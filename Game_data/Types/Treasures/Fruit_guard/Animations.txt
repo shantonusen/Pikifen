@@ -1,0 +1,17 @@
+animations{
+	idling{
+		frames{
+			idling{
+				duration=0.0000
+			}
+		}
+	}
+}
+sprites{
+	idling{
+		file=Fruit_guard.png
+		file_pos=0.0000 0.0000
+		file_size=109.0000 215.0000
+	}
+}
+body_parts

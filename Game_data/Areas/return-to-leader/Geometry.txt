@@ -1,0 +1,50 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=320.0000 -320.0000
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=32.0000 -32.0000
+	}
+	Tool{
+		type=Bomb rock
+		p=32.0000 0.0000
+	}
+	Enemy{
+		type=Dwarf Red Bulborb
+		p=-192.0000 -192.0000
+	}
+}
+path_stops
+tree_shadows

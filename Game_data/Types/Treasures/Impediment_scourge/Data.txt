@@ -1,0 +1,9 @@
+name = Impediment Scourge
+
+height = 100
+max_carriers = 15
+points = 50
+pushable = false
+pushes = true
+radius = 40
+weight = 10

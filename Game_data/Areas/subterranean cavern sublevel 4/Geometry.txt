@@ -1,0 +1,166 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=320.0000 -320.0000
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+	v=-153.5000 142.5000
+	v=85.5000 145.5000
+	v=87.5000 306.5000
+	v=-157.5000 302.5000
+	v=74.5000 -76.5000
+	v=78.5000 -302.5000
+	v=34.5000 -309.5000
+	v=20.5000 -82.5000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+	e{
+		s=0 1
+		v=7 4
+	}
+	e{
+		s=0 1
+		v=4 5
+	}
+	e{
+		s=0 1
+		v=5 6
+	}
+	e{
+		s=0 1
+		v=6 7
+	}
+	e{
+		s=2 0
+		v=11 8
+	}
+	e{
+		s=2 0
+		v=8 9
+	}
+	e{
+		s=2 0
+		v=9 10
+	}
+	e{
+		s=2 0
+		v=10 11
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=White.png
+	}
+	s{
+		z=91.0000
+		texture=White.png
+	}
+	s{
+		z=127.0000
+		texture=White.png
+	}
+}
+mobs{
+	Leader{
+		type=Alph
+		p=0.0000 0.0000
+	}
+	Track{
+		type=Climbing stick (including leader)
+		p=192.5000 216.5000
+		angle=3.2247
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=-100.5000 242.5000
+		vars=sprout=true
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=-4.5000 257.5000
+		vars=sprout=true
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=-60.5000 244.5000
+		vars=sprout=true
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=-45.5000 216.5000
+		vars=sprout=true
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=-9.5000 213.5000
+		vars=sprout=true
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=-82.5000 217.5000
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=-44.5000 188.5000
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=-63.5000 274.5000
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=12.5000 231.5000
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=-109.5000 225.5000
+	}
+	Custom{
+		type=Reinforced wall
+		p=178.5000 -94.5000
+		angle=4.7539
+	}
+	Ship{
+		type=Hocotate ship
+		p=187.5000 -268.5000
+		angle=1.5624
+	}
+	Tool{
+		type=Bomb rock
+		p=249.5000 -169.5000
+	}
+	Tool{
+		type=Bomb rock
+		p=186.5000 -160.5000
+	}
+	Tool{
+		type=Bomb rock
+		p=118.5000 -173.5000
+	}
+	Leader{
+		type=Olimar
+		p=49.5000 16.5000
+	}
+	Treasure{
+		type=Leviathan Feather
+		p=216.5000 12.5000
+	}
+}
+path_stops
+tree_shadows

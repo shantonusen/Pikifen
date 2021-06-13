@@ -1,0 +1,9 @@
+name = Fruit Guard
+
+height = 100
+max_carriers = 25
+points = 100
+pushable = false
+pushes = true
+radius = 60
+weight = 15

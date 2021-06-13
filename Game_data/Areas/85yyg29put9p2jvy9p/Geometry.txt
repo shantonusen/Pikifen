@@ -1,0 +1,85 @@
+vertexes{
+	v=-256.0000 -256.0000
+	v=256.0000 -256.0000
+	v=256.0000 256.0000
+	v=-256.0000 256.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Enemy{
+		type=Armored Cannon Beetle
+		p=160.0000 0.0000
+		angle=3.1545
+	}
+	Enemy{
+		type=Armored Cannon Beetle
+		p=-160.0000 0.0000
+	}
+	Enemy{
+		type=Armored Cannon Beetle
+		p=0.0000 -160.0000
+		angle=1.5773
+	}
+	Enemy{
+		type=Armored Cannon Beetle
+		p=0.0000 160.0000
+		angle=4.7059
+	}
+	Custom{
+		type=Reinforced wall
+		p=64.0000 -64.0000
+		angle=2.1461
+	}
+	Custom{
+		type=Reinforced wall
+		p=-64.0000 64.0000
+		angle=2.2237
+	}
+	Custom{
+		type=Reinforced wall
+		p=-64.0000 -64.0000
+		angle=0.6206
+	}
+	Custom{
+		type=Reinforced wall
+		p=64.0000 64.0000
+		angle=0.6206
+	}
+	Enemy{
+		type=Electric Water Dumple
+		p=-0.0000 -0.0000
+	}
+	Custom{
+		type=Fire geyser
+		p=-0.0000 -0.0000
+	}
+}
+path_stops
+tree_shadows

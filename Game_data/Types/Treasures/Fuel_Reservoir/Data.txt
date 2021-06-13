@@ -1,0 +1,9 @@
+name = Fuel Reservoir
+
+height = 100
+max_carriers = 15
+points = 120
+pushable = false
+pushes = true
+radius = 75
+weight = 8

@@ -1,0 +1,148 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=320.0000 -320.0000
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+	v=-260.5000 -213.5000
+	v=-194.5000 -283.5000
+	v=210.5000 -278.5000
+	v=277.5000 -227.5000
+	v=265.5000 173.5000
+	v=224.5000 255.5000
+	v=-224.5000 264.5000
+	v=-267.5000 193.5000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+	e{
+		s=0 1
+		v=11 4
+	}
+	e{
+		s=0 1
+		v=4 5
+	}
+	e{
+		s=0 1
+		v=5 6
+	}
+	e{
+		s=0 1
+		v=6 7
+	}
+	e{
+		s=0 1
+		v=7 8
+	}
+	e{
+		s=0 1
+		v=8 9
+	}
+	e{
+		s=0 1
+		v=9 10
+	}
+	e{
+		s=0 1
+		v=10 11
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Metal.png
+	}
+	s{
+		z=-330.0000
+		texture=Metal.png
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=113.5000 -102.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=108.5000 -82.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=163.5000 -107.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=150.5000 -107.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=177.5000 -88.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=160.5000 -76.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=145.5000 -76.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=157.5000 -104.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=134.5000 -86.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=141.5000 -73.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=138.5000 -99.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=144.5000 -100.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=135.5000 -78.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=158.5000 -92.5000
+	}
+	Enemy{
+		type=Munge Dweevil
+		p=-143.5000 -63.5000
+		vars=spoils=Lost Gyro Block
+	}
+	Ship{
+		type=Hocotate ship
+		p=106.5000 -205.5000
+		angle=2.8257
+	}
+}
+path_stops
+tree_shadows

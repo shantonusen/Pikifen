@@ -1,0 +1,9 @@
+name = Wiimote
+
+height = 100
+max_carriers = 14
+points = 100
+pushable = false
+pushes = true
+radius = 20
+weight = 14

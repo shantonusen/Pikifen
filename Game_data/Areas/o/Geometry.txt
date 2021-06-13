@@ -1,0 +1,134 @@
+vertexes{
+	v=-765.9573 -447.9540
+	v=641.7667 -660.5834
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+	v=-320.0000 -1.5000
+	v=-131.5000 -2.5000
+	v=-130.5000 -41.5000
+	v=-320.0000 -42.5000
+	v=71.9155 -46.8391
+	v=420.3741 -46.8391
+	v=397.1436 20.5297
+	v=88.1769 11.2374
+	v=-151.0980 -323.2828
+	v=-148.7749 -228.0375
+	v=-371.7884 -232.6836
+	v=-369.4654 -313.9906
+}
+edges{
+	e{
+		s=-1 1
+		v=3 4
+	}
+	e{
+		s=-1 1
+		v=0 1
+	}
+	e{
+		s=-1 1
+		v=1 2
+	}
+	e{
+		s=-1 1
+		v=2 3
+	}
+	e{
+		s=-1 0
+		v=4 7
+	}
+	e{
+		s=-1 1
+		v=7 0
+	}
+	e{
+		s=0 1
+		v=4 5
+	}
+	e{
+		s=0 1
+		v=5 6
+	}
+	e{
+		s=0 1
+		v=6 7
+	}
+	e{
+		s=1 2
+		v=11 8
+	}
+	e{
+		s=1 2
+		v=8 9
+	}
+	e{
+		s=1 2
+		v=9 10
+	}
+	e{
+		s=1 2
+		v=10 11
+	}
+	e{
+		s=1 3
+		v=15 12
+	}
+	e{
+		s=1 3
+		v=12 13
+	}
+	e{
+		s=1 3
+		v=13 14
+	}
+	e{
+		s=1 3
+		v=14 15
+	}
+}
+sectors{
+	s{
+		z=576.0000
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=443.0000
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=222.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=-6.0000 281.0000
+	}
+	Group task{
+		type=Cardboard box
+		p=-28.5000 3.5000
+		angle=4.6874
+		links=2
+	}
+	Custom{
+		type=Dummy
+		p=-34.9451 -283.7909
+	}
+	Onion{
+		type=Orange Onion
+		p=162.5148 199.4051
+		vars=pikmin_inside=12
+	}
+	Track{
+		type=Climbing stick (including leader)
+		p=109.0845 -290.7600
+		angle=3.1416
+	}
+}
+path_stops
+tree_shadows

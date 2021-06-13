@@ -1,0 +1,154 @@
+vertexes{
+	v=-960.0000 -672.0000
+	v=480.0000 -672.0000
+	v=480.0000 512.0000
+	v=-960.0000 512.0000
+	v=-32.0000 160.0000
+	v=-544.0000 352.0000
+	v=-480.0000 -224.0000
+	v=-224.0000 -32.0000
+	v=-192.0000 0.0000
+	v=-448.0000 -224.0000
+	v=-352.0000 -128.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+	e{
+		s=0 1
+		v=4 5
+	}
+	e{
+		s=0 1
+		v=5 6
+	}
+	e{
+		s=0 2
+		v=10 7
+	}
+	e{
+		s=0 2
+		v=7 8
+	}
+	e{
+		s=0 2
+		v=8 4
+	}
+	e{
+		s=0 2
+		v=6 9
+	}
+	e{
+		s=0 2
+		v=9 10
+	}
+	e{
+		s=2 1
+		v=6 4
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Bridge.png
+	}
+	s{
+		z=200.0000
+		texture=Stone.jpg
+	}
+	s{
+		z=100.0000
+		texture=Stone.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=-352.0000 0.0000
+	}
+	Leader{
+		type=Louie
+		p=-192.0000 -256.0000
+	}
+	Onion{
+		type=Master Onion
+		p=-352.0000 128.0000
+		vars=pikmin_inside=0 0 100 0 0 100 0 0 100
+	}
+	Leader{
+		type=President
+		p=-192.0000 -256.0000
+	}
+	Ship{
+		type=Hocotate ship
+		p=-448.0000 224.0000
+		angle=4.7576
+		vars=pikmin_inside=0 0 100 0 0 100
+	}
+	Enemy{
+		type=Water Dumple
+		p=-384.0000 64.0000
+		vars=random_pellet_spoils=10
+	}
+	Custom{
+		type=Reinforced wall
+		p=-480.0000 -128.0000
+		angle=0.1035
+	}
+	Custom{
+		type=Reinforced wall
+		p=-512.0000 0.0000
+		angle=0.1035
+	}
+	Custom{
+		type=Reinforced wall
+		p=-544.0000 160.0000
+		angle=0.1035
+	}
+	Custom{
+		type=Reinforced wall
+		p=-544.0000 288.0000
+		angle=0.1035
+	}
+	Custom{
+		type=Reinforced wall
+		p=-448.0000 320.0000
+		angle=1.2411
+	}
+	Custom{
+		type=Reinforced wall
+		p=-288.0000 256.0000
+		angle=1.2411
+	}
+	Custom{
+		type=Reinforced wall
+		p=-160.0000 192.0000
+		angle=1.2411
+	}
+	Custom{
+		type=Reinforced wall
+		p=-96.0000 96.0000
+		angle=2.4305
+	}
+	Custom{
+		type=Reinforced wall
+		p=-384.0000 -160.0000
+		angle=2.4305
+	}
+}
+path_stops
+tree_shadows

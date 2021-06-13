@@ -1,0 +1,9 @@
+name = Sud generator
+
+height = 100
+max_carriers = 35
+points = 60
+pushable = false
+pushes = true
+radius = 40
+weight = 20

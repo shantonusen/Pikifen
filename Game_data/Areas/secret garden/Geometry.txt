@@ -1,0 +1,422 @@
+vertexes{
+	v=-1280.0000 -992.0000
+	v=1152.0000 -992.0000
+	v=1152.0000 1504.0000
+	v=-1312.0000 1536.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Alph
+		p=-192.0000 160.0000
+	}
+	Onion{
+		type=Red Onion
+		p=224.0000 -288.0000
+		angle=2.0686
+	}
+	Leader{
+		type=Alph
+		p=-1248.0000 1376.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-1184.0000 992.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=320.0000 -512.0000
+		angle=3.1287
+		vars=maturity=1;team=player_1
+	}
+	Pellet{
+		type=Red 1 pellet
+		p=256.0000 -0.0000
+		vars=team=player_1
+	}
+	Enemy{
+		type=Cloaking Burrow-nit
+		p=480.0000 -384.0000
+	}
+	Enemy{
+		type=Cloaking Burrow-nit
+		p=-928.0000 -480.0000
+		vars=team=player_2
+	}
+	Pellet{
+		type=Red 1 pellet
+		p=448.0000 -160.0000
+	}
+	Pellet{
+		type=Red 1 pellet
+		p=576.0000 -288.0000
+	}
+	Pellet{
+		type=Red 5 pellet
+		p=256.0000 -192.0000
+	}
+	Ship{
+		type=Hocotate ship
+		p=-192.0000 736.0000
+	}
+	Treasure{
+		type=2 Euro
+		p=224.0000 -544.0000
+		angle=3.2322
+	}
+	Treasure{
+		type=Wiimote
+		p=-224.0000 -288.0000
+	}
+	Treasure{
+		type=Bathroom Bundle
+		p=-224.0000 192.0000
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-192.0000 192.0000
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-192.0000 192.0000
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-128.0000 96.0000
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-128.0000 160.0000
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-160.0000 160.0000
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-128.0000 128.0000
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-128.0000 192.0000
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-160.0000 192.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=-192.0000 192.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=-128.0000 192.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=-128.0000 192.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=-192.0000 192.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=-192.0000 160.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=-160.0000 192.0000
+	}
+	Converter{
+		type=Lapis Lazuli Candypop Bud
+		p=-96.0000 -96.0000
+		angle=3.3613
+	}
+	Onion{
+		type=Blue Onion
+		p=32.0000 -32.0000
+	}
+	Pikmin{
+		type=Blue Pikmin
+		p=128.0000 -32.0000
+		vars=maturity=1
+	}
+	Pellet{
+		type=Blue 1 pellet
+		p=96.0000 32.0000
+	}
+	Pellet{
+		type=Blue 1 pellet
+		p=160.0000 -96.0000
+	}
+	Pellet{
+		type=Blue 1 pellet
+		p=224.0000 -96.0000
+	}
+	Pellet{
+		type=Blue 1 pellet
+		p=96.0000 -96.0000
+	}
+	Converter{
+		type=Lapis Lazuli Candypop Bud
+		p=-96.0000 -96.0000
+		angle=3.3613
+	}
+	Converter{
+		type=Lapis Lazuli Candypop Bud
+		p=-96.0000 -96.0000
+		angle=3.3613
+	}
+	Converter{
+		type=Lapis Lazuli Candypop Bud
+		p=-96.0000 -96.0000
+		angle=3.3613
+	}
+	Converter{
+		type=Lapis Lazuli Candypop Bud
+		p=-96.0000 -96.0000
+		angle=4.6284
+	}
+	Pikmin{
+		type=Blue Pikmin
+		p=160.0000 0.0000
+		vars=maturity=1
+	}
+	Pikmin{
+		type=Blue Pikmin
+		p=128.0000 0.0000
+		vars=maturity=1
+	}
+	Pikmin{
+		type=Blue Pikmin
+		p=128.0000 96.0000
+		vars=maturity=1
+	}
+	Pikmin{
+		type=Blue Pikmin
+		p=192.0000 32.0000
+		vars=maturity=1
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=224.0000 32.0000
+		vars=maturity=1
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=64.0000 128.0000
+		vars=maturity=1
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=192.0000 64.0000
+		vars=maturity=1
+	}
+	Tool{
+		type=Bomb rock
+		p=320.0000 416.0000
+	}
+	Tool{
+		type=Bomb rock
+		p=352.0000 352.0000
+	}
+	Tool{
+		type=Bomb rock
+		p=288.0000 352.0000
+	}
+	Decoration{
+		type=Margaret
+		p=320.0000 160.0000
+	}
+	Custom{
+		type=Reinforced wall
+		p=64.0000 224.0000
+		angle=4.6801
+	}
+	Custom{
+		type=Reinforced wall
+		p=160.0000 320.0000
+	}
+	Custom{
+		type=Reinforced wall
+		p=-160.0000 320.0000
+	}
+	Custom{
+		type=Reinforced wall
+		p=160.0000 416.0000
+	}
+	Custom{
+		type=Reinforced wall
+		p=-160.0000 416.0000
+	}
+	Scale{
+		type=Seesaw block
+		p=0.0000 352.0000
+		vars=start_down=true
+	}
+	Custom{
+		type=Reinforced wall
+		p=-96.0000 224.0000
+		angle=4.6801
+	}
+	Scale{
+		type=Seesaw block
+		p=-128.0000 -96.0000
+		links=56
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 384.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-64.0000 -352.0000
+	}
+	Enemy{
+		type=Crumbug
+		p=-352.0000 32.0000
+	}
+	Enemy{
+		type=Female Sheargrub
+		p=352.0000 0.0000
+		vars=spoils=Wiimote
+	}
+	Leader{
+		type=Alph
+		p=128.0000 -352.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-1248.0000 1344.0000
+	}
+	Leader{
+		type=Alph
+		p=896.0000 -768.0000
+	}
+	Leader{
+		type=Alph
+		p=1024.0000 -544.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=1024.0000 -544.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=1024.0000 -576.0000
+	}
+}
+path_stops{
+	s{
+		pos=-352.0000 -288.0000
+		links{
+			nr=1
+		}
+	}
+	s{
+		pos=-320.0000 -288.0000
+		links{
+			nr=0
+			nr=2
+		}
+	}
+	s{
+		pos=-256.0000 -288.0000
+		links{
+			nr=1
+			nr=3
+		}
+	}
+	s{
+		pos=-288.0000 -288.0000
+		links{
+			nr=2
+			nr=4
+		}
+	}
+	s{
+		pos=-192.0000 -288.0000
+		links{
+			nr=3
+			nr=5
+		}
+	}
+	s{
+		pos=-128.0000 -288.0000
+		links{
+			nr=4
+			nr=6
+		}
+	}
+	s{
+		pos=0.0000 -0.0000
+		links{
+			nr=5
+			nr=7
+		}
+	}
+	s{
+		pos=288.0000 -224.0000
+		links{
+			nr=6
+			nr=8
+		}
+	}
+	s{
+		pos=32.0000 -544.0000
+		links{
+			nr=7
+			nr=9
+		}
+	}
+	s{
+		pos=416.0000 -640.0000
+		links{
+			nr=8
+			nr=10
+		}
+	}
+	s{
+		pos=448.0000 -576.0000
+		links{
+			nr=11
+		}
+	}
+	s{
+		pos=416.0000 -448.0000
+		links{
+			nr=12
+		}
+	}
+	s{
+		pos=576.0000 -320.0000
+		links{
+			nr=7
+		}
+	}
+}
+tree_shadows

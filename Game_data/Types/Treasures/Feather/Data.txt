@@ -1,0 +1,9 @@
+name = Leviathan Feather
+
+height = 100
+max_carriers = 1
+points = 10
+pushable = false
+pushes = true
+radius = 30
+weight = 1

@@ -1,0 +1,9 @@
+name = Bathroom Bundle
+
+height = 20
+max_carriers = 98
+points = 100
+pushable = false
+pushes = true
+radius = 40
+weight = 49

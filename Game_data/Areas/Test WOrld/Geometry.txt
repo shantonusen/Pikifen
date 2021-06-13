@@ -1,0 +1,67 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=320.0000 -320.0000
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Tool{
+		type=Bomb rock
+		p=256.0000 -256.0000
+	}
+	Pikmin{
+		type=Blue Pikmin
+		p=160.0000 -224.0000
+	}
+	Pikmin{
+		type=Orange Pikmin
+		p=64.0000 -32.0000
+	}
+	Onion{
+		type=Master Onion
+		p=-160.0000 -128.0000
+	}
+	Onion{
+		type=Orange Onion
+		p=-192.0000 64.0000
+		vars=pikmin_inside=100
+	}
+	Track{
+		type=Climbing stick (including leader)
+		p=160.0000 -128.0000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-64.0000 -160.0000
+	}
+}
+path_stops
+tree_shadows

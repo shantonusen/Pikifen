@@ -1,0 +1,9 @@
+name = Lost Gyro Block
+
+height = 100
+max_carriers = 10
+points = 80
+pushable = false
+pushes = true
+radius = 50
+weight = 5

@@ -1,0 +1,110 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=320.0000 -320.0000
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-78.5000 -60.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-97.5000 -60.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-95.5000 -42.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-76.5000 -39.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-93.5000 -24.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-77.5000 -25.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-93.5000 -3.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-78.5000 -4.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-94.5000 14.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-77.5000 15.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-95.5000 32.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-80.5000 31.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-97.5000 49.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-81.5000 49.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-97.5000 70.5000
+	}
+	Treasure{
+		type=Leviathan Feather
+		p=118.5000 -78.5000
+	}
+	Onion{
+		type=Master Onion
+		p=-158.5000 171.5000
+	}
+	Ship{
+		type=Hocotate ship
+		p=-165.5000 -241.5000
+	}
+}
+path_stops
+tree_shadows

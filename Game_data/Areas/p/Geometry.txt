@@ -1,0 +1,128 @@
+vertexes{
+	v=-440.9241 -395.6140
+	v=1107.8811 -994.7805
+	v=105.6000 172.8000
+	v=-105.6000 172.8000
+	v=-90.8293 -272.3695
+	v=66.5807 -272.9095
+	v=83.6550 121.2300
+	v=84.3150 139.5900
+	v=-80.0250 130.9500
+	v=493.5842 -714.9287
+	v=769.3442 -684.0436
+	v=897.2967 -796.5536
+	v=831.1143 -851.7056
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+	e{
+		s=0 1
+		v=8 4
+	}
+	e{
+		s=0 1
+		v=4 5
+	}
+	e{
+		s=0 1
+		v=5 6
+	}
+	e{
+		s=0 1
+		v=6 7
+	}
+	e{
+		s=0 1
+		v=7 8
+	}
+	e{
+		s=2 0
+		v=12 9
+	}
+	e{
+		s=2 0
+		v=9 10
+	}
+	e{
+		s=2 0
+		v=10 11
+	}
+	e{
+		s=2 0
+		v=11 12
+	}
+}
+sectors{
+	s{
+		is_bottomless_pit=true
+		z=0.0000
+		texture=Metal.png
+		texture_scale=0.3300 0.5400
+	}
+	s{
+		z=261.0000
+		texture=Metal.png
+		texture_scale=0.3300 0.5400
+	}
+	s{
+		z=0.0000
+		texture=Metal.png
+		texture_scale=0.3300 0.5400
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Bouncer{
+		type=Bouncy Mushroom
+		p=-90.8293 -272.3695
+		links=2
+	}
+	Bouncer{
+		type=Bouncy Mushroom
+		p=50.1623 -456.8174
+		links=3
+	}
+	Bouncer{
+		type=Bouncy Mushroom
+		p=244.2973 -536.2363
+		links=4
+	}
+	Bouncer{
+		type=Bouncy Mushroom
+		p=418.5775 -593.5943
+		links=5
+	}
+	Bouncer{
+		type=Bouncy Mushroom
+		p=579.6213 -613.4489
+		links=7
+	}
+	Leader{
+		type=Alph
+		p=-0.5775 -79.5778
+	}
+	Custom{
+		type=Dummy
+		p=709.7800 -770.0807
+	}
+}
+path_stops
+tree_shadows

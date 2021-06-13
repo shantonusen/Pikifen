@@ -1,0 +1,20 @@
+vertexes
+edges
+sectors
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Custom{
+		type=Reinforced wall
+		p=-73.2991 1080.2810
+		angle=2.3935
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-369.9363 953.8365
+	}
+}
+path_stops
+tree_shadows

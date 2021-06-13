@@ -1,0 +1,11 @@
+name=explotion  cave
+subtitle=the danger pikmin...
+bg_bmp=Ceramic_bridge_rail_red.png
+bg_color=0 0 0
+bg_dist=2.0000
+bg_zoom=1.0000
+weather
+maker=Oscar
+version=0.1
+notes
+spray_amounts=Ultra-Bitter Spray=20; Ultra-Spicy Spray=700

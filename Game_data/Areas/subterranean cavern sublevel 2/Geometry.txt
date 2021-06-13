@@ -1,0 +1,180 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=929.1477 -689.7550
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+	v=-165.6312 -188.7612
+	v=192.2727 -179.2802
+	v=189.9025 135.9597
+	v=-13.9368 230.7686
+	v=-127.7076 214.1771
+	v=-222.5166 79.0743
+	v=-258.0699 -56.0286
+	v=-234.3677 -146.0971
+	v=-196.4441 -141.3566
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+	e{
+		s=0 1
+		v=12 4
+	}
+	e{
+		s=0 1
+		v=4 5
+	}
+	e{
+		s=0 1
+		v=5 6
+	}
+	e{
+		s=0 1
+		v=6 7
+	}
+	e{
+		s=0 1
+		v=7 8
+	}
+	e{
+		s=0 1
+		v=8 9
+	}
+	e{
+		s=0 1
+		v=9 10
+	}
+	e{
+		s=0 1
+		v=10 11
+	}
+	e{
+		s=0 1
+		v=11 12
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		brightness=238
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=-53.0000
+		brightness=238
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-36.5000 14.5000
+		vars=maturity=0;sprout=true
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-44.5000 2.5000
+		vars=maturity=0;sprout=true
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-23.5000 26.5000
+		vars=maturity=0;sprout=true
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-50.5000 35.5000
+		vars=maturity=0;sprout=true
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-73.5000 12.5000
+		vars=maturity=0;sprout=true
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-46.5000 -24.5000
+		vars=maturity=0;sprout=true
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-74.5000 -13.5000
+		vars=maturity=0;sprout=true
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-26.5000 -25.5000
+		vars=maturity=0;sprout=true
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-24.5000 -8.5000
+		vars=maturity=0;sprout=true
+	}
+	Ship{
+		type=Hocotate ship
+		p=-158.5000 -59.5000
+		angle=0.8311
+	}
+	Bouncer{
+		type=Bouncy Mushroom
+		p=-127.7076 214.1771
+		links=12
+	}
+	Custom{
+		type=Dummy
+		p=317.8946 -323.8640
+	}
+	Leader{
+		type=Alph
+		p=-16.3070 10.3377
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=739.7946 -553.7757
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=680.5389 -492.1498
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=616.5428 -428.1538
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=578.6193 -378.3791
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=531.2148 -323.8640
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=455.3677 -271.7190
+	}
+	Treasure{
+		type=Fruit Guard
+		p=189.9025 135.9597
+	}
+}
+path_stops
+tree_shadows

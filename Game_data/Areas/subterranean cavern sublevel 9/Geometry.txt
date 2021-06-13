@@ -1,0 +1,103 @@
+vertexes{
+	v=-321.0000 -328.0000
+	v=319.0000 -328.0000
+	v=319.0000 312.0000
+	v=-321.0000 312.0000
+	v=-321.0000 -84.5000
+	v=319.0000 -244.5000
+}
+edges{
+	e{
+		s=-1 1
+		v=3 4
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 5
+	}
+	e{
+		s=-1 1
+		v=2 3
+	}
+	e{
+		s=0 1
+		v=4 5
+	}
+	e{
+		s=-1 0
+		v=4 0
+	}
+	e{
+		s=-1 1
+		v=5 2
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Metal.png
+	}
+	s{
+		z=0.0000
+		hazards=crush
+		hazards_floor=true
+		texture=Metal.png
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=-248.0000 -233.0000
+	}
+	Leader{
+		type=Alph
+		p=-276.0000 -240.0000
+	}
+	Ship{
+		type=Hocotate ship
+		p=74.5000 157.5000
+		angle=4.2553
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-116.5000 -223.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-98.5000 -230.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-100.5000 -216.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-57.5000 -232.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-72.5000 -207.5000
+	}
+	Treasure{
+		type=Diet Doomer
+		p=61.5000 -240.5000
+	}
+	Enemy{
+		type=Crumbug
+		p=136.5000 44.5000
+	}
+	Enemy{
+		type=Crumbug
+		p=185.5000 -3.5000
+	}
+	Enemy{
+		type=Crumbug
+		p=87.5000 23.5000
+	}
+}
+path_stops
+tree_shadows

@@ -1,0 +1,191 @@
+vertexes{
+	v=-322.0000 -333.0000
+	v=318.0000 -333.0000
+	v=318.0000 307.0000
+	v=-322.0000 307.0000
+	v=81.5000 305.0000
+	v=87.5000 90.5000
+	v=207.5000 92.5000
+	v=207.5000 136.5000
+	v=119.5000 134.5000
+	v=105.5000 305.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 9
+	}
+	e{
+		s=-1 0
+		v=4 3
+	}
+	e{
+		s=-1 1
+		v=9 4
+	}
+	e{
+		s=0 1
+		v=4 5
+	}
+	e{
+		s=0 1
+		v=5 6
+	}
+	e{
+		s=0 1
+		v=6 7
+	}
+	e{
+		s=0 1
+		v=7 8
+	}
+	e{
+		s=0 1
+		v=8 9
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Metal.png
+	}
+	s{
+		z=308.0000
+		texture=Metal.png
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=12.0000 5.0000
+	}
+	Treasure{
+		type=Sud generator
+		p=-158.5000 -180.5000
+		links=0
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=224.5000 -232.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=224.5000 -232.5000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=224.5000 -232.5000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=224.5000 -232.5000
+	}
+	Ship{
+		type=Hocotate ship
+		p=244.5000 225.5000
+		angle=5.0531
+	}
+	Custom{
+		type=Electric gate
+		p=237.5000 94.5000
+		angle=1.5624
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=193.5000 -160.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=234.5000 -203.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=253.5000 -136.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=200.5000 -197.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=230.5000 -166.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=257.5000 -184.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=265.5000 -210.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=264.5000 -156.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=220.5000 -175.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=245.5000 -211.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=189.5000 -200.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=236.5000 -174.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=250.5000 -182.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=208.5000 -177.5000
+	}
+	Pikmin{
+		type=Yellow Pikmin
+		p=204.5000 -194.5000
+	}
+	Enemy{
+		type=Crumbug
+		p=-28.5000 -187.5000
+	}
+	Enemy{
+		type=Crumbug
+		p=-131.5000 153.5000
+	}
+	Enemy{
+		type=Crumbug
+		p=-200.5000 57.5000
+	}
+	Enemy{
+		type=Crumbug
+		p=-42.5000 90.5000
+	}
+	Enemy{
+		type=Water Dumple
+		p=-123.5000 -72.5000
+	}
+	Treasure{
+		type=Mirth Sphere
+		p=122.5000 -244.5000
+	}
+}
+path_stops
+tree_shadows

@@ -1,0 +1,11 @@
+name=rybnox cubes in pikmin
+subtitle=pikminnnnnnnnnn?
+bg_bmp
+bg_color=0 0 0
+bg_dist=2.0000
+bg_zoom=1.0000
+weather=Slight blackout
+maker
+version
+notes
+spray_amounts

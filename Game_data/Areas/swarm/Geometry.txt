@@ -1,0 +1,66 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=320.0000 -320.0000
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-100.5000 -67.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-108.5000 -43.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-101.5000 -23.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-86.5000 -50.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-135.5000 -49.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-119.5000 -69.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-124.5000 -28.5000
+	}
+}
+path_stops
+tree_shadows

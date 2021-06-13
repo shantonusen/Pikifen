@@ -1,0 +1,106 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=336.6797 -280.5479
+	v=695.1763 1036.2935
+	v=-899.8583 1171.0881
+	v=119.6956 -467.3383
+	v=-64.0299 -47.0321
+	v=-187.8203 63.9521
+	v=-303.3203 141.7424
+	v=-177.2904 -320.0000
+	v=23.1797 -337.5479
+}
+edges{
+	e{
+		s=-1 0
+		v=3 7
+	}
+	e{
+		s=-1 1
+		v=0 8
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+	e{
+		s=0 1
+		v=9 4
+	}
+	e{
+		s=0 1
+		v=4 1
+	}
+	e{
+		s=0 1
+		v=1 5
+	}
+	e{
+		s=0 1
+		v=5 6
+	}
+	e{
+		s=0 1
+		v=6 7
+	}
+	e{
+		s=-1 1
+		v=7 0
+	}
+	e{
+		s=-1 1
+		v=8 9
+	}
+	e{
+		s=-1 0
+		v=9 1
+	}
+}
+sectors{
+	s{
+		z=64.0000
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=0.0000
+		hazards=water;water_bubble
+		hazards_floor=true
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Custom{
+		type=Clog
+		p=-154.5000 -110.5000
+	}
+	Treasure{
+		type=Sud generator
+		p=-222.5000 -239.5000
+	}
+	Onion{
+		type=Blue Onion
+		p=-5.5000 175.5000
+		vars=pikmin_inside=10
+	}
+	Ship{
+		type=Hocotate ship
+		p=116.5000 100.5000
+		angle=3.4575
+		vars=pikmin_inside=1 1 34
+	}
+	Scale{
+		type=Paper bag
+		p=146.5000 -102.5000
+		angle=5.1196
+	}
+}
+path_stops
+tree_shadows

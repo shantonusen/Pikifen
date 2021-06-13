@@ -1,0 +1,54 @@
+vertexes{
+	v=-416.0000 -384.0000
+	v=320.0000 -224.0000
+	v=320.0000 416.0000
+	v=-320.0000 320.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=-384.0000 -352.0000
+		vars=team=player_4
+	}
+	Enemy{
+		type=Cloaking Burrow-nit
+		p=0.0000 0.0000
+		vars=spoils=Wiimote;team=enemy_1
+	}
+	Onion{
+		type=Master Onion
+		p=160.0000 224.0000
+		vars=pikmin_inside=0 0 231 0 0 451 0 0 198;team=enemy_1
+	}
+	Ship{
+		type=Hocotate ship
+		p=192.0000 -128.0000
+		angle=2.3012
+	}
+}
+path_stops
+tree_shadows

@@ -1,0 +1,354 @@
+vertexes{
+	v=-413.0000 -332.5406
+	v=142.0231 -810.5359
+	v=1044.9033 1019.1414
+	v=-1453.9678 1242.2059
+	v=-191.3881 -144.2578
+	v=-202.1533 -130.5223
+	v=-215.3913 -119.1509
+	v=-230.5934 -110.5807
+	v=-247.1754 -105.1410
+	v=-264.5000 -103.0406
+	v=-281.9015 -104.3605
+	v=-298.7111 -109.0500
+	v=-328.0183 -127.6939
+	v=-339.3896 -140.9319
+	v=-347.9599 -156.1340
+	v=-353.3997 -172.7160
+	v=-355.5000 -190.0406
+	v=-354.1801 -207.4422
+	v=-349.4906 -224.2518
+	v=-341.6119 -239.8235
+	v=-302.4066 -273.5005
+	v=-285.8246 -278.9403
+	v=-268.5000 -281.0406
+	v=-251.0985 -279.7208
+	v=-234.2889 -275.0312
+	v=-218.7172 -267.1526
+	v=-204.9817 -256.3873
+	v=-193.6104 -243.1494
+	v=-185.0401 -227.9473
+	v=71.3997 -50.3652
+	v=-318.0000 -264.9302
+	v=-318.0000 -116.9287
+}
+edges{
+	e{
+		s=-1 0
+		v=3 31
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+	e{
+		s=0 1
+		v=29 4
+	}
+	e{
+		s=0 1
+		v=4 5
+	}
+	e{
+		s=0 1
+		v=5 6
+	}
+	e{
+		s=0 1
+		v=6 7
+	}
+	e{
+		s=0 1
+		v=7 8
+	}
+	e{
+		s=0 1
+		v=8 9
+	}
+	e{
+		s=0 1
+		v=9 10
+	}
+	e{
+		s=0 1
+		v=10 11
+	}
+	e{
+		s=0 1
+		v=11 31
+	}
+	e{
+		s=0 1
+		v=31 12
+	}
+	e{
+		s=0 1
+		v=12 13
+	}
+	e{
+		s=0 1
+		v=13 14
+	}
+	e{
+		s=0 1
+		v=14 15
+	}
+	e{
+		s=0 1
+		v=15 16
+	}
+	e{
+		s=0 1
+		v=16 17
+	}
+	e{
+		s=0 1
+		v=17 18
+	}
+	e{
+		s=0 1
+		v=18 19
+	}
+	e{
+		s=0 1
+		v=19 0
+	}
+	e{
+		s=0 1
+		v=30 20
+	}
+	e{
+		s=0 1
+		v=20 21
+	}
+	e{
+		s=0 1
+		v=21 22
+	}
+	e{
+		s=0 1
+		v=22 23
+	}
+	e{
+		s=0 1
+		v=23 24
+	}
+	e{
+		s=0 1
+		v=24 25
+	}
+	e{
+		s=0 1
+		v=25 26
+	}
+	e{
+		s=0 1
+		v=26 27
+	}
+	e{
+		s=0 1
+		v=27 28
+	}
+	e{
+		s=0 1
+		v=28 29
+	}
+	e{
+		s=-1 1
+		v=30 0
+	}
+	e{
+		s=-1 0
+		v=31 30
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		brightness=209
+		texture=Grass_dark.jpg
+		texture_tint=254 254 255
+	}
+	s{
+		z=210.0000
+		texture=Grass_dark.jpg
+		texture_tint=254 254 255
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Custom{
+		type=White bramble gate
+		p=150.3997 -29.8246
+		angle=1.8949
+	}
+	Ship{
+		type=Hocotate ship
+		p=128.5000 -248.5000
+		angle=2.3935
+	}
+	Treasure{
+		type=Fruit Guard
+		p=-59.5000 -252.5000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-79.5000 21.5000
+	}
+	Onion{
+		type=Red Onion
+		p=-202.5000 242.5000
+		vars=pikmin_inside=1 1 9999
+	}
+	Enemy{
+		type=Whiptongue Bulborb
+		p=-262.5000 -187.5000
+		vars=spoils=Wiimote
+	}
+	Custom{
+		type=White bramble gate
+		p=343.6682 40.3665
+		angle=1.8949
+	}
+	Custom{
+		type=White bramble gate
+		p=531.3259 97.0178
+		angle=1.8949
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=71.3997 -46.8246
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=71.3997 -46.8246
+	}
+	Custom{
+		type=White bramble gate
+		p=71.3997 -46.8246
+		angle=1.8949
+	}
+	Custom{
+		type=White bramble gate
+		p=456.9712 36.8256
+		angle=1.8949
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-729.1656 776.8334
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-481.3161 776.8334
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=148.9296 677.6935
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-244.0887 528.9839
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-81.2163 790.9962
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-502.5603 433.3848
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-360.9321 893.6766
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-583.9966 599.7980
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-906.2008 890.1359
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-672.5143 1014.0607
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-973.4742 1038.8456
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-272.4144 681.2343
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-467.1533 1028.2235
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-190.9781 1038.8456
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-237.0073 808.6996
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-421.1241 592.7166
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-835.3868 1014.0607
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-605.2408 861.8102
+		angle=3.1582
+		vars=spoils=Fruit Guard
+	}
+}
+path_stops
+tree_shadows

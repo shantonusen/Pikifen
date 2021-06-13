@@ -1,0 +1,181 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=320.0000 -320.0000
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+	v=-60.5000 -137.5000
+	v=58.5000 -102.5000
+	v=116.5000 -156.5000
+	v=110.5000 -21.5000
+	v=51.5000 59.5000
+	v=12.5000 -40.5000
+	v=-146.5000 228.5000
+	v=-296.5000 -60.5000
+	v=190.5000 -24.5000
+	v=296.5000 -124.5000
+	v=59.5000 -265.5000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+	e{
+		s=0 1
+		v=11 4
+	}
+	e{
+		s=2 1
+		v=4 5
+	}
+	e{
+		s=2 1
+		v=5 6
+	}
+	e{
+		s=0 1
+		v=6 7
+	}
+	e{
+		s=0 1
+		v=7 8
+	}
+	e{
+		s=0 1
+		v=8 9
+	}
+	e{
+		s=0 1
+		v=9 10
+	}
+	e{
+		s=0 1
+		v=10 11
+	}
+	e{
+		s=2 0
+		v=6 12
+	}
+	e{
+		s=2 0
+		v=12 13
+	}
+	e{
+		s=2 0
+		v=13 14
+	}
+	e{
+		s=2 0
+		v=14 4
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=-279.0000
+		hazards=crush
+		hazards_floor=true
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=-277.0000
+		hazards=crush
+		hazards_floor=true
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=185.5000 90.5000
+	}
+	Treasure{
+		type=2 Euro
+		p=-123.5000 -195.5000
+	}
+	Onion{
+		type=Master Onion
+		p=91.5000 195.5000
+		vars=pikmin_inside=10 12 12
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=296.5000 -124.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=212.5000 -119.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=116.5000 -156.5000
+	}
+	Ship{
+		type=Hocotate ship
+		p=208.5000 192.5000
+		angle=3.9893
+	}
+	Track{
+		type=Climbing stick
+		p=200.5000 -113.5000
+		angle=1.5958
+	}
+}
+path_stops{
+	s{
+		pos=78.5000 -176.5000
+		links{
+			nr=1
+			nr=5
+			nr=3
+		}
+	}
+	s{
+		pos=259.5000 -169.5000
+		links{
+			nr=0
+			nr=2
+		}
+	}
+	s{
+		pos=265.5000 47.5000
+		links
+	}
+	s{
+		pos=-84.5000 -243.5000
+		links{
+			nr=4
+			nr=0
+		}
+	}
+	s{
+		pos=-241.5000 -237.5000
+		links{
+			nr=3
+			nr=5
+		}
+	}
+	s{
+		pos=-222.5000 -47.5000
+		links{
+			nr=4
+			nr=0
+		}
+	}
+}
+tree_shadows

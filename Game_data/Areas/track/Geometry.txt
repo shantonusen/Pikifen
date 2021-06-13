@@ -1,0 +1,85 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=320.0000 -320.0000
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Track{
+		type=Climbing stick
+		p=64.0000 -96.0000
+	}
+	Pikmin{
+		type=Blue Pikmin
+		p=-192.0000 -96.0000
+	}
+	Treasure{
+		type=Mirth Sphere
+		p=-36.5000 -168.5000
+	}
+	Treasure{
+		type=Leviathan Feather
+		p=186.5000 -220.5000
+	}
+	Treasure{
+		type=Diet Doomer
+		p=243.5000 -102.5000
+	}
+}
+path_stops{
+	s{
+		pos=96.0000 -96.0000
+		links{
+			nr=1
+		}
+	}
+	s{
+		pos=96.0000 32.0000
+		links{
+			nr=0
+			nr=2
+		}
+	}
+	s{
+		pos=32.0000 160.0000
+		links{
+			nr=1
+			nr=3
+		}
+	}
+	s{
+		pos=-96.0000 160.0000
+		links{
+			nr=2
+		}
+	}
+}
+tree_shadows

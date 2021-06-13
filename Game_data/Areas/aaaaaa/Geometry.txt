@@ -1,0 +1,11 @@
+vertexes
+edges
+sectors
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+}
+path_stops
+tree_shadows

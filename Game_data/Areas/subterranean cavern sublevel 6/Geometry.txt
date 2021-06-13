@@ -1,0 +1,149 @@
+vertexes{
+	v=-320.0000 -320.0000
+	v=320.0000 -320.0000
+	v=320.0000 320.0000
+	v=-320.0000 320.0000
+	v=-240.5000 -243.5000
+	v=186.5000 -232.5000
+	v=195.5000 62.5000
+	v=-132.5000 260.5000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+	e{
+		s=0 1
+		v=7 4
+	}
+	e{
+		s=0 1
+		v=4 5
+	}
+	e{
+		s=0 1
+		v=5 6
+	}
+	e{
+		s=0 1
+		v=6 7
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=-3072.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-70.5000 110.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-23.5000 122.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-19.5000 109.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-6.5000 99.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=18.5000 111.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=54.5000 128.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=133.5000 4.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=195.5000 62.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=167.5000 -24.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=90.5000 16.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=106.5000 16.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=85.5000 55.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-44.5000 73.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=54.5000 56.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=102.5000 -11.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=39.5000 83.5000
+	}
+	Pikmin{
+		type=Rock Pikmin
+		p=-100.5000 166.5000
+	}
+	Treasure{
+		type=Impediment Scourge
+		p=-150.5000 -170.5000
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-110.5000 -56.5000
+		angle=5.2859
+	}
+	Enemy{
+		type=Red Bulborb
+		p=10.5000 -177.5000
+		angle=2.2274
+	}
+	Ship{
+		type=Hocotate ship
+		p=82.5000 106.5000
+		angle=4.6209
+	}
+}
+path_stops
+tree_shadows

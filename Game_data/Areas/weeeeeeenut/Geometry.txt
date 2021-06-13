@@ -1,0 +1,391 @@
+vertexes{
+	v=-8.5000 151.5000
+	v=-69.9962 129.8815
+	v=-126.0933 96.6811
+	v=-174.6353 53.1747
+	v=-213.7569 1.0341
+	v=-241.9547 -57.7369
+	v=-258.1451 -120.8798
+	v=-261.7058 -185.9679
+	v=-252.5000 -250.5000
+	v=-230.8815 -311.9962
+	v=-197.6811 -368.0933
+	v=-154.1746 -416.6353
+	v=-102.0340 -455.7570
+	v=19.8798 -500.1451
+	v=84.9678 -503.7058
+	v=149.5000 -494.5000
+	v=210.9962 -472.8815
+	v=267.0933 -439.6811
+	v=315.6353 -396.1746
+	v=354.7570 -344.0340
+	v=382.9548 -285.2630
+	v=399.1451 -222.1201
+	v=402.7058 -157.0321
+	v=393.5000 -92.4999
+	v=371.8815 -31.0037
+	v=338.6811 25.0933
+	v=295.1746 73.6354
+	v=243.0339 112.7570
+	v=184.2631 140.9547
+	v=121.1202 157.1451
+	v=56.0321 160.7058
+	v=-1321.9753 -941.4008
+	v=-2222.9341 1032.1283
+	v=-2537.5547 3120.0645
+	v=-399.5649 2862.6479
+	v=1094.8826 1082.1815
+	v=1009.0769 -548.1250
+	v=-113.5464 -1248.8708
+	v=-1815.6523 139.9871
+}
+edges{
+	e{
+		s=1 0
+		v=30 0
+	}
+	e{
+		s=1 0
+		v=0 1
+	}
+	e{
+		s=1 0
+		v=1 2
+	}
+	e{
+		s=1 0
+		v=2 3
+	}
+	e{
+		s=1 0
+		v=3 4
+	}
+	e{
+		s=1 0
+		v=4 5
+	}
+	e{
+		s=1 0
+		v=5 6
+	}
+	e{
+		s=1 0
+		v=6 7
+	}
+	e{
+		s=1 0
+		v=7 8
+	}
+	e{
+		s=1 0
+		v=8 9
+	}
+	e{
+		s=1 0
+		v=9 10
+	}
+	e{
+		s=1 0
+		v=10 11
+	}
+	e{
+		s=1 0
+		v=11 12
+	}
+	e{
+		s=1 0
+		v=12 13
+	}
+	e{
+		s=1 0
+		v=13 14
+	}
+	e{
+		s=1 0
+		v=14 15
+	}
+	e{
+		s=1 0
+		v=15 16
+	}
+	e{
+		s=1 0
+		v=16 17
+	}
+	e{
+		s=1 0
+		v=17 18
+	}
+	e{
+		s=1 0
+		v=18 19
+	}
+	e{
+		s=1 0
+		v=19 20
+	}
+	e{
+		s=1 0
+		v=20 21
+	}
+	e{
+		s=1 0
+		v=21 22
+	}
+	e{
+		s=1 0
+		v=22 23
+	}
+	e{
+		s=1 0
+		v=23 24
+	}
+	e{
+		s=1 0
+		v=24 25
+	}
+	e{
+		s=1 0
+		v=25 26
+	}
+	e{
+		s=1 0
+		v=26 27
+	}
+	e{
+		s=1 0
+		v=27 28
+	}
+	e{
+		s=1 0
+		v=28 29
+	}
+	e{
+		s=1 0
+		v=29 30
+	}
+	e{
+		s=1 -1
+		v=37 31
+	}
+	e{
+		s=1 -1
+		v=31 38
+	}
+	e{
+		s=1 -1
+		v=32 33
+	}
+	e{
+		s=1 -1
+		v=33 34
+	}
+	e{
+		s=1 -1
+		v=34 35
+	}
+	e{
+		s=1 -1
+		v=35 36
+	}
+	e{
+		s=1 -1
+		v=36 37
+	}
+	e{
+		s=1 -1
+		v=38 32
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		brightness=58
+		texture=White.png
+	}
+	s{
+		z=0.0000
+		texture=White.png
+	}
+}
+mobs{
+	Leader{
+		type=Louie
+		p=352.0000 -384.0000
+	}
+	Pikmin{
+		type=Blue Pikmin
+		p=352.0000 -384.0000
+		angle=2.9735
+	}
+	Onion{
+		type=Blue Onion
+		p=288.0000 -352.0000
+		vars=pikmin_inside=0 0 99
+	}
+	Enemy{
+		type=White Spectralid
+		p=256.0000 -256.0000
+		vars=random_pellet_spoils=0,0,100;spoils=Wiimote,Wiimote,Bathroom Bundle
+	}
+	Ship{
+		type=Hocotate ship
+		p=-352.0000 320.0000
+		angle=5.7919
+	}
+	Treasure{
+		type=Sud generator
+		p=-160.0000 -192.0000
+	}
+	Treasure{
+		type=Leviathan Feather
+		p=288.0000 -160.0000
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-224.0000 -32.0000
+		vars=spoils=Fruit Guard
+	}
+	Drop{
+		type=Ultra-bitter nectar
+		p=64.0000 -192.0000
+	}
+	Onion{
+		type=Master Onion
+		p=192.0000 128.0000
+	}
+	Converter{
+		type=Violet Candypop Bud
+		p=160.0000 -256.0000
+	}
+	Converter{
+		type=Violet Candypop Bud
+		p=-160.0000 -352.0000
+	}
+	Treasure{
+		type=Fuel Reservoir
+		p=-128.0000 224.0000
+	}
+	Enemy{
+		type=Dwarf Red Bulborb
+		p=224.0000 0.0000
+		vars=random_pellet_spoils=5;spoils=Fruit Guard
+	}
+	Decoration{
+		type=Leaves
+		p=224.0000 -0.0000
+	}
+	Custom{
+		type=White bramble gate
+		p=256.0000 256.0000
+		angle=0.7646
+	}
+	Treasure{
+		type=2 Euro
+		p=320.0000 288.0000
+	}
+	Custom{
+		type=White bramble gate
+		p=288.0000 352.0000
+		angle=5.4854
+	}
+	Custom{
+		type=White bramble gate
+		p=384.0000 224.0000
+		angle=5.4854
+	}
+	Custom{
+		type=White bramble gate
+		p=384.0000 320.0000
+		angle=0.7313
+	}
+	Treasure{
+		type=Bathroom Bundle
+		p=-32.0000 -256.0000
+	}
+	Treasure{
+		type=Fuel Reservoir
+		p=-572.2229 -34.9363
+	}
+	Treasure{
+		type=Fuel Reservoir
+		p=726.2670 210.2573
+	}
+	Treasure{
+		type=Fuel Reservoir
+		p=-744.8944 255.1519
+	}
+	Treasure{
+		type=Fruit Guard
+		p=-133.6372 800.7939
+	}
+	Treasure{
+		type=Sud generator
+		p=557.0488 818.0610
+	}
+	Treasure{
+		type=Sud generator
+		p=515.6077 -159.2598
+	}
+	Treasure{
+		type=Sud generator
+		p=280.7744 586.6813
+	}
+	Treasure{
+		type=Sud generator
+		p=-458.2597 576.3209
+	}
+	Enemy{
+		type=Fiery Blowhog
+		p=-351.2034 880.2229
+		vars=spoils=Sud generator
+	}
+	Enemy{
+		type=Fiery Blowhog
+		p=-510.0612 786.9802
+		vars=spoils=Bathroom Bundle
+	}
+	Group task{
+		type=Cardboard box
+		p=-965.9139 -708.3551
+		angle=0.7978
+		links=32
+	}
+	Custom{
+		type=Dummy
+		p=-769.0684 -511.5096
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-1357.3943 -1027.4802
+	}
+	Treasure{
+		type=Sud generator
+		p=-1145.4924 -815.4115
+	}
+	Enemy{
+		type=Munge Dweevil
+		p=-900.2988 -176.5269
+		vars=random_pellet_spoils=20,20,20,20,20,20,20
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=795.3356 824.9680
+	}
+	Pile{
+		type=Bitter Burgeoning Spiderwort
+		p=-941.7400 1073.6150
+		angle=6.2832
+	}
+	Pile{
+		type=Bitter Burgeoning Spiderwort
+		p=-927.9263 907.8503
+		angle=6.2832
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=402.7058 -157.0321
+	}
+}
+path_stops
+tree_shadows

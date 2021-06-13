@@ -1,0 +1,9 @@
+name = Diet Doomer
+
+height = 100
+max_carriers = 10
+points = 25
+pushable = false
+pushes = true
+radius = 40
+weight = 5

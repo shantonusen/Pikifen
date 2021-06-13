@@ -1,0 +1,119 @@
+vertexes{
+	v=-480.0000 -416.0000
+	v=320.0000 -640.0000
+	v=480.0000 448.0000
+	v=-256.0000 576.0000
+}
+edges{
+	e{
+		s=-1 0
+		v=3 0
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-32.0000 -96.0000
+		vars=random_pellet_spoils=1 20 5;spoils=Wiimote
+	}
+	Onion{
+		type=Yellow Onion
+		p=32.0000 -224.0000
+		vars=pikmin_inside=0 0 400
+	}
+	Onion{
+		type=Blue Onion
+		p=288.0000 -224.0000
+		vars=pikmin_inside=0 0 200
+	}
+	Onion{
+		type=Red Onion
+		p=160.0000 -96.0000
+		vars=pikmin_inside=0 0 300
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=32.0000 -224.0000
+	}
+	Converter{
+		type=Violet Candypop Bud
+		p=-96.0000 96.0000
+		angle=0.4396
+	}
+	Decoration{
+		type=Shoot
+		p=-224.0000 -256.0000
+	}
+	Decoration{
+		type=Shoot
+		p=-128.0000 -224.0000
+	}
+	Treasure{
+		type=Bathroom Bundle
+		p=224.0000 64.0000
+	}
+	Treasure{
+		type=2 Euro
+		p=288.0000 -32.0000
+	}
+	Drop{
+		type=Ultra-bitter nectar
+		p=128.0000 -288.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-32.0000 -128.0000
+	}
+	Enemy{
+		type=Whiptongue Bulborb
+		p=288.0000 -320.0000
+		vars=spoils=Wiimote
+	}
+	Pikmin{
+		type=Blue Pikmin
+		p=256.0000 -320.0000
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-352.0000 -352.0000
+	}
+	Enemy{
+		type=Red Bulborb
+		p=-352.0000 -352.0000
+		vars=spoils=Wiimote
+	}
+	Ship{
+		type=Hocotate ship
+		p=192.0000 288.0000
+		angle=3.6458
+		vars=pikmin_inside=0 0 0 0 0 3
+	}
+	Leader{
+		type=Alph
+		p=-96.0000 -352.0000
+	}
+}
+path_stops
+tree_shadows

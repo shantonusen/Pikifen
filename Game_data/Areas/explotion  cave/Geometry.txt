@@ -1,0 +1,197 @@
+vertexes{
+	v=-416.0000 -128.0000
+	v=256.0000 -832.0000
+	v=352.0000 320.0000
+	v=-320.0000 0.0000
+	v=288.0000 160.0000
+	v=-352.9846 408.1231
+}
+edges{
+	e{
+		s=-1 0
+		v=3 4
+	}
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 5
+	}
+	e{
+		s=-1 0
+		v=4 0
+	}
+	e{
+		s=-1 0
+		v=5 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=288.0000 -288.0000
+	}
+	Leader{
+		type=President
+		p=-160.0000 160.0000
+	}
+	Converter{
+		type=Queen Candypop Bud
+		p=-224.0000 -256.0000
+	}
+	Converter{
+		type=Queen Candypop Bud
+		p=224.0000 224.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Onion{
+		type=Master Onion
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Pikmin{
+		type=Purple Pikmin
+		p=0.0000 0.0000
+	}
+	Ship{
+		type=Hocotate ship
+		p=0.0000 -128.0000
+		angle=1.5773
+	}
+	Custom{
+		type=White bramble gate
+		p=-160.0000 -192.0000
+		angle=0.6206
+	}
+	Custom{
+		type=White bramble gate
+		p=-128.0000 -224.0000
+	}
+	Custom{
+		type=White bramble gate
+		p=-224.0000 -128.0000
+		angle=1.5773
+	}
+	Custom{
+		type=Gas pipe
+		p=224.0000 160.0000
+	}
+	Custom{
+		type=Gas pipe
+		p=160.0000 224.0000
+	}
+	Pikmin{
+		type=White Pikmin
+		p=0.0000 0.0000
+	}
+	Pellet{
+		type=Red 10 pellet
+		p=0.0000 0.0000
+	}
+	Custom{
+		type=Gas pipe
+		p=288.0000 160.0000
+	}
+	Custom{
+		type=Gas pipe
+		p=160.0000 288.0000
+	}
+	Bridge{
+		type=Wood bridge
+		p=256.0000 -192.0000
+	}
+	Pile{
+		type=Ceramic pile red
+		p=-128.0000 128.0000
+		links=31
+	}
+	Bridge{
+		type=Ceramic bridge red
+		p=-192.0000 288.0000
+		angle=2.5599
+	}
+}
+path_stops{
+	s{
+		pos=224.0000 -256.0000
+		links{
+			nr=1
+		}
+	}
+	s{
+		pos=256.0000 -32.0000
+		links{
+			nr=0
+			nr=2
+		}
+	}
+	s{
+		pos=224.0000 128.0000
+		links{
+			nr=1
+		}
+	}
+}
+tree_shadows

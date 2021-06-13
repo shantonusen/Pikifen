@@ -1,0 +1,70 @@
+vertexes{
+	v=-745.1195 -364.1381
+	v=768.3501 -361.8150
+	v=777.6423 308.3848
+	v=-728.8581 315.3539
+	v=-278.6825 89.2213
+	v=-733.9350 103.2137
+	v=-281.0009 313.2821
+}
+edges{
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=-1 0
+		v=2 6
+	}
+	e{
+		s=0 1
+		v=5 4
+	}
+	e{
+		s=0 1
+		v=4 6
+	}
+	e{
+		s=-1 1
+		v=3 5
+	}
+	e{
+		s=-1 0
+		v=5 0
+	}
+	e{
+		s=-1 1
+		v=6 3
+	}
+}
+sectors{
+	s{
+		z=0.0000
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=443.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=President
+		p=573.7952 -167.2601
+	}
+	Onion{
+		type=Blue Onion
+		p=-485.4345 203.0511
+		vars=pikmin_inside=12
+	}
+	Leader{
+		type=Alph
+		p=539.0338 -19.9624
+	}
+}
+path_stops
+tree_shadows

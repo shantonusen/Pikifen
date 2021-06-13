@@ -1,0 +1,149 @@
+vertexes{
+	v=-2709.4248 -1052.9844
+	v=-2946.9248 -1045.9844
+	v=-2946.9248 -1089.9844
+	v=-2891.4248 -753.9844
+	v=-2890.4248 -801.9844
+	v=-2935.4248 -802.9844
+	v=-2938.4248 -759.9844
+	v=-2728.4248 -692.9844
+	v=-2727.4248 -630.9844
+	v=-2778.4248 -628.9844
+	v=-2779.4248 -658.9844
+}
+edges{
+	e{
+		s=-1 0
+		v=0 1
+	}
+	e{
+		s=-1 0
+		v=2 0
+	}
+	e{
+		s=-1 0
+		v=1 2
+	}
+	e{
+		s=1 -1
+		v=6 3
+	}
+	e{
+		s=1 -1
+		v=3 4
+	}
+	e{
+		s=1 -1
+		v=4 5
+	}
+	e{
+		s=1 -1
+		v=5 6
+	}
+	e{
+		s=-1 2
+		v=10 7
+	}
+	e{
+		s=-1 2
+		v=7 8
+	}
+	e{
+		s=-1 2
+		v=8 9
+	}
+	e{
+		s=-1 2
+		v=9 10
+	}
+}
+sectors{
+	s{
+		z=337.0000
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=795.0000
+		texture=Grass_dark.jpg
+	}
+	s{
+		z=874.0000
+		texture=Grass_dark.jpg
+	}
+}
+mobs{
+	Leader{
+		type=Olimar
+		p=0.0000 0.0000
+	}
+	Custom{
+		type=White bramble gate
+		p=-69.5000 -235.5000
+	}
+	Treasure{
+		type=2 Euro
+		p=-189.5000 -231.5000
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-252.5000 -228.5000
+		vars=sprout=true
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-192.5000 -294.5000
+		vars=sprout=true
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-136.5000 -226.5000
+		vars=sprout=true
+	}
+	Pikmin{
+		type=White Pikmin
+		p=-195.5000 -170.5000
+		vars=sprout=true
+	}
+	Onion{
+		type=Yellow Onion
+		p=201.5000 239.5000
+		vars=pikmin_inside=1 1 300
+	}
+	Ship{
+		type=Hocotate ship
+		p=213.5000 -231.5000
+		angle=2.3935
+	}
+	Custom{
+		type=Gas pipe
+		p=-231.5000 182.5000
+	}
+	Custom{
+		type=Gas pipe
+		p=-135.5000 244.5000
+	}
+	Custom{
+		type=White bramble gate
+		p=-185.5000 218.5000
+		angle=2.1276
+	}
+	Treasure{
+		type=Sud generator
+		p=-246.0000 272.0000
+	}
+	Custom{
+		type=White bramble gate
+		p=-177.5000 198.5000
+		angle=2.1276
+	}
+	Pikmin{
+		type=Red Pikmin
+		p=-80.5000 -116.5000
+	}
+	Leader{
+		type=Alph
+		p=883.8389 517.7871
+	}
+}
+path_stops
+tree_shadows

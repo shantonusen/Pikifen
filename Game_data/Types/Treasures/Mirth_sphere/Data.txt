@@ -1,0 +1,9 @@
+name = Mirth Sphere
+
+height = 100
+max_carriers = 8
+points = 85
+pushable = false
+pushes = true
+radius = 50
+weight = 1

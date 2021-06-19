@@ -10,6 +10,7 @@ CXXFLAGS     := -std=c++0x -rdynamic -D_GLIBCXX_USE_CXX11_ABI=0 -MMD $(shell pkg
 LDFLAGS      += -lm $(shell pkg-config --libs $(ALLEGRO_PKGS))
 DEBUGFLAGS   := -g -ggdb -Wall -Wno-unknown-pragmas -O0
 RELEASEFLAGS := -Wall -Wextra -Wno-unknown-pragmas -O2
+ASANFLAGS    := -fsanitize=address
 
 .PHONY: all
 all: release
@@ -17,6 +18,10 @@ all: release
 .PHONY: debug
 debug: CXXFLAGS += $(DEBUGFLAGS)
 debug: $(PROG)
+
+.PHONY: asan
+asan: CXXFLAGS += $(DEBUGFLAGS) $(ASANFLAGS)
+asan: $(PROG)
 
 .PHONY: release
 release: CXXFLAGS += $(RELEASEFLAGS)

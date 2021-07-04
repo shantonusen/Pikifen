@@ -1267,7 +1267,14 @@ static stbtt__buf stbtt__cff_index_get(stbtt__buf b, int i)
 #define ttFixed(p)    ttLONG(p)
 
 static stbtt_uint16 ttUSHORT(stbtt_uint8 *p) { return p[0]*256 + p[1]; }
-static stbtt_int16 ttSHORT(stbtt_uint8 *p)   { return p[0]*256 + p[1]; }
+static stbtt_int16 ttSHORT(stbtt_uint8 *p)   {
+    union {
+        stbtt_uint16 a;
+        stbtt_int16 b;
+    } tmp;
+    tmp.a = p[0]*256 + p[1];
+    return tmp.b;
+}
 static stbtt_uint32 ttULONG(stbtt_uint8 *p)  { return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) + p[3]; }
 static stbtt_int32 ttLONG(stbtt_uint8 *p)    { return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) + p[3]; }
 
@@ -4082,8 +4089,8 @@ STBTT_DEF int stbtt_PackFontRangesRenderIntoRects(stbtt_pack_context *spc, const
                                     &x0,&y0,&x1,&y1);
             stbtt_MakeGlyphBitmapSubpixel(info,
                                           spc->pixels + r->x + r->y*spc->stride_in_bytes,
-                                          r->w - spc->h_oversample+1,
-                                          r->h - spc->v_oversample+1,
+                                          (r->w + 1) - spc->h_oversample,
+                                          (r->h + 1) - spc->v_oversample,
                                           spc->stride_in_bytes,
                                           scale * spc->h_oversample,
                                           scale * spc->v_oversample,

@@ -1516,8 +1516,10 @@ ImU32 ImHashData(const void* data_p, size_t data_size, ImU32 seed)
     ImU32 crc = ~seed;
     const unsigned char* data = (const unsigned char*)data_p;
     const ImU32* crc32_lut = GCrc32LookupTable;
-    while (data_size-- != 0)
+    while (data_size != 0) {
+        data_size--;
         crc = (crc >> 8) ^ crc32_lut[(crc & 0xFF) ^ *data++];
+    }
     return ~crc;
 }
 

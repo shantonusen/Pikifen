@@ -79,7 +79,7 @@ ALLEGRO_COLOR change_alpha(const ALLEGRO_COLOR &c, const unsigned char a);
 ALLEGRO_COLOR change_color_lighting(const ALLEGRO_COLOR &c, const float l);
 void change_game_state(unsigned int new_state);
 void clear_area_textures();
-void crash(const string &reason, const string &info, const int exit_status);
+void crash(const string &reason, const string &info, const int exit_status) __attribute__((noreturn));
 bool does_edge_have_ledge_smoothing(
     edge* e_ptr, sector** affected_sector, sector** unaffected_sector
 );

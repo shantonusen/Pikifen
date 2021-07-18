@@ -208,6 +208,9 @@ void animation_editor::draw_canvas() {
                     hitbox_color = al_map_rgba(128, 128, 0, 128);
                     hitbox_outline_color = al_map_rgba(64, 64, 0, 255);
                     break;
+                } default: {
+                    engine_assert(false, "Unexpected hitbox type");
+                    break;
                 }
                 }
                 

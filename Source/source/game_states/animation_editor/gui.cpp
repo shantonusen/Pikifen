@@ -795,7 +795,7 @@ void animation_editor::process_gui_panel_animation() {
             ImGui::Text(
                 "Current frame: %s / %i",
                 frame_ptr ? i2s(cur_frame_nr + 1).c_str() : "--",
-                (int) cur_anim->frames.size()
+                cur_anim ? (int) cur_anim->frames.size() : 0
             );
             
             if(frame_ptr) {

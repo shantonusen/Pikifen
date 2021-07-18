@@ -396,6 +396,9 @@ void gameplay_state::draw_ingame_text() {
                     } case HITBOX_TYPE_DISABLED: {
                         hc = al_map_rgba(128, 128, 0, 192); //Yellow.
                         break;
+                    } default: {
+                        engine_assert(false, "Unexpected hitbox type");
+                        break;
                     }
                     }
                     point p =

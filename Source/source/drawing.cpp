@@ -754,6 +754,7 @@ void draw_liquid(
                     (anim_sprite->file_size.y * 0.5) * anim_sprite->scale.x;
             }
         }
+        engine_assert(anim_sprite, "No current sprite");
         
         for(size_t v = 0; v < n_vertexes; ++v) {
         

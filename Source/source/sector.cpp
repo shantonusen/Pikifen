@@ -1853,6 +1853,7 @@ void polygon::cut(vector<polygon>* inners) {
         //We know a bridge exists if the same vertex
         //appears twice.
         vector<size_t> bridges;
+        engine_assert(best_vertex, "No best vertex found");
         for(size_t v = 0; v < vertexes.size(); ++v) {
             if(vertexes[v] == best_vertex) {
                 bridges.push_back(v);

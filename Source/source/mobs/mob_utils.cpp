@@ -501,6 +501,7 @@ void group_info_struct::reassign_spots() {
             }
         }
         
+        engine_assert(closest_mob, "No closest mob found");
         closest_mob->group_spot_index = s;
     }
 }

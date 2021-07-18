@@ -2771,7 +2771,7 @@ void area_editor::split_sector_with_drawing() {
     //later on, we may need to use data from stage 2 instead.
     vector<edge*> traversed_edges[2];
     vector<vertex*> traversed_vertexes[2];
-    bool is_working_at_stage_1_left;
+    bool is_working_at_stage_1_left = false;
     traverse_sector_for_split(
         working_sector,
         drawing_nodes.back().on_vertex,

@@ -1813,7 +1813,7 @@ void pikmin_fsm::be_grabbed_by_enemy(mob* m, void* info1, void* info2) {
     
     game.sys_assets.sfx_pikmin_caught.play(0.2, 0);
     
-    pik_ptr->can_move_in_midair = true;
+    pik_ptr->can_move_in_midair = false;
     pik_ptr->leave_group();
     pik_ptr->is_grabbed_by_enemy = true;
     
@@ -2750,14 +2750,14 @@ void pikmin_fsm::land_on_mob(mob* m, void* info1, void* info2) {
     hitbox_interaction* info = (hitbox_interaction*) info1;
     mob* m2_ptr = info->mob2;
     
-    if(!m->can_hurt(m2_ptr)) return;
-    
     mob_event* m2_pik_land_ev =
         m2_ptr->fsm.get_event(MOB_EV_THROWN_PIKMIN_LANDED);
         
     if(m2_pik_land_ev && m->was_thrown) {
         m2_pik_land_ev->run(m2_ptr, (void*)m);
     }
+    
+    if(!m->can_hurt(m2_ptr)) return;
     
     hitbox* h_ptr = info->h2;
     

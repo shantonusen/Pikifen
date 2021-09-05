@@ -706,6 +706,8 @@ reaches {
     </table>
     
     <h2 id="action-list">List of actions</h2>
+
+    <p>In this list, any argument surrounded by square brackets is optional.</p>
     
     <table>
       <tr><th>Action</th><th>Description</th></tr>
@@ -733,8 +735,8 @@ reaches {
       <tr>
         <th><code>calculate</code></th>
         <td><dl>
-          <dt><code><b>calculate</b> &lt;variable&gt; &lt;left&gt; &lt;operator&gt; &lt;right&gt;</code></dt>
-          <dd>Calculates the mathematical operation between the operands and sets the variable to the result. It makes sense to use a variable in at least one of the operands, otherwise you're just punching in a fixed number calculation that any household calculator could tell you about. The operator can be <code>+</code> (add), <code>-</code> (subtract), <code>*</code> (multiply), <code>/</code> (divide), or <code>%</code> (<a href="https://en.wikipedia.org/wiki/Modulo_operation">modulo</a>). For instance, <code>calculate jumps $jumps + 1</code> would increment the number of jumps. Be careful not to get your $ signs confused &ndash; the &lt;variable&gt; field shouldn't use it!</dd>
+          <dt><code><b>calculate</b> &lt;destination_variable_name&gt; &lt;left&gt; &lt;operator&gt; &lt;right&gt;</code></dt>
+          <dd>Calculates the mathematical operation between the operands and sets the variable to the result. It makes sense to use a variable in at least one of the operands, otherwise you're just punching in a fixed number calculation that any household calculator could tell you about. The operator can be <code>+</code> (add), <code>-</code> (subtract), <code>*</code> (multiply), <code>/</code> (divide), or <code>%</code> (<a href="https://en.wikipedia.org/wiki/Modulo_operation">modulo</a>). For instance, <code>calculate jumps $jumps + 1</code> would increment the number of jumps. Be careful not to get your $ signs confused &ndash; the &lt;destination_variable_name&gt; field shouldn't use it!</dd>
         </dl></td>
       </tr>
       <tr>
@@ -769,29 +771,57 @@ reaches {
         </dl></td>
       </tr>
       <tr>
+        <th><code>get_angle</code></th>
+        <td><dl>
+          <dt><code><b>get_angle</b> &lt;destination_variable_name&gt; &lt;center_x&gt; &lt;center_y&gt; &lt;focus_x&gt; &lt;focus_y&gt;</code></dt>
+          <dd>Sets the variable &lt;destination_variable_name&gt; to the angle between the two sets of coordinates. This angle is in degrees, like other angles used in scripts.</dd>
+        </dl></td>
+      </tr>
+      <tr>
         <th><code>get_chomped</code></th>
         <td>Makes the object get chomped as if it were a Pikmin. This is only applicable if run inside the <code>on_hitbox_touch_eat</code> event.</td>
       </tr>
       <tr>
+        <th><code>get_coordinates_from_angle</code></th>
+        <td><dl>
+          <dt><code><b>get_coordinates_from_angle</b> &lt;x_destination_variable_name&gt; &lt;y_destination_variable_name&gt; &lt;angle&gt; &lt;distance&gt;</code></dt>
+          <dd>Sets the destination variables to the X and Y coordinates that represent the specified angle and distance. Basically, imagine an imaginary point at coordinates 0,0. If you go in the specified angle, for the specified distance, you'll end up at the returned coordinates. The angle should be in degrees, like other angles used in scripts.</dd>
+        </dl></td>
+      </tr>
+      <tr>
+        <th><code>get_distance</code></th>
+        <td><dl>
+          <dt><code><b>get_distance</b> &lt;destination_variable_name&gt; &lt;center_x&gt; &lt;center_y&gt; &lt;focus_x&gt; &lt;focus_y&gt;</code></dt>
+          <dd>Sets the variable &lt;destination_variable_name&gt; to the distance between the two sets of coordinates.</dd>
+        </dl></td>
+      </tr>
+      <tr>
+        <th><code>get_floor_z</code></th>
+        <td><dl>
+          <dt><code><b>get_floor_z</b> &lt;destination_variable_name&gt; &lt;x&gt; &lt;y&gt;</code></dt>
+          <dd>Sets the variable &lt;destination_variable_name&gt; to the Z coordinate of the floor at the specified coordinates. If there is no sector at those coordinates, the variable will receive the value 0.</dd>
+        </dl></td>
+      </tr>
+      <tr>
         <th><code>get_focus_info</code></th>
         <td><dl>
-          <dt><code><b>get_focus_info</b> &lt;destination_variable&gt; &lt;information_from_focus&gt;</code></dt>
+          <dt><code><b>get_focus_info</b> &lt;destination_variable_name&gt; &lt;information_from_focus&gt;</code></dt>
           <dd>Works like the <code>get_info</code> action, but when applicable, returns information from the focused mob instead, if any.</dd>
         </dl></td>
       </tr>
       <tr>
         <th><code>get_focus_var</code></th>
         <td><dl>
-          <dt><code><b>get_focus_var</b> &lt;destination_variable&gt; &lt;variable_from_focus&gt;</code></dt>
-          <dd>Sets the variable &lt;destination_variable&gt; of this mob to the same value as the variable &lt;variable_from_focus&gt; of the focused mob, if any.</dd>
+          <dt><code><b>get_focus_var</b> &lt;destination_variable_name&gt; &lt;focused_mob_variable_name&gt;</code></dt>
+          <dd>Sets the variable &lt;destination_variable_name&gt; of this mob to the same value as the variable &lt;focused_mob_variable_name&gt; of the focused mob, if any.</dd>
         </dl></td>
       </tr>
       <tr>
         <th><code>get_info</code></th>
         <td><dl>
-          <dt><code><b>get_info</b> &lt;destination_variable&gt; &lt;information&gt;</code></dt>
+          <dt><code><b>get_info</b> &lt;destination_variable_name&gt; &lt;information&gt;</code></dt>
           <dd>
-            Sets the variable &lt;destination_variable&gt; to some special information. The possible data are:
+            Sets the variable &lt;destination_variable_name&gt; to some special information. The possible data are:
             <ul>
               <li><code><b>body_part</b></code>: For events that deal with hitboxes, this is the name of this mob's body part that's responsible.</li>
               <li><code><b>chomped_pikmin</b></code>: How many Pikmin it currently has chomped.</li>
@@ -819,15 +849,15 @@ reaches {
       <tr>
         <th><code>get_random_decimal</code></th>
         <td><dl>
-          <dt><code><b>get_random_decimal</b> &lt;variable&gt; &lt;minimum_value&gt; &lt;maximum_value&gt;</code></dt>
-          <dd>Places a random value between &lt;minimum_value&gt; and &lt;maximum_value&gt; (including) into the variable &lt;variable&gt;. This number is a real number, so it can have decimal places.</dd>
+          <dt><code><b>get_random_decimal</b> &lt;destination_variable_name&gt; &lt;minimum_value&gt; &lt;maximum_value&gt;</code></dt>
+          <dd>Places a random value between &lt;minimum_value&gt; and &lt;maximum_value&gt; (including) into the variable &lt;destination_variable_name&gt;. This number is a real number, so it can have decimal places.</dd>
         </dl></td>
       </tr>
       <tr>
         <th><code>get_random_int</code></th>
         <td><dl>
-          <dt><code><b>get_random_int</b> &lt;variable&gt; &lt;minimum_value&gt; &lt;maximum_value&gt;</code></dt>
-          <dd>Places a random value between &lt;minimum_value&gt; and &lt;maximum_value&gt; (including) into the variable &lt;variable&gt;. This number is an integer number, so it will not have decimal places.</dd>
+          <dt><code><b>get_random_int</b> &lt;destination_variable_name&gt; &lt;minimum_value&gt; &lt;maximum_value&gt;</code></dt>
+          <dd>Places a random value between &lt;minimum_value&gt; and &lt;maximum_value&gt; (including) into the variable &lt;destination_variable_name&gt;. This number is an integer number, so it will not have decimal places.</dd>
         </dl></td>
       </tr>
       <tr>
@@ -835,6 +865,13 @@ reaches {
         <td><dl>
           <dt><code><b>goto</b> &lt;label_name&gt;</code></dt>
           <dd>Orders the script to jump to where the label named &lt;label_name&gt; is. The label must be in the same event block as this <code>goto</code>. You can use this to loop actions multiple times in a row by returning to the top of the loop.</dd>
+        </dl></td>
+      </tr>
+      <tr>
+        <th><code>hold_focused_mob</code></th>
+        <td><dl>
+          <dt><code><b>hold_focused_mob</b> &lt;body_part_name&gt;</code></dt>
+          <dd>Makes the mob hold the focused mob in its grasp. The focused mob will follow wherever the specified body part is.</dd>
         </dl></td>
       </tr>
       <tr>
@@ -863,17 +900,28 @@ reaches {
         </dl></td>
       </tr>
       <tr>
+        <th><code>link_with_focused_mob</code></th>
+        <td>Establishes a link between this mob and its focused mob, but not the other way around. If that mob is already a linked mob, nothing happens.</td>
+      </tr>
+      <tr>
+        <th><code>load_focused_mob_memory</code></th>
+        <td><dl>
+          <dt><code><b>load_focused_mob_memory</b> &lt;slot_number&gt;</code></dt>
+          <dd>Obtains a saved mob from the "focused mob memory", and focuses on that one instead. Loses mob focus if there is no mob in the specified slot, or if that specified mob has already disappeared. See also: <code>save_focused_mob_memory</code>.</dd>
+        </dl></td>
+      </tr>
+      <tr>
         <th><code>move_to_absolute</code></th>
         <td><dl>
-          <dt><code><b>move_to_absolute</b> &lt;x&gt; &lt;y&gt;</code></dt>
-          <dd>Tells the object to begin moving to the specified area coordinates.</dd>
+          <dt><code><b>move_to_absolute</b> &lt;x&gt; &lt;y&gt; [&lt;z&gt;]</code></dt>
+          <dd>Tells the object to begin moving to the specified area coordinates. The Z coordinate will only be useful if the object can fly (see <code>set_flying</code>).</dd>
         </dl></td>
       </tr>
       <tr>
         <th><code>move_to_relative</code></th>
         <td><dl>
-          <dt><code><b>move_to_relative</b> &lt;x&gt; &lt;y&gt;</code></dt>
-          <dd>Tells the object to begin moving to the specified relative coordinates. See <a href="#rel-coord">here</a> for more info.</dd>
+          <dt><code><b>move_to_relative</b> &lt;x&gt; &lt;y&gt; [&lt;z&gt;]</code></dt>
+          <dd>Tells the object to begin moving to the specified relative coordinates. See <a href="#rel-coord">here</a> for more info. The Z coordinate will only be useful if the object can fly (see <code>set_flying</code>).</dd>
         </dl></td>
       </tr>
       <tr>
@@ -923,6 +971,13 @@ reaches {
         </dl></td>
       </tr>
       <tr>
+        <th><code>save_focused_mob_memory</code></th>
+        <td><dl>
+          <dt><code><b>save_focused_mob_memory</b> &lt;slot_number&gt;</code></dt>
+          <dd>Saves the currently focused mob into the "focused mob memory", in the specified slot number. Does nothing if there is no currently focused mob. See also: <code>load_focused_mob_memory</code>.</dd>
+        </dl></td>
+      </tr>
+      <tr>
         <th><code>send_message_to_focus</code></th>
         <td><dl>
           <dt><code><b>send_message_to_focus</b> &lt;message&gt;</code></dt>
@@ -953,10 +1008,24 @@ reaches {
         </dl></td>
       </tr>
       <tr>
+        <th><code>set_can_block_paths</code></th>
+        <td><dl>
+          <dt><code><b>set_can_block_paths</b> &lt;true/false&gt;</code></dt>
+          <dd>Sets whether or not this object blocks objects following the path it is on. This is automatically called, with a false argument, when the object's health drops to 0.</dd>
+        </dl></td>
+      </tr>
+      <tr>
         <th><code>set_far_reach</code></th>
         <td><dl>
           <dt><code><b>set_far_reach</b> &lt;reach_name&gt;</code></dt>
           <dd>Makes it use the specified reach as the "far reach", from here on out.</dd>
+        </dl></td>
+      </tr>
+      <tr>
+        <th><code>set_flying</code></th>
+        <td><dl>
+          <dt><code><b>set_flying</b> &lt;true/false&gt;</code></dt>
+          <dd>Sets whether or not this object can fly.</dd>
         </dl></td>
       </tr>
       <tr>
@@ -984,7 +1053,7 @@ reaches {
         <th><code>set_hiding</code></th>
         <td><dl>
           <dt><code><b>set_hiding</b> &lt;true/false&gt;</code></dt>
-          <dd>Sets whether or not the engine should hide this object's shadow and health from here on out. This is useful, for instance, when a Sheargrub digs underground.</dd>
+          <dd>Sets whether or not the engine should hide this object from here on out. This makes the object, as well as its shadow and health to not be drawn. This is useful, for instance, when a Sheargrub digs underground.</dd>
         </dl></td>
       </tr>
       <tr>
@@ -1025,6 +1094,13 @@ reaches {
         </dl></td>
       </tr>
       <tr>
+        <th><code>set_shadow_visibility</code></th>
+        <td><dl>
+          <dt><code><b>set_shadow_visibility</b> &lt;true/false&gt;</code></dt>
+          <dd>Sets whether or not the engine should draw this object's shadow from here on out.</dd>
+        </dl></td>
+      </tr>
+      <tr>
         <th><code>set_state</code></th>
         <td><dl>
           <dt><code><b>set_state</b> &lt;state&gt;</code></dt>
@@ -1043,14 +1119,7 @@ reaches {
         <td><dl>
           <dt><code><b>set_team</b> &lt;team_name&gt;</code></dt>
           <dd>
-            Sets the object's current team. Objects in the same team will not hunt or harm each other. Valid values are:
-            <ul>
-              <li><b><code>none</code></b>: Does not belong to a team.</li>
-              <li><b><code>player_X</code></b>: Belongs to player 1, 2, 3, or 4's team (replace the X with a number). Usually used for leaders and Pikmin.</li>
-              <li><b><code>enemy_X</code></b>: Belongs to the enemy team 1, 2, 3, or 4 (replace the X with a number).</li>
-              <li><b><code>obstacle</code></b>: Obstacle team.</li>
-              <li><b><code>other</code></b>: Team for whatever else.</li>
-            </ul>
+            Sets the object's current team. Objects in the same team will not hunt or harm each other. For valid values, see the <code>team</code> property of <a href="mob_type.html">object types</a>.
           </dd>
         </dl></td>
       </tr>
@@ -1064,14 +1133,14 @@ reaches {
       <tr>
         <th><code>set_var</code></th>
         <td><dl>
-          <dt><code><b>set_var</b> &lt;variable&gt; &lt;value&gt;</code></dt>
+          <dt><code><b>set_var</b> &lt;destination_variable_name&gt; &lt;value&gt;</code></dt>
           <dd>Sets the value of the specified variable.</dd>
         </dl></td>
       </tr>
       <tr>
         <th><code>show_message_from_var</code></th>
         <td><dl>
-          <dt><code><b>show_message_from_var</b> &lt;variable&gt;</code></dt>
+          <dt><code><b>show_message_from_var</b> &lt;variable_name&gt;</code></dt>
           <dd>Shows a message on-screen using the text inside the specific variable. Any <code>\n</code> in that text represents a line break.</dd>
         </dl></td>
       </tr>
@@ -1154,7 +1223,14 @@ reaches {
         <th><code>teleport_to_relative</code></th>
         <td><dl>
           <dt><code><b>teleport_to_relative</b> &lt;x&gt; &lt;y&gt; &lt;z&gt;</code></dt>
-          <dd>Instantly teleports the object to the specified coordinates relative to its position and angle. See <a href="rel-coords">here</a> for more info.</dd>
+          <dd>Instantly teleports the object to the specified coordinates relative to its position and angle. See <a href="#rel-coords">here</a> for more info.</dd>
+        </dl></td>
+      </tr>
+      <tr>
+        <th><code>throw_focused_mob</code></th>
+        <td><dl>
+          <dt><code><b>throw_focused_mob</b> &lt;x&gt; &lt;y&gt; &lt;z&gt; &lt;max_height&gt;</code></dt>
+          <dd>Makes the focused mob be thrown in an arc from where it is towards the specified target coordinates. The peak of its jump reaches a height specified by the &lt;max_height&gt; parameter. If this mob was holding the focused mob, then it will stop holding. If the &lt;max_height&gt; is 0, the mob is simply gently released.</dd>
         </dl></td>
       </tr>
       <tr>
@@ -1162,6 +1238,8 @@ reaches {
         <td><dl>
           <dt><code><b>turn_to_absolute</b> &lt;angle&gt;</code></dt>
           <dd>Turn towards the specified angle. 0 is east, 90 is south, etc.</dd>
+          <dt><code><b>turn_to_absolute</b> &lt;x&gt; &lt;y&gt;</code></dt>
+          <dd>Turn towards the specified area coordinates.</dd>
         </dl></td>
       </tr>
       <tr>
@@ -1169,6 +1247,8 @@ reaches {
         <td><dl>
           <dt><code><b>turn_to_relative</b> &lt;angle&gt;</code></dt>
           <dd>Turn &lt;angle&gt; degrees anti-clockwise.</dd>
+          <dt><code><b>turn_to_relative</b> &lt;x&gt; &lt;y&gt;</code></dt>
+          <dd>Turn towards the specified the specified coordinates relative to its position and angle. See <a href="#rel-coords">here</a> for more info.</dd>
         </dl></td>
       </tr>
       <tr>

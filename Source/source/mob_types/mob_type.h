@@ -191,9 +191,9 @@ public:
     bool casts_shadow;
     
     //Space-related things.
-    //Radius of the space it occupies.
+    //Radius of the space it occupies. Can be overridden on a per-mob basis.
     float radius;
-    //Height.
+    //Height. Can be overridden on a per-mob basis.
     float height;
     //Moves these many units per second.
     float move_speed;
@@ -268,7 +268,7 @@ public:
     //Can the player choose to place one of these in the area editor?
     bool appears_in_area_editor;
     //If true, carrier Pikmin will be considered blocked if it's in the way.
-    bool blocks_carrier_pikmin;
+    bool can_block_paths;
     //All damage received is multiplied by this much.
     float default_vulnerability;
     //For every hazard, multiply damage taken by this much.

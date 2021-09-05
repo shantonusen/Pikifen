@@ -134,6 +134,8 @@ public:
     map<string, string> vars;
     //The mob it has focus on.
     mob* focused_mob;
+    //Further memory of focused mobs.
+    map<size_t, mob*> focused_mob_memory;
     //Mobs that it just hit. Used to stop hitboxes from hitting every frame.
     vector<std::pair<float, mob*> > hit_opponents;
     //How much damage did it take since the last time the itch event triggered?
@@ -162,6 +164,8 @@ public:
     float intended_turn_angle;
     //Variable that holds the position the mob wants to be facing.
     point* intended_turn_pos;
+    //Current radius.
+    float radius;
     //Current height.
     float height;
     //Can it currently move vertically on its own?
@@ -238,8 +242,10 @@ public:
     timer invuln_period;
     //Mob's team (who it can damage); use MOB_TEAM_*.
     unsigned char team;
-    //If it should be hidden (no shadow, no health).
+    //If it should be hidden (not drawn, no shadow, no health).
     bool hide;
+    //If its shadow should be visible.
+    bool show_shadow;
     //Is invisible due to a status effect. Cache for performance.
     bool has_invisibility_status;
     //Can this mob be hunted down right now?
@@ -268,6 +274,8 @@ public:
     float angle_cos;
     //Cached value of the angle's sine.
     float angle_sin;
+    //Cached value of how far its hitboxes or radius can reach from the center.
+    float max_span;
     
     
     void tick(const float delta_t);
@@ -282,6 +290,8 @@ public:
     void set_health(const bool add, const bool ratio, const float amount);
     void set_timer(const float time);
     void set_var(const string &name, const string &value);
+    void set_radius(const float radius);
+    void set_can_block_paths(const bool blocks);
     
     void become_carriable(const size_t destination);
     void become_uncarriable();
@@ -314,6 +324,7 @@ public:
         const float damage, const float knockback
     );
     bool is_off_camera() const;
+    bool is_point_on(const point &p) const;
     void focus_on_mob(mob* m);
     void unfocus_from_mob();
     void leave_group();
@@ -412,6 +423,9 @@ public:
     virtual ~mob();
     
 protected:
+    //Is it currently capable of blocking paths?
+    bool can_block_paths;
+    
     //Returns a walkable mob to stand on.
     mob* get_mob_to_walk_on() const;
     //Returns edge intersections at a certain spot.

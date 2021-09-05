@@ -352,6 +352,23 @@ bool mob_action_loaders::get_info(mob_action_call &call) {
 
 
 /* ----------------------------------------------------------------------------
+ * Loading code for the hold focused mob mob script action.
+ * call:
+ *   Mob action call that called this.
+ */
+bool mob_action_loaders::hold_focus(mob_action_call &call) {
+    size_t p_nr = call.mt->anims.find_body_part(call.args[0]);
+    if(p_nr == INVALID) {
+        call.custom_error =
+            "Unknown body part \"" + call.args[0] + "\"!";
+        return false;
+    }
+    call.args[0] = i2s(p_nr);
+    return true;
+}
+
+
+/* ----------------------------------------------------------------------------
  * Loading code for the "if" mob script action.
  * call:
  *   Mob action call that called this.
@@ -852,6 +869,37 @@ void mob_action_runners::focus(mob_action_run_data &data) {
 
 
 /* ----------------------------------------------------------------------------
+ * Code for the angle obtaining mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::get_angle(mob_action_run_data &data) {
+    float center_x = s2f(data.args[1]);
+    float center_y = s2f(data.args[2]);
+    float focus_x = s2f(data.args[3]);
+    float focus_y = s2f(data.args[4]);
+    float angle = get_angle(point(center_x, center_y), point(focus_x, focus_y));
+    angle = rad_to_deg(angle);
+    data.m->vars[data.args[0]] = f2s(angle);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Code for the coordinate from angle obtaining mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::get_coordinates_from_angle(mob_action_run_data &data) {
+    float angle = s2f(data.args[2]);
+    angle = deg_to_rad(angle);
+    float magnitude = s2f(data.args[3]);
+    point p = angle_to_coordinates(angle, magnitude);
+    data.m->vars[data.args[0]] = f2s(p.x);
+    data.m->vars[data.args[1]] = f2s(p.y);
+}
+
+
+/* ----------------------------------------------------------------------------
  * Code for the mob script action for getting chomped.
  * data:
  *   Data about the action call.
@@ -863,6 +911,36 @@ void mob_action_runners::get_chomped(mob_action_run_data &data) {
             (hitbox*) (data.custom_data_2)
         );
     }
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Code for the distance obtaining mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::get_distance(mob_action_run_data &data) {
+    float center_x = s2f(data.args[1]);
+    float center_y = s2f(data.args[2]);
+    float focus_x = s2f(data.args[3]);
+    float focus_y = s2f(data.args[4]);
+    data.m->vars[data.args[0]] =
+        f2s(
+            dist(point(center_x, center_y), point(focus_x, focus_y)).to_float()
+        );
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Code for the floor Z obtaining mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::get_floor_z(mob_action_run_data &data) {
+    float x = s2f(data.args[1]);
+    float y = s2f(data.args[2]);
+    sector* s = get_sector(point(x, y), NULL, true);
+    data.m->vars[data.args[0]] = f2s(s ? s->z : 0);
 }
 
 
@@ -921,6 +999,22 @@ void mob_action_runners::get_random_int(mob_action_run_data &data) {
 
 
 /* ----------------------------------------------------------------------------
+ * Code for the hold focused mob mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::hold_focus(mob_action_run_data &data) {
+    if(data.m->focused_mob) {
+        data.m->hold(
+            data.m->focused_mob,
+            s2i(data.args[0]), 0.0f, 0.0f,
+            false, HOLD_ROTATION_METHOD_COPY_HOLDER
+        );
+    }
+}
+
+
+/* ----------------------------------------------------------------------------
  * Code for the "if" mob script action.
  * data:
  *   Data about the action call.
@@ -969,12 +1063,50 @@ void mob_action_runners::if_function(mob_action_run_data &data) {
 
 
 /* ----------------------------------------------------------------------------
+ * Code for the load focused mob memory mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::load_focus_memory(mob_action_run_data &data) {
+    if(data.m->focused_mob_memory.empty()) {
+        return;
+    }
+    
+    data.m->focus_on_mob(data.m->focused_mob_memory[s2i(data.args[0])]);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Code for the link with focus mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::link_with_focus(mob_action_run_data &data) {
+    if(!data.m->focused_mob) {
+        return;
+    }
+    
+    for(size_t l = 0; l < data.m->links.size(); ++l) {
+        if(data.m->links[l] == data.m->focused_mob) {
+            //Already linked.
+            return;
+        }
+    }
+    
+    data.m->links.push_back(data.m->focused_mob);
+}
+
+
+/* ----------------------------------------------------------------------------
  * Code for the move to absolute coordinates mob script action.
  * data:
  *   Data about the action call.
  */
 void mob_action_runners::move_to_absolute(mob_action_run_data &data) {
-    data.m->chase(point(s2f(data.args[0]), s2f(data.args[1])), data.m->z);
+    float x = s2f(data.args[0]);
+    float y = s2f(data.args[1]);
+    float z = data.args.size() > 2 ? s2f(data.args[2]) : data.m->z;
+    data.m->chase(point(x, y), z);
 }
 
 
@@ -984,12 +1116,11 @@ void mob_action_runners::move_to_absolute(mob_action_run_data &data) {
  *   Data about the action call.
  */
 void mob_action_runners::move_to_relative(mob_action_run_data &data) {
-    point p =
-        rotate_point(
-            point(s2f(data.args[0]), s2f(data.args[1])),
-            data.m->angle
-        );
-    data.m->chase(data.m->pos + p, data.m->z);
+    float x = s2f(data.args[0]);
+    float y = s2f(data.args[1]);
+    float z = (data.args.size() > 2 ? s2f(data.args[2]) : 0);
+    point p = rotate_point(point(x, y), data.m->angle);
+    data.m->chase(data.m->pos + p, data.m->z + z);
 }
 
 
@@ -1127,6 +1258,20 @@ void mob_action_runners::remove_status(mob_action_run_data &data) {
 
 
 /* ----------------------------------------------------------------------------
+ * Code for the save focused mob memory mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::save_focus_memory(mob_action_run_data &data) {
+    if(!data.m->focused_mob) {
+        return;
+    }
+    
+    data.m->focused_mob_memory[s2i(data.args[0])] = data.m->focused_mob;
+}
+
+
+/* ----------------------------------------------------------------------------
  * Code for the focused mob message sending mob script action.
  * data:
  *   Data about the action call.
@@ -1189,12 +1334,32 @@ void mob_action_runners::set_animation(mob_action_run_data &data) {
 
 
 /* ----------------------------------------------------------------------------
+ * Code for the block paths setting mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::set_can_block_paths(mob_action_run_data &data) {
+    data.m->set_can_block_paths(s2b(data.args[0]));
+}
+
+
+/* ----------------------------------------------------------------------------
  * Code for the far reach setting mob script action.
  * data:
  *   Data about the action call.
  */
 void mob_action_runners::set_far_reach(mob_action_run_data &data) {
     data.m->far_reach = s2i(data.args[0]);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Code for the flying setting mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::set_flying(mob_action_run_data &data) {
+    data.m->can_move_in_midair = s2b(data.args[0]);
 }
 
 
@@ -1310,6 +1475,16 @@ void mob_action_runners::set_near_reach(mob_action_run_data &data) {
 
 
 /* ----------------------------------------------------------------------------
+ * Code for the radius setting mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::set_radius(mob_action_run_data &data) {
+    data.m->radius = s2f(data.args[0]);
+}
+
+
+/* ----------------------------------------------------------------------------
  * Code for the sector scroll setting mob script action.
  * data:
  *   Data about the action call.
@@ -1320,6 +1495,16 @@ void mob_action_runners::set_sector_scroll(mob_action_run_data &data) {
     
     s_ptr->scroll.x = s2f(data.args[0]);
     s_ptr->scroll.y = s2f(data.args[1]);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Code for the shadow visibility setting mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::set_shadow_visibility(mob_action_run_data &data) {
+    data.m->show_shadow = s2b(data.args[0]);
 }
 
 
@@ -1600,12 +1785,53 @@ void mob_action_runners::teleport_to_relative(mob_action_run_data &data) {
 
 
 /* ----------------------------------------------------------------------------
+ * Code for the throw focused mob mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::throw_focus(mob_action_run_data &data) {
+    if(!data.m->focused_mob) {
+        return;
+    }
+    
+    if(data.m->focused_mob->holder.m == data.m) {
+        data.m->release(data.m->focused_mob);
+    }
+    
+    float max_height = s2f(data.args[3]);
+    
+    if(max_height == 0.0f) {
+        //We just want to drop it, not throw it.
+        return;
+    }
+    
+    data.m->start_height_effect();
+    calculate_throw(
+        data.m->focused_mob->pos, data.m->focused_mob->z,
+        point(s2f(data.args[0]), s2f(data.args[1])), s2f(data.args[2]),
+        max_height, GRAVITY_ADDER,
+        &data.m->focused_mob->speed,
+        &data.m->focused_mob->speed_z,
+        NULL
+    );
+}
+
+
+/* ----------------------------------------------------------------------------
  * Code for the turn to an absolute angle mob script action.
  * data:
  *   Data about the action call.
  */
 void mob_action_runners::turn_to_absolute(mob_action_run_data &data) {
-    data.m->face(deg_to_rad(s2f(data.args[0])), NULL);
+    if(data.args.size() == 1) {
+        //Turn to an absolute angle.
+        data.m->face(deg_to_rad(s2f(data.args[0])), NULL);
+    } else {
+        //Turn to some absolute coordinates.
+        float x = s2f(data.args[0]);
+        float y = s2f(data.args[1]);
+        data.m->face(get_angle(data.m->pos, point(x, y)), NULL);
+    }
 }
 
 
@@ -1615,7 +1841,16 @@ void mob_action_runners::turn_to_absolute(mob_action_run_data &data) {
  *   Data about the action call.
  */
 void mob_action_runners::turn_to_relative(mob_action_run_data &data) {
-    data.m->face(data.m->angle + deg_to_rad(s2f(data.args[0])), NULL);
+    if(data.args.size() == 1) {
+        //Turn to a relative angle.
+        data.m->face(data.m->angle + deg_to_rad(s2f(data.args[0])), NULL);
+    } else {
+        //Turn to some relative coordinates.
+        float x = s2f(data.args[0]);
+        float y = s2f(data.args[1]);
+        point p = rotate_point(point(x, y), data.m->angle);
+        data.m->face(get_angle(data.m->pos, data.m->pos + p), NULL);
+    }
 }
 
 

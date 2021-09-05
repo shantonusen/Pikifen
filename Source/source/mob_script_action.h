@@ -28,15 +28,22 @@ enum MOB_ACTION_TYPES {
     MOB_ACTION_END_IF,
     MOB_ACTION_FINISH_DYING,
     MOB_ACTION_FOCUS,
+    MOB_ACTION_GET_ANGLE,
     MOB_ACTION_GET_CHOMPED,
-    MOB_ACTION_GET_INFO,
+    MOB_ACTION_GET_COORDINATES_FROM_ANGLE,
+    MOB_ACTION_GET_DISTANCE,
+    MOB_ACTION_GET_FLOOR_Z,
     MOB_ACTION_GET_FOCUS_INFO,
     MOB_ACTION_GET_FOCUS_VAR,
+    MOB_ACTION_GET_INFO,
     MOB_ACTION_GET_RANDOM_DECIMAL,
     MOB_ACTION_GET_RANDOM_INT,
     MOB_ACTION_GOTO,
+    MOB_ACTION_HOLD_FOCUS,
     MOB_ACTION_IF,
     MOB_ACTION_LABEL,
+    MOB_ACTION_LINK_WITH_FOCUS,
+    MOB_ACTION_LOAD_FOCUS_MEMORY,
     MOB_ACTION_MOVE_TO_ABSOLUTE,
     MOB_ACTION_MOVE_TO_RELATIVE,
     MOB_ACTION_MOVE_TO_TARGET,
@@ -46,11 +53,14 @@ enum MOB_ACTION_TYPES {
     MOB_ACTION_RECEIVE_STATUS,
     MOB_ACTION_RELEASE,
     MOB_ACTION_REMOVE_STATUS,
+    MOB_ACTION_SAVE_FOCUS_MEMORY,
     MOB_ACTION_SEND_MESSAGE_TO_FOCUS,
     MOB_ACTION_SEND_MESSAGE_TO_LINKS,
     MOB_ACTION_SEND_MESSAGE_TO_NEARBY,
     MOB_ACTION_SET_ANIMATION,
+    MOB_ACTION_SET_CAN_BLOCK_PATHS,
     MOB_ACTION_SET_FAR_REACH,
+    MOB_ACTION_SET_FLYING,
     MOB_ACTION_SET_GRAVITY,
     MOB_ACTION_SET_HEALTH,
     MOB_ACTION_SET_HEIGHT,
@@ -59,7 +69,9 @@ enum MOB_ACTION_TYPES {
     MOB_ACTION_SET_HUNTABLE,
     MOB_ACTION_SET_LIMB_ANIMATION,
     MOB_ACTION_SET_NEAR_REACH,
+    MOB_ACTION_SET_RADIUS,
     MOB_ACTION_SET_SECTOR_SCROLL,
+    MOB_ACTION_SET_SHADOW_VISIBILITY,
     MOB_ACTION_SET_STATE,
     MOB_ACTION_SET_TANGIBLE,
     MOB_ACTION_SET_TEAM,
@@ -81,6 +93,7 @@ enum MOB_ACTION_TYPES {
     MOB_ACTION_SWALLOW_ALL,
     MOB_ACTION_TELEPORT_TO_ABSOLUTE,
     MOB_ACTION_TELEPORT_TO_RELATIVE,
+    MOB_ACTION_THROW_FOCUS,
     MOB_ACTION_TURN_TO_ABSOLUTE,
     MOB_ACTION_TURN_TO_RELATIVE,
     MOB_ACTION_TURN_TO_TARGET,
@@ -270,14 +283,21 @@ void delete_function(mob_action_run_data &data);
 void drain_liquid(mob_action_run_data &data);
 void finish_dying(mob_action_run_data &data);
 void focus(mob_action_run_data &data);
+void get_angle(mob_action_run_data &data);
 void get_chomped(mob_action_run_data &data);
+void get_coordinates_from_angle(mob_action_run_data &data);
+void get_distance(mob_action_run_data &data);
 void get_info(mob_action_run_data &data);
+void get_floor_z(mob_action_run_data &data);
 void get_focus_info(mob_action_run_data &data);
 void get_focus_var(mob_action_run_data &data);
 void get_random_decimal(mob_action_run_data &data);
 void get_random_int(mob_action_run_data &data);
 void goto_function(mob_action_run_data &data);
+void hold_focus(mob_action_run_data &data);
 void if_function(mob_action_run_data &data);
+void link_with_focus(mob_action_run_data &data);
+void load_focus_memory(mob_action_run_data &data);
 void move_to_absolute(mob_action_run_data &data);
 void move_to_relative(mob_action_run_data &data);
 void move_to_target(mob_action_run_data &data);
@@ -287,11 +307,14 @@ void print(mob_action_run_data &data);
 void receive_status(mob_action_run_data &data);
 void release(mob_action_run_data &data);
 void remove_status(mob_action_run_data &data);
+void save_focus_memory(mob_action_run_data &data);
 void send_message_to_focus(mob_action_run_data &data);
 void send_message_to_links(mob_action_run_data &data);
 void send_message_to_nearby(mob_action_run_data &data);
 void set_animation(mob_action_run_data &data);
+void set_can_block_paths(mob_action_run_data &data);
 void set_far_reach(mob_action_run_data &data);
+void set_flying(mob_action_run_data &data);
 void set_gravity(mob_action_run_data &data);
 void set_health(mob_action_run_data &data);
 void set_height(mob_action_run_data &data);
@@ -300,8 +323,10 @@ void set_holdable(mob_action_run_data &data);
 void set_huntable(mob_action_run_data &data);
 void set_limb_animation(mob_action_run_data &data);
 void set_near_reach(mob_action_run_data &data);
+void set_radius(mob_action_run_data &data);
 void set_state(mob_action_run_data &data);
 void set_sector_scroll(mob_action_run_data &data);
+void set_shadow_visibility(mob_action_run_data &data);
 void set_tangible(mob_action_run_data &data);
 void set_team(mob_action_run_data &data);
 void set_timer(mob_action_run_data &data);
@@ -322,6 +347,7 @@ void swallow(mob_action_run_data &data);
 void swallow_all(mob_action_run_data &data);
 void teleport_to_absolute(mob_action_run_data &data);
 void teleport_to_relative(mob_action_run_data &data);
+void throw_focus(mob_action_run_data &data);
 void turn_to_absolute(mob_action_run_data &data);
 void turn_to_relative(mob_action_run_data &data);
 void turn_to_target(mob_action_run_data &data);
@@ -333,6 +359,7 @@ bool arachnorb_plan_logic(mob_action_call &call);
 bool calculate(mob_action_call &call);
 bool focus(mob_action_call &call);
 bool get_info(mob_action_call &call);
+bool hold_focus(mob_action_call &call);
 bool if_function(mob_action_call &call);
 bool move_to_target(mob_action_call &call);
 bool receive_status(mob_action_call &call);

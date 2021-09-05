@@ -483,7 +483,7 @@ void init_mob_actions() {
         mob_action_loaders::arachnorb_plan_logic
     );
     
-    reg_param("destination variable", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);
     reg_param("operand", MOB_ACTION_PARAM_FLOAT, false, false);
     reg_param("operation", MOB_ACTION_PARAM_ENUM, true, false);
     reg_param("operand", MOB_ACTION_PARAM_FLOAT, false, false);
@@ -537,6 +537,18 @@ void init_mob_actions() {
         mob_action_loaders::focus
     );
     
+    reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("center x", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("center y", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("target x", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("target y", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_action(
+        MOB_ACTION_GET_ANGLE,
+        "get_angle",
+        mob_action_runners::get_angle,
+        nullptr
+    );
+    
     reg_action(
         MOB_ACTION_GET_CHOMPED,
         "get_chomped",
@@ -544,16 +556,40 @@ void init_mob_actions() {
         nullptr
     );
     
-    reg_param("variable name", MOB_ACTION_PARAM_STRING, true, false);
-    reg_param("info", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("x destination var name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("y destination var name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("angle", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("distance", MOB_ACTION_PARAM_FLOAT, false, false);
     reg_action(
-        MOB_ACTION_GET_INFO,
-        "get_info",
-        mob_action_runners::get_info,
-        mob_action_loaders::get_info
+        MOB_ACTION_GET_COORDINATES_FROM_ANGLE,
+        "get_coordinates_from_angle",
+        mob_action_runners::get_coordinates_from_angle,
+        nullptr
     );
     
-    reg_param("variable name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("center x", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("center y", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("target x", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("target y", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_action(
+        MOB_ACTION_GET_DISTANCE,
+        "get_distance",
+        mob_action_runners::get_distance,
+        nullptr
+    );
+    
+    reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("x", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("y", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_action(
+        MOB_ACTION_GET_FLOOR_Z,
+        "get_floor_z",
+        mob_action_runners::get_floor_z,
+        nullptr
+    );
+    
+    reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);
     reg_param("info", MOB_ACTION_PARAM_STRING, true, false);
     reg_action(
         MOB_ACTION_GET_FOCUS_INFO,
@@ -562,7 +598,7 @@ void init_mob_actions() {
         mob_action_loaders::get_info
     );
     
-    reg_param("this mob's var name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);
     reg_param("focused mob's var name", MOB_ACTION_PARAM_STRING, true, false);
     reg_action(
         MOB_ACTION_GET_FOCUS_VAR,
@@ -571,7 +607,16 @@ void init_mob_actions() {
         nullptr
     );
     
-    reg_param("variable name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("info", MOB_ACTION_PARAM_STRING, true, false);
+    reg_action(
+        MOB_ACTION_GET_INFO,
+        "get_info",
+        mob_action_runners::get_info,
+        mob_action_loaders::get_info
+    );
+    
+    reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);
     reg_param("minimum value", MOB_ACTION_PARAM_FLOAT, false, false);
     reg_param("maximum value", MOB_ACTION_PARAM_FLOAT, false, false);
     reg_action(
@@ -581,7 +626,7 @@ void init_mob_actions() {
         nullptr
     );
     
-    reg_param("variable name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);
     reg_param("minimum value", MOB_ACTION_PARAM_INT, false, false);
     reg_param("maximum value", MOB_ACTION_PARAM_INT, false, false);
     reg_action(
@@ -597,6 +642,14 @@ void init_mob_actions() {
         "goto",
         nullptr,
         nullptr
+    );
+    
+    reg_param("body part name", MOB_ACTION_PARAM_ENUM, true, false);
+    reg_action(
+        MOB_ACTION_HOLD_FOCUS,
+        "hold_focused_mob",
+        mob_action_runners::hold_focus,
+        mob_action_loaders::hold_focus
     );
     
     reg_param("comparand", MOB_ACTION_PARAM_STRING, false, false);
@@ -617,8 +670,24 @@ void init_mob_actions() {
         nullptr
     );
     
+    reg_action(
+        MOB_ACTION_LINK_WITH_FOCUS,
+        "link_with_focused_mob",
+        mob_action_runners::link_with_focus,
+        nullptr
+    );
+    
+    reg_param("slot", MOB_ACTION_PARAM_INT, false, false);
+    reg_action(
+        MOB_ACTION_LOAD_FOCUS_MEMORY,
+        "load_focused_mob_memory",
+        mob_action_runners::load_focus_memory,
+        nullptr
+    );
+    
     reg_param("x", MOB_ACTION_PARAM_FLOAT, false, false);
     reg_param("y", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("z", MOB_ACTION_PARAM_FLOAT, false, true);
     reg_action(
         MOB_ACTION_MOVE_TO_ABSOLUTE,
         "move_to_absolute",
@@ -628,6 +697,7 @@ void init_mob_actions() {
     
     reg_param("x", MOB_ACTION_PARAM_FLOAT, false, false);
     reg_param("y", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("z", MOB_ACTION_PARAM_FLOAT, false, true);
     reg_action(
         MOB_ACTION_MOVE_TO_RELATIVE,
         "move_to_relative",
@@ -688,6 +758,14 @@ void init_mob_actions() {
         mob_action_loaders::remove_status
     );
     
+    reg_param("slot", MOB_ACTION_PARAM_INT, false, false);
+    reg_action(
+        MOB_ACTION_SAVE_FOCUS_MEMORY,
+        "save_focused_mob_memory",
+        mob_action_runners::save_focus_memory,
+        nullptr
+    );
+    
     reg_param("message", MOB_ACTION_PARAM_STRING, false, false);
     reg_action(
         MOB_ACTION_SEND_MESSAGE_TO_FOCUS,
@@ -722,12 +800,28 @@ void init_mob_actions() {
         mob_action_loaders::set_animation
     );
     
+    reg_param("blocks", MOB_ACTION_PARAM_BOOL, false, false);
+    reg_action(
+        MOB_ACTION_SET_CAN_BLOCK_PATHS,
+        "set_can_block_paths",
+        mob_action_runners::set_can_block_paths,
+        nullptr
+    );
+    
     reg_param("reach name", MOB_ACTION_PARAM_ENUM, true, false);
     reg_action(
         MOB_ACTION_SET_FAR_REACH,
         "set_far_reach",
         mob_action_runners::set_far_reach,
         mob_action_loaders::set_far_reach
+    );
+    
+    reg_param("flying", MOB_ACTION_PARAM_BOOL, false, false);
+    reg_action(
+        MOB_ACTION_SET_FLYING,
+        "set_flying",
+        mob_action_runners::set_flying,
+        nullptr
     );
     
     reg_param("multiplier", MOB_ACTION_PARAM_FLOAT, false, false);
@@ -794,12 +888,28 @@ void init_mob_actions() {
         mob_action_loaders::set_near_reach
     );
     
+    reg_param("radius", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_action(
+        MOB_ACTION_SET_RADIUS,
+        "set_radius",
+        mob_action_runners::set_radius,
+        nullptr
+    );
+    
     reg_param("x speed", MOB_ACTION_PARAM_FLOAT, false, false);
     reg_param("y speed", MOB_ACTION_PARAM_FLOAT, false, false);
     reg_action(
         MOB_ACTION_SET_SECTOR_SCROLL,
         "set_sector_scroll",
         mob_action_runners::set_sector_scroll,
+        nullptr
+    );
+    
+    reg_param("visible", MOB_ACTION_PARAM_BOOL, false, false);
+    reg_action(
+        MOB_ACTION_SET_SHADOW_VISIBILITY,
+        "set_shadow_visibility",
+        mob_action_runners::set_shadow_visibility,
         nullptr
     );
     
@@ -835,7 +945,7 @@ void init_mob_actions() {
         nullptr
     );
     
-    reg_param("variable name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);
     reg_param("value", MOB_ACTION_PARAM_STRING, false, false);
     reg_action(
         MOB_ACTION_SET_VAR,
@@ -844,7 +954,7 @@ void init_mob_actions() {
         nullptr
     );
     
-    reg_param("variable name", MOB_ACTION_PARAM_STRING, true, false);
+    reg_param("var name", MOB_ACTION_PARAM_STRING, true, false);
     reg_action(
         MOB_ACTION_SHOW_MESSAGE_FROM_VAR,
         "show_message_from_var",
@@ -972,7 +1082,19 @@ void init_mob_actions() {
         nullptr
     );
     
-    reg_param("angle", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("x coordinate", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("y coordinate", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("z coordinate", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("max height", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_action(
+        MOB_ACTION_THROW_FOCUS,
+        "throw_focused_mob",
+        mob_action_runners::throw_focus,
+        nullptr
+    );
+    
+    reg_param("angle or x coordinate", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("y coordinate", MOB_ACTION_PARAM_FLOAT, false, true);
     reg_action(
         MOB_ACTION_TURN_TO_ABSOLUTE,
         "turn_to_absolute",

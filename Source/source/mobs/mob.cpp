@@ -53,6 +53,7 @@ mob::mob(const point &pos, mob_type* type, const float angle) :
     angle(angle),
     intended_turn_angle(angle),
     intended_turn_pos(nullptr),
+    radius(type->radius),
     height(type->height),
     can_move_in_midair(false),
     z_cap(FLT_MAX),
@@ -82,13 +83,18 @@ mob::mob(const point &pos, mob_type* type, const float angle) :
     invuln_period(0),
     team(MOB_TEAM_NONE),
     hide(false),
+    show_shadow(true),
     has_invisibility_status(false),
     is_huntable(true),
     height_effect_pivot(LARGE_FLOAT),
     on_hazard(nullptr),
     chomp_max(0),
     parent(nullptr),
-    time_alive(0.0f) {
+    time_alive(0.0f),
+    angle_cos(0.0f),
+    angle_sin(0.0f),
+    max_span(type->max_span),
+    can_block_paths(false) {
     
     next_mob_id++;
     
@@ -102,6 +108,10 @@ mob::mob(const point &pos, mob_type* type, const float angle) :
     center_sector = sec;
     
     team = type->starting_team;
+    
+    if(type->can_block_paths) {
+        set_can_block_paths(true);
+    }
 }
 
 
@@ -781,9 +791,11 @@ void mob::calculate_knockback(
     if(attack_h) {
         *kb_strength = attack_h->knockback;
         if(attack_h->knockback_outward) {
-            *kb_angle = get_angle(pos, victim->pos);
+            *kb_angle =
+                get_angle(attack_h->get_cur_pos(pos, angle), victim->pos);
         } else {
-            *kb_angle = angle + attack_h->knockback_angle;
+            *kb_angle =
+                angle + attack_h->knockback_angle;
         }
     } else {
         *kb_strength = 0;
@@ -1807,18 +1819,39 @@ void mob::hold(
 bool mob::is_off_camera() const {
     if(parent) return false;
     
-    float m_radius;
+    float radius_to_use;
     if(type->rectangular_dim.x == 0) {
-        m_radius = type->radius;
+        radius_to_use = radius;
     } else {
-        m_radius =
+        radius_to_use =
             std::max(
                 type->rectangular_dim.x / 2.0,
                 type->rectangular_dim.y / 2.0
             );
     }
     
-    return !bbox_check(game.cam.box[0], game.cam.box[1], pos, m_radius);
+    return !bbox_check(game.cam.box[0], game.cam.box[1], pos, radius_to_use);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Checks if the given point is on top of the mob.
+ * p:
+ *   Point to check.
+ */
+bool mob::is_point_on(const point &p) const {
+    if(type->rectangular_dim.x == 0) {
+        return dist(p, pos) <= radius;
+        
+    } else {
+        point p_delta = p - pos;
+        p_delta = rotate_point(p_delta, -angle);
+        p_delta += type->rectangular_dim / 2.0f;
+        
+        return
+            p_delta.x > 0 && p_delta.x < type->rectangular_dim.x &&
+            p_delta.y > 0 && p_delta.y < type->rectangular_dim.y;
+    }
 }
 
 
@@ -2050,6 +2083,26 @@ void mob::set_animation(const string &name, const bool auto_start) {
 
 
 /* ----------------------------------------------------------------------------
+ * Sets whether the mob can block paths from here on.
+ * blocks:
+ *   Whether it can block paths or not.
+ */
+void mob::set_can_block_paths(const bool blocks) {
+    if(blocks) {
+        if(!can_block_paths) {
+            game.states.gameplay->path_mgr.handle_obstacle_add(this);
+            can_block_paths = true;
+        }
+    } else {
+        if(can_block_paths) {
+            game.states.gameplay->path_mgr.handle_obstacle_remove(this);
+            can_block_paths = false;
+        }
+    }
+}
+
+
+/* ----------------------------------------------------------------------------
  * Changes a mob's health, relatively or absolutely.
  * add:
  *   If true, change is relative to the current value
@@ -2068,6 +2121,25 @@ void mob::set_health(const bool add, const bool ratio, const float amount) {
     if(add) base_nr = health;
     
     health = clamp(base_nr + change, 0.0f, type->max_health);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Sets the mob's radius to a different value.
+ * radius:
+ *   New radius.
+ */
+void mob::set_radius(const float radius) {
+    this->radius = radius;
+    max_span = radius;
+    max_span = std::max(max_span, type->anims.max_span);
+    if(type->rectangular_dim.x != 0) {
+        max_span =
+            std::max(
+                max_span,
+                dist(point(0, 0), type->rectangular_dim / 2.0).to_float()
+            );
+    }
 }
 
 
@@ -2108,7 +2180,15 @@ mob* mob::spawn(mob_type::spawn_struct* info, mob_type* type_ptr) {
         type_ptr = game.mob_categories.find_mob_type(info->mob_type_name);
     }
     
-    if(!type_ptr) return NULL;
+    if(!type_ptr) {
+        log_error(
+            "Object \"" + type->name + "\" tried to spawn an object of the "
+            "type \"" + info->mob_type_name + "\", but there is no such "
+            "object type!"
+        );
+        return NULL;
+    }
+    
     if(
         type_ptr->category->id == MOB_CATEGORY_PIKMIN &&
         game.states.gameplay->mobs.pikmin_list.size() >=
@@ -2612,8 +2692,8 @@ void mob::tick_misc_logic(const float delta_t) {
         }
     }
     
-    if(type->blocks_carrier_pikmin && health <= 0) {
-        game.states.gameplay->path_mgr.handle_obstacle_clear(this);
+    if(can_block_paths && health <= 0) {
+        set_can_block_paths(false);
     }
     
     float ratio = health / type->max_health;
@@ -2701,11 +2781,11 @@ void mob::tick_script(const float delta_t) {
                 if(
                     (
                         d > r_ptr->radius_1 +
-                        (type->radius + focus->type->radius) ||
+                        (radius + focus->radius) ||
                         face_diff > r_ptr->angle_1 / 2.0f
                     ) && (
                         d > r_ptr->radius_2 +
-                        (type->radius + focus->type->radius) ||
+                        (radius + focus->radius) ||
                         face_diff > r_ptr->angle_2 / 2.0f
                     )
                     

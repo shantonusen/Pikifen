@@ -1695,7 +1695,7 @@ void pikmin_fsm::attack_reached_opponent(mob* m, void* info1, void* info2) {
             !closest_h || !closest_h->can_pikmin_latch ||
             h_z > p_ptr->z + p_ptr->height ||
             h_z + closest_h->height < p_ptr->z ||
-            d >= closest_h->radius + p_ptr->type->radius
+            d >= closest_h->radius + p_ptr->radius
         ) {
             //Can't latch. Let's just do a grounded attack instead.
             p_ptr->fsm.set_state(PIKMIN_STATE_ATTACKING_GROUNDED);
@@ -2516,6 +2516,11 @@ void pikmin_fsm::go_to_group_task(mob* m, void* info1, void* info2) {
     group_task* tas_ptr = (group_task*) info1;
     pikmin* pik_ptr = (pikmin*) m;
     
+    if(!pik_ptr->can_move_in_midair && tas_ptr->tas_type->flying_pikmin_only) {
+        //Only flying Pikmin can use this, and this Pikmin doesn't fly.
+        return;
+    }
+    
     group_task::group_task_spot* free_spot = tas_ptr->get_free_spot();
     if(!free_spot) {
         //There are no free spots available. Forget it.
@@ -2533,7 +2538,10 @@ void pikmin_fsm::go_to_group_task(mob* m, void* info1, void* info2) {
     
     m->focus_on_mob(tas_ptr);
     
-    m->chase(&(free_spot->absolute_pos), &tas_ptr->z);
+    m->chase(
+        &(free_spot->absolute_pos), &tas_ptr->z,
+        point(), tas_ptr->tas_type->spots_z
+    );
     
     pik_ptr->set_animation(PIKMIN_ANIM_WALKING);
     pik_ptr->set_timer(PIKMIN_GOTO_TIMEOUT);
@@ -2611,7 +2619,7 @@ void pikmin_fsm::go_to_opponent(mob* m, void* info1, void* info2) {
     m->chase(
         &m->focused_mob->pos, &m->focused_mob->z,
         point(), 0.0f, 0,
-        m->focused_mob->type->radius + m->type->radius + GROUNDED_ATTACK_DIST
+        m->focused_mob->radius + m->radius + GROUNDED_ATTACK_DIST
     );
     m->set_animation(PIKMIN_ANIM_WALKING);
     m->leave_group();
@@ -2665,7 +2673,7 @@ void pikmin_fsm::go_to_tool(mob* m, void* info1, void* info2) {
     m->chase(
         &too_ptr->pos, &too_ptr->z,
         point(), 0.0f, 0,
-        pik_ptr->type->radius + too_ptr->type->radius
+        pik_ptr->radius + too_ptr->radius
     );
     
     pik_ptr->set_animation(PIKMIN_ANIM_WALKING);
@@ -3091,7 +3099,7 @@ void pikmin_fsm::rechase_opponent(mob* m, void* info1, void* info2) {
         m->focused_mob &&
         m->focused_mob->health > 0 &&
         dist(m->pos, m->focused_mob->pos) <=
-        (m->type->radius + m->focused_mob->type->radius + GROUNDED_ATTACK_DIST)
+        (m->radius + m->focused_mob->radius + GROUNDED_ATTACK_DIST)
     ) {
         //If the opponent is alive and within reach, let's stay in this state,
         //and attack some more!
@@ -3635,9 +3643,10 @@ void pikmin_fsm::tick_group_task_work(mob* m, void* info1, void* info2) {
     pikmin* pik_ptr = (pikmin*) m;
     group_task* tas_ptr = (group_task*) (m->focused_mob);
     point cur_spot_pos = tas_ptr->get_spot_pos(pik_ptr);
+    float cur_spot_z = tas_ptr->z + tas_ptr->tas_type->spots_z;
     
     pik_ptr->chase(
-        cur_spot_pos, tas_ptr->z,
+        cur_spot_pos, cur_spot_z,
         CHASE_FLAG_TELEPORT |
         CHASE_FLAG_TELEPORTS_CONSTANTLY
     );
@@ -3741,7 +3750,7 @@ void pikmin_fsm::touched_hazard(mob* m, void* info1, void* info2) {
                 0, 1, PARTICLE_PRIORITY_LOW
             );
             par.bitmap = game.sys_assets.bmp_wave_ring;
-            par.size_grow_speed = m->type->radius * 4;
+            par.size_grow_speed = m->radius * 4;
             particle_generator pg(0.3, par, 1);
             pg.follow_mob = m;
             pg.id = MOB_PARTICLE_GENERATOR_WAVE_RING;

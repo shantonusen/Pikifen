@@ -62,8 +62,8 @@ carry_info_struct::carry_info_struct(mob* m, const size_t destination) :
     for(size_t c = 0; c < m->type->max_carriers; ++c) {
         float angle = TAU / m->type->max_carriers * c;
         point p(
-            cos(angle) * (m->type->radius + game.config.standard_pikmin_radius),
-            sin(angle) * (m->type->radius + game.config.standard_pikmin_radius)
+            cos(angle) * (m->radius + game.config.standard_pikmin_radius),
+            sin(angle) * (m->radius + game.config.standard_pikmin_radius)
         );
         spot_info.push_back(carrier_spot_struct(p));
     }
@@ -196,9 +196,9 @@ void carry_info_struct::rotate_points(const float angle) {
         float s_angle = angle + (TAU / m->type->max_carriers * s);
         point p(
             cos(s_angle) *
-            (m->type->radius + game.config.standard_pikmin_radius),
+            (m->radius + game.config.standard_pikmin_radius),
             sin(s_angle) *
-            (m->type->radius + game.config.standard_pikmin_radius)
+            (m->radius + game.config.standard_pikmin_radius)
         );
         spot_info[s].pos = p;
     }
@@ -688,7 +688,7 @@ point hold_info_struct::get_final_pos(float* final_z) const {
         final_pos +=
             angle_to_coordinates(
                 offset_angle + m->angle,
-                offset_dist * m->type->radius
+                offset_dist * m->radius
             );
         *final_z = m->z;
     }
@@ -1155,12 +1155,13 @@ mob* create_mob(
             log_error(
                 "Object \"" + type->name + "\" tried to spawn a child with the "
                 "spawn name \"" + child_info->spawn_name + "\", but that name "
-                "does not exist!"
+                "does not exist in the list of spawn data!"
             );
             continue;
         }
         
         mob* new_mob = m_ptr->spawn(spawn_info);
+        
         if(!new_mob) continue;
         
         parent_info_struct* p_info = new parent_info_struct(m_ptr);
@@ -1252,15 +1253,18 @@ void delete_mob(mob* m_ptr, const bool complete_destruction) {
                 m2_ptr->parent = NULL;
                 m2_ptr->to_delete = true;
             }
+            for(size_t f = 0; f < m2_ptr->focused_mob_memory.size(); ++f) {
+                if(m2_ptr->focused_mob_memory[f] == m_ptr) {
+                    m2_ptr->focused_mob_memory[f] = NULL;
+                }
+            }
         }
         
         while(!m_ptr->holding.empty()) {
             m_ptr->release(m_ptr->holding[0]);
         }
         
-        if(m_ptr->type->blocks_carrier_pikmin) {
-            game.states.gameplay->path_mgr.handle_obstacle_clear(m_ptr);
-        }
+        m_ptr->set_can_block_paths(false);
         
         m_ptr->fsm.set_state(INVALID);
     }

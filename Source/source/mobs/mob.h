@@ -226,6 +226,8 @@ public:
     hold_info_struct holder;
     //List of mobs it is holding.
     vector<mob*> holding;
+    //If it's stored inside another mob, this indicates which mob it is.
+    mob* stored_inside_another;
     
     //Health wheel properties.
     //How much the health wheel is filled. Slowly moves to its target amount.
@@ -250,6 +252,8 @@ public:
     bool has_invisibility_status;
     //Can this mob be hunted down right now?
     bool is_huntable;
+    //Can this mob be hurt right now?
+    bool is_hurtable;
     //If not LARGE_FLOAT, compare the Z with this to shrink/grow the sprite.
     float height_effect_pivot;
     //How much the mob moved this frame, if it's walkable.
@@ -379,7 +383,9 @@ public:
         const float speed, const bool can_free_move
     );
     void stop_circling();
-    void face(const float new_angle, point* new_pos);
+    void face(
+        const float new_angle, point* new_pos, const bool instantly = false
+    );
     point get_chase_target(float* z = NULL) const;
     virtual float get_base_speed() const;
     

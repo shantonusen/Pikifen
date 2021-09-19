@@ -39,7 +39,7 @@
     <h3 id="mandatory">Mandatory</h3>
     
     <ul>
-      <li><b><code>first_row_p1</code></b>: X and Y (in relative coordinates) of the leftmost point of the first row.</li>
+      <li><b><code>first_row_p1</code></b>: X and Y (in <a href="script.html#rel-coord">relative coordinates</a>) of the leftmost point of the first row.</li>
       <li><b><code>first_row_p2</code></b>: Same as above, but the rightmost point.</li>
     </ul>
 
@@ -56,7 +56,7 @@
     <h3 id="optional">Optional</h3>
 
     <ul>
-      <li><b><code>flying_pikmin_only</code></b>: If true, then only Pikmin that can fly will be able to interact with it.</li>
+      <li><b><code>flying_pikmin_only</code></b>: If true, then only Pikmin that can fly will be able to interact with it. Defaults to false.</li>
       <li><b><code>interval_between_rows</code></b>: Keep this much distance between each row. Defaults to 10.</li>
       <li><b><code>pikmin_per_row</code></b>: How many Pikmin fit in one row. Defaults to 10.</li>
       <li><b><code>speed_bonus</code></b>: If this object can move, it will speed up by this much for every extra unit of power put on the task beyond the goal. Defaults to 1.</li>
@@ -70,6 +70,8 @@
     <h2 id="script">Script</h2>
 
     <p>All of the group task type object's behavior is defined by the user-made <a href="script.html">script</a>. You should add events for <code>on_receive_message</code> to know when the power goal has been met or lost. You should also set the object's health to zero when you are done, if you don't want the Pikmin to work on it any more.</p>
+
+    <p>Some <a href="script.html#vars">script variables</a> control special behavior, like the group task's starting team. To know which ones exist, you can go to the area editor, select a group task, and read the tooltip of each variable.</p>
 
   </div>
 </body>

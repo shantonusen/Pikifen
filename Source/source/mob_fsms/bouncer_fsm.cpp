@@ -47,7 +47,7 @@ void bouncer_fsm::create_fsm(mob_type* typ) {
     
     
     typ->states = efc.finish();
-    typ->first_state_nr = fix_states(typ->states, "idling");
+    typ->first_state_nr = fix_states(typ->states, "idling", typ);
     
     //Check if the number in the enum and the total match up.
     engine_assert(
@@ -124,10 +124,7 @@ void bouncer_fsm::handle_mob(mob* m, void* info1, void* info2) {
         &angle
     );
     
-    toucher->angle = angle;
-    toucher->angle_cos = cos(angle);
-    toucher->angle_sin = sin(angle);
-    toucher->face(angle, NULL);
+    toucher->face(angle, NULL, true);
     
     ev->run(toucher, (void*) m);
 }

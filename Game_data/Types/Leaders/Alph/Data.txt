@@ -1,0 +1,21 @@
+name = Alph
+
+acceleration = 800
+dismiss_sfx = Olimar_dismiss.ogg
+height = 46
+main_color = 17 238 238
+max_carriers = 5
+max_health = 2000
+max_throw_height = 130
+move_speed = 130
+name_call_sfx = 
+pushable = true
+pushes = false
+rotation_speed = 360
+radius = 16
+vulnerabilities {
+    poison = 0
+}
+weight = 1
+whistle_sfx = Olimar_whistle.ogg
+icon = Alph_icon.png

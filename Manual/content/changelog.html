@@ -34,7 +34,8 @@
         <ul>
           <li>When thrown at an enemy, they cause damage when they collide, and then bounce back.</li>
           <li>They also lunge forward on their own when they get close to an enemy they are chasing on foot. This impact works just like a throw, bounce back included.</li>
-          <li>Also, added cystal walls, crystal nodules, large crystals, small crystals, and Skutterchucks.</li>
+          <li>Also, updated the pellets, Pellet Posies, Candypop Buds, and Onions to support Rock Pikmin.</li>
+          <li>Plus, added cystal walls, crystal nodules, large crystals, small crystals, and Skutterchucks.</li>
         </ul>
       </li>
       <li>
@@ -43,11 +44,13 @@
           <li>If their target is above or below them, they can move up and down in the air to get to it.</li>
           <li>When following a leader, they try to stay a bit above the leader, and when idling, they also try to idle some distance above-ground.</li>
           <li>Because they are flying in the air when following a leader, they can travel over bodies of water. That said, leaders that are underwater can't grab or throw them.</li>
-          <li>Also, added Puffy Blowhogs.</li>
+          <li>Also, updated the pellets, Pellet Posies, Candypop Buds, and Onions to support Winged Pikmin.</li>
+          <li>Plus, added bamboo gates, Flukeweeds, and Puffy Blowhogs.</li>
         </ul>
       </li>
-      <li>Added Bulbmin. They are invulnerable to all elemental hazards, but lack an Onion or ship to go to.</li>
-      <li>Added pellets, Pellet Posies, Candypop Buds, and Onions for the new Pikmin types, including Pellet Posies, Candypop Buds, and Onions that support multiple Pikmin types.</li>
+      <li>Added Bulbmin, both adults and young. They are invulnerable to all elemental hazards, but the young lack an Onion or ship to go to.</li>
+      <li>Added Alph, Brittany, and Charlie, as well as the S.S. Drake. The Hocotatian leaders also got a glow-up. The President's color was changed to yellow, otherwise half of the leaders would be blue.</li>
+      <li>Purple Pikmin now cause a bit of collision damage when they land on an enemy after being thrown.</li>
       <li>Pikmin will now only take paths that they can survive. e.g. a carcass with 1 Red Pikmin and 9 Blue Pikmin carrying it will take a path that doesn't go through water, but a carcass carried by 10 Blue Pikmin might take that water path.</li>
       <li>Objects now move with acceleration. This should make them a bit smoother when moving.</li>
       <li>
@@ -71,7 +74,6 @@
         Rock Pikmin-related features:
         <ul>
           <li>Added a property for Pikmin types, <code>attack_method</code>, that controls how the Pikmin attacks. If set to <code>impact</code>, that Pikmin attacks like a Rock Pikmin, as explained above.</li>
-          <li>These Pikmin should have attack hitboxes in the throwing animation on top of the regular ones.</li>
           <li>Their on-foot lunges use the attack animation, so it should ideally be in a pose where they lunge forward, and have a hitbox.</li>
         </ul>
       </li>
@@ -83,6 +85,7 @@
           <li>Technically, if a leader is on a floor with a hazard (liquid or otherwise), they will be unable to grab Pikmin that are outside it and are vulnerable to the hazard. If they grab and bring those Pikmin to said floor, the Pikmin will suffer the effects.</li>
         </ul>
       </li>
+      <li>Pikmin now have a new state that is entered when they land on a mob, <code>mob_landing</code>. In it, they change to an animation of the same name. It is only after this animation ends that they latch on or bounce back. As such, this animation is a good opportunity to get the Pikmin to cause damage upon collision.</li>
       <li>
         Revamped paths.
         <ul>
@@ -104,17 +107,19 @@
         New mob script actions:
         <ul>
           <li><code>hold_focused_mob</code> lets the object hold whatever object it has in focus, much like how a leader holds a Pikmin.</li>
-          <li><code>link_with_focused_mob</code> lets the object be linked to whatever object it has in focus.</li>
           <li><code>load_focused_mob_memory</code> and <code>save_focused_mob_memory</code> let the currently focused object be saved into a memory, and be recalled later. This allows the object to keep track of more than one object at a time, although it still only focuses on one at a time.</li>
-          <li><code>throw_focused_mob</code> lets the focused object be thrown in an arc towards a destination.</li>
+          <li><code>link_with_focused_mob</code> lets the object be linked to whatever object it has in focus.</li>
           <li><code>get_angle</code> lets the script obtain the angle between two sets of coordinates.</li>
-          <li><code>get_distance</code> lets the script obtain the distance between two sets of coordinates.</li>
+          <li><code>set_can_block_paths</code> lets the object block or stop blocking the paths of others.</li>
           <li><code>get_coordinates_from_angle</code> lets the script obtain the X and Y coordinates calculated from a given angle and distance.</li>
+          <li><code>get_distance</code> lets the script obtain the distance between two sets of coordinates.</li>
           <li><code>get_floor_z</code> lets the script obtain the Z coordinate of the floor at the specified coordinates.</li>
+          <li><code>release_stored_mobs</code> lets the object release any other object that is stored inside.</li>
           <li><code>set_flying</code> lets the object move in mid air at will, unaffected by gravity.</li>
           <li><code>set_radius</code> lets the object's radius be changed.</li>
           <li><code>set_shadow_visibility</code> lets the object's shadow be hidden.</li>
-          <li><code>set_can_block_paths</code> lets the object block or stop blocking the paths of others.</li>
+          <li><code>store_focus_inside</code> lets the object store another one inside, to be released later.</li>
+          <li><code>throw_focused_mob</code> lets the focused object be thrown in an arc towards a destination.</li>
         </ul>
       </li>
       <li>
@@ -122,6 +127,8 @@
         <ul>
           <li>The <code>move_to_absolute</code> and <code>move_to_relative</code> actions can now use an optional Z coordinate argument.</li>
           <li>The <code>turn_to_absolute</code> and <code>turn_to_relative</code> actions can now either use an angle argument, or coordinate arguments.</li>
+          <li>Added <code>group_task_power</code> to the <code>get_info</code> action, so a group task object can obtain the current "Pikmin power" applied to it.</li>
+          <li>The <code>on_hitbox_touch_a_n</code> event used to trigger regardless of the first hitbox's type. This has now been fixed, and <code>on_hitbox_touch_n_n</code> was created for when the both hitboxes are of the normal type.</li>
         </ul>
       </li>
       <li>
@@ -132,10 +139,20 @@
           <li>Added the <code>carrying</code> value to the <code>worker_pikmin_pose</code> property (though it doesn't change anything yet).</li>
         </ul>
       </li>
-      <li>Added the <code>no_pikmin_color</code> property to the game configuration, to control the color the cursor shows when no Pikmin are available.</li>
-      <li>Added the <code>acceleration</code> property to control an object type's acceleration.</li>
-      <li>The maximum distances at which the leader can whistle or throw can now be set in <code>Game_data/Misc/Config.txt</code>.</li>
-      <li>The <code>on_hitbox_touch_a_n</code> event used to trigger regardless of the first hitbox's type. This has now been fixed, and <code>on_hitbox_touch_n_n</code> was created for when the both hitboxes are of the normal type.</li>
+      <li>
+        New object type properties:
+        <ul>
+          <li><code>acceleration</code> controls the object type's acceleration.</li>
+          <li><code>has_group</code> lets the object have a group of other objects (usually Pikmin) following it.</li>
+        </ul>
+      </li>
+      <li>
+        New game configuration properties:
+        <ul>
+          <li><code>no_pikmin_color</code> controls the color the cursor shows when no Pikmin are available.</li>
+          <li><code>throw_max_dist</code> and <code>whistle_max_dist</code> control the maximum distances at which the leader can throw or whistle.</li>
+        </ul>
+      </li>
       <li>
         Minor editor tweaks.
         <ul>
@@ -151,11 +168,12 @@
     
     <ul>
       <li>
-        In order for Pikmin to get up when whistled, their states and animations relating to knockback had to be changed. This results in the following animation changes:
+        Animation changes. These are needed in order for Pikmin to get up when whistled, and for Purple Pikmin and Rock Pikmin to cause collision damage:
         <ul>
           <li><code>lying</code> is now just the Pikmin lying down forever.</li>
           <li><code>knocked_back</code> is a new animation for the Pikmin getting knocked back forever.</li>
           <li><code>getting_up</code> is a new animation for the Pikmin getting up from lying down.</li>
+          <li><code>mob_landing</code> is a new animation for the thrown Pikmin landing on a mob and getting ready, and/or causing damage.</li>
         </ul>
       </li>
       <li>

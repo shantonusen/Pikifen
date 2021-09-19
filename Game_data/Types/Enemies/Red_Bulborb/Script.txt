@@ -1,6 +1,10 @@
 first_state = sleeping
 death_state = dying
 
+init {
+    set_var ignoring false
+}
+
 script {
     sleeping {
         on_enter {

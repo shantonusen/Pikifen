@@ -95,6 +95,16 @@ pikmin_type::pikmin_type() :
         "false if it spawns as an idle Pikmin.";
     area_editor_props.push_back(aep_sprout);
     
+    area_editor_prop_struct aep_follow_link;
+    aep_sprout.name = "Follow link as leader";
+    aep_sprout.var = "follow_link_as_leader";
+    aep_sprout.type = AEMP_BOOL;
+    aep_sprout.def_value = "false";
+    aep_sprout.tooltip =
+        "True if this Pikmin should follow its linked object, "
+        "as if it were its leader.";
+    area_editor_props.push_back(aep_sprout);
+    
     pikmin_fsm::create_fsm(this);
 }
 
@@ -107,6 +117,7 @@ anim_conversion_vector pikmin_type::get_anim_conversions() const {
     v.push_back(std::make_pair(PIKMIN_ANIM_IDLING,       "idling"));
     v.push_back(std::make_pair(PIKMIN_ANIM_WALKING,      "walking"));
     v.push_back(std::make_pair(PIKMIN_ANIM_THROWN,       "thrown"));
+    v.push_back(std::make_pair(PIKMIN_ANIM_MOB_LANDING,  "mob_landing"));
     v.push_back(std::make_pair(PIKMIN_ANIM_ATTACKING,    "attacking"));
     v.push_back(std::make_pair(PIKMIN_ANIM_GRABBING,     "grabbing"));
     v.push_back(std::make_pair(PIKMIN_ANIM_SIGHING,      "sighing"));

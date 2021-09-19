@@ -31,6 +31,7 @@ leader_type::leader_type() :
     main_color = al_map_rgb(128, 128, 128);
     show_health = false;
     target_type = MOB_TARGET_TYPE_PLAYER;
+    has_group = true;
     huntable_targets =
         MOB_TARGET_TYPE_PLAYER |
         MOB_TARGET_TYPE_ENEMY;
@@ -100,9 +101,15 @@ void leader_type::load_resources(data_node* file) {
     
     //TODO Replace load_sample with something better when it exists.
     bmp_icon = game.bitmaps.get(icon_str, icon_node);
-    sfx_dismiss = load_sample(dismiss_sfx_str);
-    sfx_name_call = load_sample(name_call_sfx_str);
-    sfx_whistle = load_sample(whistle_sfx_str);
+    if(!dismiss_sfx_str.empty()) {
+        sfx_dismiss = load_sample(dismiss_sfx_str);
+    }
+    if(!name_call_sfx_str.empty()) {
+        sfx_name_call = load_sample(name_call_sfx_str);
+    }
+    if(!whistle_sfx_str.empty()) {
+        sfx_whistle = load_sample(whistle_sfx_str);
+    }
 }
 
 

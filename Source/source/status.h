@@ -30,6 +30,7 @@ enum STATUS_AFFECTS_FLAGS {
     STATUS_AFFECTS_OTHERS = 8,
 };
 
+
 enum STATUS_STATE_CHANGES {
     STATUS_STATE_CHANGE_NONE,
     STATUS_STATE_CHANGE_FLAILING,
@@ -37,6 +38,14 @@ enum STATUS_STATE_CHANGES {
     STATUS_STATE_CHANGE_PANIC,
     STATUS_STATE_CHANGE_CUSTOM,
 };
+
+
+enum STATUS_REAPPLY_RULES {
+    STATUS_REAPPLY_KEEP_TIME,
+    STATUS_REAPPLY_RESET_TIME,
+    STATUS_REAPPLY_ADD_TIME,
+};
+
 
 /* ----------------------------------------------------------------------------
  * A status effect type, like "burning", "spicy", "petrified", etc.
@@ -56,6 +65,7 @@ struct status_type {
     bool removable_with_whistle;
     bool remove_on_hazard_leave;
     float auto_remove_time;
+    STATUS_REAPPLY_RULES reapply_rule;
     
     //Health addition/subtraction percentage per second.
     float health_change_ratio;
@@ -73,18 +83,22 @@ struct status_type {
     bool disables_attack;
     bool turns_inedible;
     bool turns_invisible;
+    bool freezes_animation;
     
     //We need to know this in order to remove the particle generator later.
     bool generates_particles;
     particle_generator* particle_gen;
     point particle_offset_pos;
     float particle_offset_z;
+    float shaking_effect;
     string overlay_animation;
     float overlay_anim_mob_scale;
     animation_database overlay_anim_db;
     animation_instance overlay_anim_instance;
+    status_type* replacement_on_timeout;
     
     status_type();
+    
 };
 
 

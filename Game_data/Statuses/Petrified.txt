@@ -1,9 +1,14 @@
+//Used when an enemy has been sprayed by an ultra-bitter spray.
 name = petrified
+
 affects_enemies = true
 anim_speed_multiplier = 0
-auto_remove_time = 10
+auto_remove_time = 8
 color = 128 0 255
 defense_multiplier = 1.2
 disables_attack = true
+freezes_animation = true
+reapply_rule = keep_time
+replacement_on_timeout = petrified_cracking
 speed_multiplier = 0
 tint = 64 64 64

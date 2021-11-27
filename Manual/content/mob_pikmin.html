@@ -4,19 +4,15 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Pikmin - Object category - Pikifen manual</title>
+  <title>Pikifen manual</title>
   <meta name="description" content="The Pikifen user manual">
   
   <link rel="stylesheet" href="../data/style.css">
   <script src="../data/script.js"></script>
 </head>
 
-<body onload="make_toc();">
-  <iframe id="header-frame" src="header.html"></iframe>
-  
+<body onload="setup('Pikmin object category', ['Making content', 'Object types'], ['making.html', 'mob_type.html']);">
   <div id="content">
-    
-    <h1>Object category &ndash; Pikmin</h1>
     
     <p>The <b>Pikmin</b> are the creatures the player's leader commands. They can carry, fight, multiply, get eaten, etc.</p>
 
@@ -77,7 +73,7 @@
     <p>A Pikmin type needs to have the following animations:</p>
 
     <ul>
-      <li><b><code>attacking</code></b>: If its attack method is "latch", this is the Pikmin reeling back its head and smacking with it. If it's "impact", this is the Pikmin lunging forward, and eventually getting up.</li>
+      <li><b><code>attacking</code></b>: If its attack method is "latch", this is the Pikmin reeling back its head and smacking with it, causing damage; this is used regardless of the Pikmin being latched on or attacking while grounded. If its attack method is "impact", this is the Pikmin lunging forward and causing damage; it should be quick and snappy so the Pikmin can be bounced back shortly after.</li>
       <li><b><code>carrying</code></b>: Carrying an object.</li>
       <li><b><code>drinking</code></b>: Bending down to drink a drop.</li>
       <li><b><code>getting_up</code></b>: Getting up from lying down.</li>

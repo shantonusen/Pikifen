@@ -120,7 +120,7 @@ void gen_mob_fsm::carry_get_path(mob* m, void* info1, void* info2) {
     
     m->follow_path(
         m->carry_info->intended_point, true,
-        m->carry_info->get_speed(), target_distance
+        m->carry_info->get_speed(), target_distance, false, ""
     );
     
     m->path_info->target_point = m->carry_info->intended_point;
@@ -395,6 +395,20 @@ void gen_mob_fsm::handle_delivery(mob* m, void* info1, void* info2) {
 
 
 /* ----------------------------------------------------------------------------
+ * When a mob has to lose its momentum.
+ * m:
+ *   The mob.
+ * info1:
+ *   Unused.
+ * info2:
+ *   Unused.
+ */
+void gen_mob_fsm::lose_momentum(mob* m, void* info1, void* info2) {
+    m->speed.x = m->speed.y = 0.0f;
+}
+
+
+/* ----------------------------------------------------------------------------
  * When a mob starts the process of being delivered to an Onion/ship.
  * m:
  *   The mob.
@@ -433,7 +447,7 @@ void gen_mob_fsm::touch_hazard(mob* m, void* info1, void* info2) {
     hazard* h = (hazard*) info1;
     
     for(size_t e = 0; e < h->effects.size(); ++e) {
-        m->apply_status_effect(h->effects[e], false, false);
+        m->apply_status_effect(h->effects[e], false);
     }
 }
 
@@ -453,6 +467,6 @@ void gen_mob_fsm::touch_spray(mob* m, void* info1, void* info2) {
     spray_type* s = (spray_type*) info1;
     
     for(size_t e = 0; e < s->effects.size(); ++e) {
-        m->apply_status_effect(s->effects[e], false, false);
+        m->apply_status_effect(s->effects[e], false);
     }
 }

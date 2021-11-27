@@ -334,6 +334,9 @@ void leader_fsm::create_fsm(mob_type* typ) {
         efc.new_event(MOB_EV_HITBOX_TOUCH_N_A); {
             efc.run(leader_fsm::be_attacked);
         }
+        efc.new_event(MOB_EV_TOUCHED_SPRAY); {
+            efc.run(leader_fsm::touched_spray);
+        }
         efc.new_event(MOB_EV_DEATH); {
             efc.change_state("dying");
         }
@@ -1503,22 +1506,6 @@ void leader_fsm::fall_down_pit(mob* m, void* info1, void* info2) {
 
 
 /* ----------------------------------------------------------------------------
- * When the leader finishes the animation of the current pluck.
- * m:
- *   The mob.
- * info1:
- *   Unused.
- * info2:
- *   Unused.
- */
-void leader_fsm::finish_pluck(mob* m, void* info1, void* info2) {
-    leader* l_ptr = (leader*) m;
-    l_ptr->stop_chasing();
-    l_ptr->set_animation(LEADER_ANIM_IDLING);
-}
-
-
-/* ----------------------------------------------------------------------------
  * When a leader finishes drinking the drop it was drinking.
  * m:
  *   The mob.
@@ -1544,9 +1531,7 @@ void leader_fsm::finish_drinking(mob* m, void* info1, void* info2) {
             );
         break;
     } case DROP_EFFECT_GIVE_STATUS: {
-        m->apply_status_effect(
-            d_ptr->dro_type->status_to_give, true, false
-        );
+        m->apply_status_effect(d_ptr->dro_type->status_to_give, false);
         break;
     } default: {
         break;
@@ -1554,6 +1539,22 @@ void leader_fsm::finish_drinking(mob* m, void* info1, void* info2) {
     }
     
     m->unfocus_from_mob();
+}
+
+
+/* ----------------------------------------------------------------------------
+ * When the leader finishes the animation of the current pluck.
+ * m:
+ *   The mob.
+ * info1:
+ *   Unused.
+ * info2:
+ *   Unused.
+ */
+void leader_fsm::finish_pluck(mob* m, void* info1, void* info2) {
+    leader* l_ptr = (leader*) m;
+    l_ptr->stop_chasing();
+    l_ptr->set_animation(LEADER_ANIM_IDLING);
 }
 
 
@@ -1803,6 +1804,11 @@ void leader_fsm::queue_stop_auto_pluck(mob* m, void* info1, void* info2) {
  */
 void leader_fsm::release(mob* m, void* info1, void* info2) {
     if(m->holding.empty()) return;
+    //Reset the Pikmin's position to match the leader's,
+    //so that the leader doesn't release the Pikmin inside a wall behind them.
+    m->holding[0]->pos = m->pos;
+    m->holding[0]->z = m->z;
+    m->holding[0]->face(m->angle + TAU / 2.0f, NULL, true);
     m->release(m->holding[0]);
 }
 
@@ -1900,6 +1906,7 @@ void leader_fsm::signal_stop_auto_pluck(mob* m, void* info1, void* info2) {
  */
 void leader_fsm::spray(mob* m, void* info1, void* info2) {
     size_t spray_nr = *((size_t*) info1);
+    spray_type &spray_type_ref = game.spray_types[spray_nr];
     
     if(game.states.gameplay->spray_stats[spray_nr].nr_sprays == 0) {
         m->fsm.set_state(LEADER_STATE_ACTIVE);
@@ -1909,17 +1916,25 @@ void leader_fsm::spray(mob* m, void* info1, void* info2) {
     float cursor_angle =
         get_angle(m->pos, game.states.gameplay->leader_cursor_w);
     float shoot_angle =
-        cursor_angle + ((game.spray_types[spray_nr].angle) ? TAU / 2 : 0);
+        cursor_angle + ((spray_type_ref.angle) ? TAU / 2 : 0);
         
     unordered_set<mob*> affected_mobs;
-    if(game.spray_types[spray_nr].group) {
+    
+    if(spray_type_ref.affects_user) {
+        affected_mobs.insert(m);
+    }
+    
+    if(spray_type_ref.group) {
         for(size_t gm = 0; gm < m->group->members.size(); ++gm) {
+            mob* gm_ptr = m->group->members[gm];
             if(
-                m->group->members[gm]->type->category->id ==
-                MOB_CATEGORY_PIKMIN
+                gm_ptr->type->category->id != MOB_CATEGORY_PIKMIN &&
+                spray_type_ref.group_pikmin_only
             ) {
-                affected_mobs.insert(m->group->members[gm]);
+                continue;
             }
+            
+            affected_mobs.insert(gm_ptr);
         }
         //If there is nothing to get sprayed, better not waste it.
         if(affected_mobs.empty())  {
@@ -1936,7 +1951,7 @@ void leader_fsm::spray(mob* m, void* info1, void* info2) {
             
             if(
                 dist(m->pos, am_ptr->pos) >
-                game.spray_types[spray_nr].distance_range + am_ptr->radius
+                spray_type_ref.distance_range + am_ptr->radius
             ) {
                 continue;
             }
@@ -1946,7 +1961,7 @@ void leader_fsm::spray(mob* m, void* info1, void* info2) {
                     shoot_angle,
                     get_angle(m->pos, am_ptr->pos)
                 );
-            if(angle_dif > game.spray_types[spray_nr].angle_range / 2) continue;
+            if(angle_dif > spray_type_ref.angle_range / 2) continue;
             
             affected_mobs.insert(am_ptr);
         }
@@ -1965,12 +1980,12 @@ void leader_fsm::spray(mob* m, void* info1, void* info2) {
     );
     p.bitmap = game.sys_assets.bmp_smoke;
     p.friction = 1;
-    p.color = game.spray_types[spray_nr].main_color;
+    p.color = spray_type_ref.main_color;
     particle_generator pg(0, p, 32);
     pg.angle = shoot_angle;
-    pg.angle_deviation = game.spray_types[spray_nr].angle_range / 2.0f;
-    pg.total_speed = game.spray_types[spray_nr].distance_range * 0.8;
-    pg.total_speed_deviation = game.spray_types[spray_nr].distance_range * 0.4;
+    pg.angle_deviation = spray_type_ref.angle_range / 2.0f;
+    pg.total_speed = spray_type_ref.distance_range * 0.8;
+    pg.total_speed_deviation = spray_type_ref.distance_range * 0.4;
     pg.size_deviation = 0.5;
     pg.emit(game.states.gameplay->particles);
     
@@ -2228,11 +2243,11 @@ void leader_fsm::touched_hazard(mob* m, void* info1, void* info2) {
     
     if(!vuln.status_to_apply || !vuln.status_overrides) {
         for(size_t e = 0; e < h->effects.size(); ++e) {
-            l->apply_status_effect(h->effects[e], false, false);
+            l->apply_status_effect(h->effects[e], false);
         }
     }
     if(vuln.status_to_apply) {
-        l->apply_status_effect(vuln.status_to_apply, true, false);
+        l->apply_status_effect(vuln.status_to_apply, false);
     }
     
     if(h->associated_liquid) {
@@ -2279,7 +2294,7 @@ void leader_fsm::touched_spray(mob* m, void* info1, void* info2) {
     spray_type* s = (spray_type*) info1;
     
     for(size_t e = 0; e < s->effects.size(); ++e) {
-        l->apply_status_effect(s->effects[e], false, false);
+        l->apply_status_effect(s->effects[e], false);
     }
 }
 

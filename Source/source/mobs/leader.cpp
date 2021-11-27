@@ -409,7 +409,7 @@ void leader::dismiss() {
 void leader::draw_mob() {
     mob::draw_mob();
     
-    sprite* s_ptr = anim.get_cur_sprite();
+    sprite* s_ptr = get_cur_sprite();
     if(!s_ptr) return;
     
     bitmap_effect_info eff;
@@ -571,6 +571,19 @@ bool leader::order_pikmin_to_onion(
 
 
 /* ----------------------------------------------------------------------------
+ * Queues up a throw. This will cause the throw to go through whenever
+ * the throw cooldown ends.
+ */
+void leader::queue_throw() {
+    if(!check_throw_ok()) {
+        return;
+    }
+    
+    throw_queued = true;
+}
+
+
+/* ----------------------------------------------------------------------------
  * Signals the group members that the swarm mode stopped.
  */
 void leader::signal_swarm_end() const {
@@ -721,19 +734,6 @@ void leader::tick_class_specifics(const float delta_t) {
     if(group && group->members.empty()) {
         stop_auto_throwing();
     }
-}
-
-
-/* ----------------------------------------------------------------------------
- * Queues up a throw. This will cause the throw to go through whenever
- * the throw cooldown ends.
- */
-void leader::queue_throw() {
-    if(!check_throw_ok()) {
-        return;
-    }
-    
-    throw_queued = true;
 }
 
 

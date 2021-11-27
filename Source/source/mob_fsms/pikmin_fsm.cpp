@@ -8,6 +8,8 @@
  * Pikmin finite state machine logic.
  */
 
+#include <algorithm>
+
 #include "pikmin_fsm.h"
 
 #include "../functions.h"
@@ -1097,6 +1099,7 @@ void pikmin_fsm::create_fsm(mob_type* typ) {
     
     efc.new_state("impact_bounce", PIKMIN_STATE_IMPACT_BOUNCE); {
         efc.new_event(MOB_EV_ON_ENTER); {
+            efc.run(pikmin_fsm::stand_still);
             efc.run(pikmin_fsm::do_impact_bounce);
         }
         efc.new_event(MOB_EV_LANDED); {
@@ -1121,13 +1124,10 @@ void pikmin_fsm::create_fsm(mob_type* typ) {
             efc.run(pikmin_fsm::start_impact_lunge);
         }
         efc.new_event(MOB_EV_ANIMATION_END); {
-            efc.run(pikmin_fsm::stand_still);
-            efc.change_state("idling");
+            efc.change_state("impact_bounce");
         }
         efc.new_event(MOB_EV_HITBOX_TOUCH_A_N); {
-            efc.run(pikmin_fsm::stand_still);
             efc.run(pikmin_fsm::check_outgoing_attack);
-            efc.run(pikmin_fsm::land_on_mob);
         }
         efc.new_event(MOB_EV_HITBOX_TOUCH_EAT); {
             efc.run(pikmin_fsm::touched_eat_hitbox);
@@ -1722,9 +1722,9 @@ void pikmin_fsm::attack_reached_opponent(mob* m, void* info1, void* info2) {
             p_ptr->fsm.set_state(PIKMIN_STATE_ATTACKING_GROUNDED);
             
         } else {
-            //Go for a latch instead.
-            hitbox_interaction hti(p_ptr->focused_mob, NULL, closest_h);
-            pikmin_fsm::land_on_mob(m, &hti, NULL);
+            //Latch on.
+            p_ptr->latch(p_ptr->focused_mob, closest_h);
+            p_ptr->fsm.set_state(PIKMIN_STATE_ATTACKING_LATCHED);
             
         }
         
@@ -1733,6 +1733,7 @@ void pikmin_fsm::attack_reached_opponent(mob* m, void* info1, void* info2) {
     }
     case PIKMIN_ATTACK_IMPACT: {
 
+        //Lunge forward for an impact.
         p_ptr->fsm.set_state(PIKMIN_STATE_IMPACT_LUNGE);
         
         break;
@@ -2272,39 +2273,11 @@ void pikmin_fsm::finish_drinking(mob* m, void* info1, void* info2) {
         p_ptr->increase_maturity(d_ptr->dro_type->increase_amount);
         break;
     } case DROP_EFFECT_GIVE_STATUS: {
-        p_ptr->apply_status_effect(
-            d_ptr->dro_type->status_to_give, true, false
-        );
+        p_ptr->apply_status_effect(d_ptr->dro_type->status_to_give, false);
         break;
     }
     }
     
-    m->unfocus_from_mob();
-}
-
-
-/* ----------------------------------------------------------------------------
- * When a Pikmin finishes picking some object up to hold it.
- * m:
- *   The mob.
- * info1:
- *   Unused.
- * info2:
- *   Unused.
- */
-void pikmin_fsm::finish_picking_up(mob* m, void* info1, void* info2) {
-    tool* too_ptr = (tool*) (m->focused_mob);
-    
-    if(!(too_ptr->holdability_flags & HOLDABLE_BY_PIKMIN)) {
-        m->fsm.set_state(PIKMIN_STATE_IDLING);
-        return;
-    }
-    
-    m->subgroup_type_ptr =
-        game.states.gameplay->subgroup_types.get_type(
-            SUBGROUP_TYPE_CATEGORY_TOOL, m->focused_mob->type
-        );
-    m->hold(m->focused_mob, INVALID, 4, 0, true, true);
     m->unfocus_from_mob();
 }
 
@@ -2354,11 +2327,16 @@ void pikmin_fsm::finish_getting_up(mob* m, void* info1, void* info2) {
 void pikmin_fsm::finish_mob_landing(mob* m, void* info1, void* info2) {
     pikmin* pik_ptr = (pikmin*) m;
     
+    if(!m->focused_mob) {
+        //The mob has died or vanished since the Pikmin first landed.
+        //Return to idle.
+        pik_ptr->fsm.set_state(PIKMIN_STATE_IDLING);
+        return;
+    }
+    
     switch(pik_ptr->pik_type->attack_method) {
     case PIKMIN_ATTACK_LATCH: {
-        pik_ptr->latched = true;
         pik_ptr->fsm.set_state(PIKMIN_STATE_ATTACKING_LATCHED);
-        
         break;
         
     }
@@ -2368,6 +2346,32 @@ void pikmin_fsm::finish_mob_landing(mob* m, void* info1, void* info2) {
         
     }
     }
+}
+
+
+/* ----------------------------------------------------------------------------
+ * When a Pikmin finishes picking some object up to hold it.
+ * m:
+ *   The mob.
+ * info1:
+ *   Unused.
+ * info2:
+ *   Unused.
+ */
+void pikmin_fsm::finish_picking_up(mob* m, void* info1, void* info2) {
+    tool* too_ptr = (tool*) (m->focused_mob);
+    
+    if(!(too_ptr->holdability_flags & HOLDABLE_BY_PIKMIN)) {
+        m->fsm.set_state(PIKMIN_STATE_IDLING);
+        return;
+    }
+    
+    m->subgroup_type_ptr =
+        game.states.gameplay->subgroup_types.get_type(
+            SUBGROUP_TYPE_CATEGORY_TOOL, m->focused_mob->type
+        );
+    m->hold(m->focused_mob, INVALID, 4, 0, true, true);
+    m->unfocus_from_mob();
 }
 
 
@@ -2841,18 +2845,7 @@ void pikmin_fsm::land_on_mob(mob* m, void* info1, void* info2) {
     
     switch(pik_ptr->pik_type->attack_method) {
     case PIKMIN_ATTACK_LATCH: {
-        pik_ptr->speed.x = pik_ptr->speed.y = pik_ptr->speed_z = 0;
-        
-        float h_offset_dist;
-        float h_offset_angle;
-        m2_ptr->get_hitbox_hold_point(
-            pik_ptr, h_ptr, &h_offset_dist, &h_offset_angle
-        );
-        m2_ptr->hold(
-            pik_ptr, h_ptr->body_part_index, h_offset_dist, h_offset_angle,
-            true, true
-        );
-        
+        pik_ptr->latch(m2_ptr, h_ptr);
         break;
         
     }
@@ -2864,7 +2857,6 @@ void pikmin_fsm::land_on_mob(mob* m, void* info1, void* info2) {
     }
     
     pik_ptr->fsm.set_state(PIKMIN_STATE_MOB_LANDING);
-    
 }
 
 
@@ -3423,6 +3415,26 @@ void pikmin_fsm::start_flailing(mob* m, void* info1, void* info2) {
 
 
 /* ----------------------------------------------------------------------------
+ * When a Pikmin starts getting up from being knocked down.
+ * m:
+ *   The mob.
+ * info1:
+ *   Unused.
+ * info2:
+ *   Unused.
+ */
+void pikmin_fsm::start_getting_up(mob* m, void* info1, void* info2) {
+    pikmin* p_ptr = (pikmin*) m;
+    
+    if(p_ptr->pik_type->can_fly) {
+        p_ptr->can_move_in_midair = true;
+    }
+    
+    m->set_animation(PIKMIN_ANIM_GETTING_UP);
+}
+
+
+/* ----------------------------------------------------------------------------
  * When a Pikmin starts lunging forward for an impact attack.
  * m:
  *   The mob.
@@ -3474,26 +3486,6 @@ void pikmin_fsm::start_panicking(mob* m, void* info1, void* info2) {
 
 
 /* ----------------------------------------------------------------------------
- * When a Pikmin starts getting up from being knocked down.
- * m:
- *   The mob.
- * info1:
- *   Unused.
- * info2:
- *   Unused.
- */
-void pikmin_fsm::start_getting_up(mob* m, void* info1, void* info2) {
-    pikmin* p_ptr = (pikmin*) m;
-    
-    if(p_ptr->pik_type->can_fly) {
-        p_ptr->can_move_in_midair = true;
-    }
-    
-    m->set_animation(PIKMIN_ANIM_GETTING_UP);
-}
-
-
-/* ----------------------------------------------------------------------------
  * When a Pikmin starts picking some object up to hold it.
  * m:
  *   The mob.
@@ -3532,7 +3524,8 @@ void pikmin_fsm::start_returning(mob* m, void* info1, void* info2) {
             carried_mob->carry_info->return_point,
             false,
             p_ptr->get_base_speed(),
-            carried_mob->carry_info->return_dist
+            carried_mob->carry_info->return_dist,
+            false, ""
         )
     ) {
         p_ptr->set_animation(PIKMIN_ANIM_WALKING);
@@ -3811,11 +3804,11 @@ void pikmin_fsm::touched_hazard(mob* m, void* info1, void* info2) {
     
     if(!vuln.status_to_apply || !vuln.status_overrides) {
         for(size_t e = 0; e < h->effects.size(); ++e) {
-            p->apply_status_effect(h->effects[e], false, false);
+            p->apply_status_effect(h->effects[e], false);
         }
     }
     if(vuln.status_to_apply) {
-        p->apply_status_effect(vuln.status_to_apply, true, false);
+        p->apply_status_effect(vuln.status_to_apply, false);
     }
 }
 
@@ -3835,7 +3828,7 @@ void pikmin_fsm::touched_spray(mob* m, void* info1, void* info2) {
     spray_type* s = (spray_type*) info1;
     
     for(size_t e = 0; e < s->effects.size(); ++e) {
-        m->apply_status_effect(s->effects[e], false, false);
+        m->apply_status_effect(s->effects[e], false);
     }
     
     if(s->buries_pikmin) {

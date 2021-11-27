@@ -1,0 +1,16 @@
+//Used when a petrified enemy just broke free. It only lasts for a short while, just enough to spawn the particles.
+name = petrified_cracked
+
+affects_enemies = true
+anim_speed_multiplier = 0
+auto_remove_time = 0.001
+color = 128 0 255
+defense_multiplier = 1.2
+disables_attack = true
+freezes_animation = true
+particle_generator = petrification_crack
+particle_offset = 0 0 1000
+reapply_rule = keep_time
+speed_multiplier = 0
+shaking_effect = 1.5
+tint = 64 64 64

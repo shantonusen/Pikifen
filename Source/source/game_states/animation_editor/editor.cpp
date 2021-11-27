@@ -376,7 +376,7 @@ void animation_editor::load() {
     load_mob_types(false);
     
     file_path.clear();
-    can_reload = false;
+    animation_exists_on_disk = false;
     can_save = false;
     loaded_content_yet = false;
     side_view = false;
@@ -424,7 +424,7 @@ void animation_editor::load_animation_database(
     cur_hitbox = NULL;
     cur_hitbox_nr = 0;
     
-    can_reload = true;
+    animation_exists_on_disk = true;
     can_save = true;
     
     game.cam.set_pos(point());
@@ -662,7 +662,7 @@ void animation_editor::press_quit_button() {
  * Code to run when the reload button widget is pressed.
  */
 void animation_editor::press_reload_button() {
-    if(!can_reload) return;
+    if(!animation_exists_on_disk) return;
     if(!check_new_unsaved_changes(reload_widget_pos)) {
         load_animation_database(false);
     }
@@ -1111,6 +1111,71 @@ void animation_editor::set_all_sprite_scales(const float scale) {
     
     made_new_changes = true;
     status_text = "Set all sprite scales to " + f2s(scale) + ".";
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Sets the current frame to be the most apt sprite it can find, given the
+ * current circumstances.
+ * Basically, it picks a sprite that's called something similar to
+ * the current animation.
+ */
+void animation_editor::set_best_frame_sprite() {
+    if(anims.sprites.empty()) return;
+    
+    //Find the sprites that match the most characters with the animation name.
+    //Let's set the starting best score to 3, as an arbitrary way to
+    //sift out results that technically match, but likely aren't the same
+    //term. Example: If the animation is called "running", and there is no
+    //"runnning" sprite, we probably don't want a match with "rummaging".
+    //Also, set the final sprite index to 0 so that if something goes wrong,
+    //we default to the first sprite on the list.
+    size_t final_sprite_idx = 0;
+    vector<size_t> best_sprite_idxs;
+    size_t best_score = 3;
+    
+    if(anims.sprites.size() > 1) {
+        for(size_t s = 0; s < anims.sprites.size(); ++s) {
+            size_t score =
+                get_matching_string_starts(
+                    str_to_lower(cur_anim->name),
+                    str_to_lower(anims.sprites[s]->name)
+                ).size();
+            if(score < best_score) {
+                continue;
+            }
+            if(score > best_score) {
+                best_score = score;
+                best_sprite_idxs.clear();
+            }
+            best_sprite_idxs.push_back(s);
+        }
+    }
+    
+    if(best_sprite_idxs.size() == 1) {
+        //If there's only one best match, go for it.
+        final_sprite_idx = best_sprite_idxs[0];
+        
+    } else if(best_sprite_idxs.size() > 1) {
+        //Sort them alphabetically and pick the first.
+        std::sort(
+            best_sprite_idxs.begin(),
+            best_sprite_idxs.end(),
+        [this, &best_sprite_idxs] (const size_t s1, const size_t s2) {
+            return
+                str_to_lower(anims.sprites[s1]->name) <
+                str_to_lower(anims.sprites[s2]->name);
+        });
+        final_sprite_idx = best_sprite_idxs[0];
+    }
+    
+    //Finally, set the frame info then.
+    cur_anim->frames[cur_frame_nr].sprite_index =
+        final_sprite_idx;
+    cur_anim->frames[cur_frame_nr].sprite_ptr =
+        anims.sprites[final_sprite_idx];
+    cur_anim->frames[cur_frame_nr].sprite_name =
+        anims.sprites[final_sprite_idx]->name;
 }
 
 

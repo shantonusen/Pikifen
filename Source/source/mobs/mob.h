@@ -168,6 +168,8 @@ public:
     float radius;
     //Current height.
     float height;
+    //Current rectangular dimensions.
+    point rectangular_dim;
     //Can it currently move vertically on its own?
     bool can_move_in_midair;
     //Due to framerate imperfections, thrown Pikmin/leaders can reach higher
@@ -248,6 +250,8 @@ public:
     bool hide;
     //If its shadow should be visible.
     bool show_shadow;
+    //Force the usage of this specific sprite.
+    sprite* forced_sprite;
     //Is invisible due to a status effect. Cache for performance.
     bool has_invisibility_status;
     //Can this mob be hunted down right now?
@@ -295,6 +299,7 @@ public:
     void set_timer(const float time);
     void set_var(const string &name, const string &value);
     void set_radius(const float radius);
+    void set_rectangular_dim(const point &rectangular_dim);
     void set_can_block_paths(const bool blocks);
     
     void become_carriable(const size_t destination);
@@ -318,6 +323,7 @@ public:
     ) const;
     void cause_spike_damage(mob* victim, const bool is_ingestion);
     void chomp(mob* m, hitbox* hitbox_info);
+    sprite* get_cur_sprite() const;
     void get_hitbox_hold_point(
         mob* mob_to_hold, hitbox* h_ptr, float* offset_dist, float* offset_angle
     ) const;
@@ -374,8 +380,9 @@ public:
     void stop_chasing();
     void stop_turning();
     bool follow_path(
-        const point &target, const bool can_continue = true,
-        const float speed = -1.0f, const float final_target_distance = 3
+        const point &target, const bool can_continue,
+        const float speed, const float final_target_distance,
+        const bool is_script_action, const string &label
     );
     void stop_following_path();
     void circle_around(
@@ -393,9 +400,7 @@ public:
     void arachnorb_plan_logic(const unsigned char goal);
     void arachnorb_foot_move_logic();
     
-    void apply_status_effect(
-        status_type* s, const bool refill, const bool given_by_parent
-    );
+    void apply_status_effect(status_type* s, const bool given_by_parent);
     void delete_old_status_effects();
     void remove_particle_generator(const size_t id);
     ALLEGRO_BITMAP* get_status_bitmap(float* bmp_scale) const;

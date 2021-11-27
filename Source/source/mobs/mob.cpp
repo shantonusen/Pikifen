@@ -55,6 +55,7 @@ mob::mob(const point &pos, mob_type* type, const float angle) :
     intended_turn_pos(nullptr),
     radius(type->radius),
     height(type->height),
+    rectangular_dim(type->rectangular_dim),
     can_move_in_midair(false),
     z_cap(FLT_MAX),
     home(pos),
@@ -86,6 +87,7 @@ mob::mob(const point &pos, mob_type* type, const float angle) :
     team(MOB_TEAM_NONE),
     hide(false),
     show_shadow(true),
+    forced_sprite(nullptr),
     has_invisibility_status(false),
     is_huntable(true),
     is_hurtable(true),
@@ -232,17 +234,14 @@ void mob::apply_knockback(const float knockback, const float knockback_angle) {
  * Applies a status effect's effects.
  * s:
  *   Status effect to use.
- * refill:
- *   If true, then the time left before the status wears off is reset, if the
- *   mob is already under this status effect.
  * given_by_parent:
  *   If true, this status effect was given to the mob by its parent mob.
  */
 void mob::apply_status_effect(
-    status_type* s, const bool refill, const bool given_by_parent
+    status_type* s, const bool given_by_parent
 ) {
     if(parent && parent->relay_statuses && !given_by_parent) {
-        parent->m->apply_status_effect(s, refill, false);
+        parent->m->apply_status_effect(s, false);
         if(!parent->handle_statuses) return;
     }
     
@@ -254,17 +253,27 @@ void mob::apply_status_effect(
     for(size_t m = 0; m < game.states.gameplay->mobs.all.size(); ++m) {
         mob* m2_ptr = game.states.gameplay->mobs.all[m];
         if(m2_ptr->parent && m2_ptr->parent->m == this) {
-            m2_ptr->apply_status_effect(s, refill, true);
+            m2_ptr->apply_status_effect(s, true);
         }
     }
     
     //Check if the mob is already under this status.
     for(size_t ms = 0; ms < this->statuses.size(); ++ms) {
         if(this->statuses[ms].type == s) {
-            //Already exists. Can we refill its duration?
+            //Already exists. What do we do with the time left?
             
-            if(refill && s->auto_remove_time > 0.0f) {
+            switch(s->reapply_rule) {
+            case STATUS_REAPPLY_KEEP_TIME: {
+                break;
+            }
+            case STATUS_REAPPLY_RESET_TIME: {
                 this->statuses[ms].time_left = s->auto_remove_time;
+                break;
+            }
+            case STATUS_REAPPLY_ADD_TIME: {
+                this->statuses[ms].time_left += s->auto_remove_time;
+                break;
+            }
             }
             
             return;
@@ -291,6 +300,10 @@ void mob::apply_status_effect(
         pg.follow_angle = &this->angle;
         pg.reset();
         particle_generators.push_back(pg);
+    }
+    
+    if(s->freezes_animation) {
+        forced_sprite = get_cur_sprite();
     }
 }
 
@@ -918,7 +931,7 @@ void mob::cause_spike_damage(mob* victim, const bool is_ingestion) {
         v != victim->type->spike_damage_vulnerabilities.end() &&
         v->second.status_to_apply
     ) {
-        victim->apply_status_effect(v->second.status_to_apply, true, false);
+        victim->apply_status_effect(v->second.status_to_apply, false);
     }
 }
 
@@ -1057,18 +1070,46 @@ void mob::circle_around(
  * Deletes all status effects asking to be deleted.
  */
 void mob::delete_old_status_effects() {
+    vector<status_type*> new_statuses_to_apply;
+    bool removed_forced_sprite = false;
+    
     for(size_t s = 0; s < statuses.size(); ) {
-        if(statuses[s].to_delete) {
-            handle_status_effect_loss(statuses[s].type);
+        status &s_ptr = statuses[s];
+        if(s_ptr.to_delete) {
+            handle_status_effect_loss(s_ptr.type);
             
-            if(statuses[s].type->generates_particles) {
-                remove_particle_generator(statuses[s].type->particle_gen->id);
+            if(s_ptr.type->generates_particles) {
+                remove_particle_generator(s_ptr.type->particle_gen->id);
+            }
+            
+            if(s_ptr.type->freezes_animation) {
+                removed_forced_sprite = true;
+            }
+            
+            if(s_ptr.type->replacement_on_timeout && s_ptr.time_left <= 0.0f) {
+                new_statuses_to_apply.push_back(
+                    s_ptr.type->replacement_on_timeout
+                );
+                if(s_ptr.type->replacement_on_timeout->freezes_animation) {
+                    //Actually, never mind, let's keep the current forced
+                    //sprite so that the next status effect can use it too.
+                    removed_forced_sprite = false;
+                }
             }
             
             statuses.erase(statuses.begin() + s);
         } else {
             ++s;
         }
+    }
+    
+    //Apply new status effects.
+    for(size_t s = 0; s < new_statuses_to_apply.size(); ++s) {
+        apply_status_effect(new_statuses_to_apply[s], false);
+    }
+    
+    if(removed_forced_sprite) {
+        forced_sprite = NULL;
     }
     
     //Update some flags.
@@ -1228,7 +1269,7 @@ void mob::draw_limb() {
  * by child classes.
  */
 void mob::draw_mob() {
-    sprite* s_ptr = anim.get_cur_sprite();
+    sprite* s_ptr = get_cur_sprite();
     
     if(!s_ptr) return;
     
@@ -1300,14 +1341,19 @@ void mob::focus_on_mob(mob* m2) {
  *   If true, it is possible for the new path to continue
  *   from where the old one left off, if there was an old one.
  * speed:
- *   Speed at which to travel. -1 uses the mob's speed.
+ *   Speed at which to travel.
  * final_target_distance:
  *   For the final chase, from the last path stop to
  *   the destination, use this for the target distance parameter.
+ * is_script_action:
+ *   If true, this path following order was given by a mob script action.
+ * label:
+ *   If not empty, only follow path links with this label.
  */
 bool mob::follow_path(
     const point &target, const bool can_continue,
-    const float speed, const float final_target_distance
+    const float speed, const float final_target_distance,
+    const bool is_script_action, const string &label
 ) {
     bool was_blocked = false;
     path_stop* old_next_stop = NULL;
@@ -1343,15 +1389,25 @@ bool mob::follow_path(
         //The object will only be airborne if all its carriers can fly.
         if(carry_info->can_fly()) taker_flags |= PATH_TAKER_FLAG_AIRBORNE;
     } else {
-        //Simple mobs are empty-handed, so that's considered light load.
-        taker_flags |= PATH_TAKER_FLAG_LIGHT_LOAD;
+        if(
+            type->category->id == MOB_CATEGORY_PIKMIN ||
+            type->category->id == MOB_CATEGORY_LEADERS
+        ) {
+            //Simple mobs are empty-handed, so that's considered light load.
+            taker_flags |= PATH_TAKER_FLAG_LIGHT_LOAD;
+        }
         //Check if the object can fly directly.
         if(can_move_in_midair) taker_flags |= PATH_TAKER_FLAG_AIRBORNE;
     }
     
+    if(is_script_action) taker_flags |= PATH_TAKER_FLAG_SCRIPT_USE;
+    
     path_info =
-        new path_info_struct(this, target, invulnerabilities, taker_flags);
+        new path_info_struct(
+        this, target, invulnerabilities, taker_flags, label
+    );
     path_info->final_target_distance = final_target_distance;
+    path_info->label = label;
     
     if(
         can_continue &&
@@ -1452,7 +1508,7 @@ point mob::get_chase_target(float* z) const {
 hitbox* mob::get_closest_hitbox(
     const point &p, const size_t h_type, dist* d
 ) const {
-    sprite* s = anim.get_cur_sprite();
+    sprite* s = get_cur_sprite();
     if(!s) return NULL;
     hitbox* closest_hitbox = NULL;
     float closest_hitbox_dist = 0;
@@ -1474,6 +1530,17 @@ hitbox* mob::get_closest_hitbox(
     if(d) *d = closest_hitbox_dist;
     
     return closest_hitbox;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Returns the current sprite of animation.
+ * Normally, this returns the current animation's current sprite,
+ * but it can return a forced sprite (e.g. from a status effect that
+ * freezes animations).
+ */
+sprite* mob::get_cur_sprite() const {
+    return forced_sprite ? forced_sprite : anim.get_cur_sprite();
 }
 
 
@@ -1522,7 +1589,7 @@ mob_type::vulnerability_struct mob::get_hazard_vulnerability(
  *   The hitbox's number.
  */
 hitbox* mob::get_hitbox(const size_t nr) const {
-    sprite* s = anim.get_cur_sprite();
+    sprite* s = get_cur_sprite();
     if(!s) return NULL;
     if(s->hitboxes.empty()) return NULL;
     return &s->hitboxes[nr];
@@ -1604,7 +1671,7 @@ float mob::get_latched_pikmin_weight() const {
  * info:
  *   Struct to fill the info with.
  * add_status:
- *   If true, add status effect coloring to the result.
+ *   If true, add status effect changes to the result.
  * add_sector_brightness:
  *   If true, add sector brightness coloring to the result.
  * delivery_time_ratio_left:
@@ -1619,6 +1686,9 @@ void mob::get_sprite_bitmap_effects(
     const bool add_status, const bool add_sector_brightness,
     const float delivery_time_ratio_left, const ALLEGRO_COLOR &delivery_color
 ) const {
+
+    const float STATUS_SHAKING_TIME_MULT = 60.0f;
+    
     info->translation =
         point(
             pos.x + angle_cos * s_ptr->offset.x - angle_sin * s_ptr->offset.y,
@@ -1661,6 +1731,14 @@ void mob::get_sprite_bitmap_effects(
                 t->glow.g = glow_color_sum.g / n_glow_colors;
                 t->glow.b = glow_color_sum.b / n_glow_colors;
                 t->glow.a = glow_color_sum.a / n_glow_colors;
+            }
+            
+            if(t->shaking_effect != 0.0f) {
+                info->translation.x +=
+                    sin(
+                        game.states.gameplay->area_time_passed *
+                        STATUS_SHAKING_TIME_MULT
+                    ) * t->shaking_effect;
             }
         }
     }
@@ -1772,7 +1850,7 @@ ALLEGRO_BITMAP* mob::get_status_bitmap(float* bmp_scale) const {
 
 /* ----------------------------------------------------------------------------
  * Handles a status effect being applied.
- * s:
+ * sta_type:
  *   Status type to check.
  */
 void mob::handle_status_effect_gain(status_type* sta_type) {
@@ -1787,7 +1865,7 @@ void mob::handle_status_effect_gain(status_type* sta_type) {
 
 /* ----------------------------------------------------------------------------
  * Handles a status effect being removed.
- * s:
+ * sta_type:
  *   Status type to check.
  */
 void mob::handle_status_effect_loss(status_type* sta_type) {
@@ -1839,13 +1917,13 @@ bool mob::is_off_camera() const {
     if(parent) return false;
     
     float radius_to_use;
-    if(type->rectangular_dim.x == 0) {
+    if(rectangular_dim.x == 0) {
         radius_to_use = radius;
     } else {
         radius_to_use =
             std::max(
-                type->rectangular_dim.x / 2.0,
-                type->rectangular_dim.y / 2.0
+                rectangular_dim.x / 2.0,
+                rectangular_dim.y / 2.0
             );
     }
     
@@ -1859,17 +1937,17 @@ bool mob::is_off_camera() const {
  *   Point to check.
  */
 bool mob::is_point_on(const point &p) const {
-    if(type->rectangular_dim.x == 0) {
+    if(rectangular_dim.x == 0) {
         return dist(p, pos) <= radius;
         
     } else {
         point p_delta = p - pos;
         p_delta = rotate_point(p_delta, -angle);
-        p_delta += type->rectangular_dim / 2.0f;
+        p_delta += rectangular_dim / 2.0f;
         
         return
-            p_delta.x > 0 && p_delta.x < type->rectangular_dim.x &&
-            p_delta.y > 0 && p_delta.y < type->rectangular_dim.y;
+            p_delta.x > 0 && p_delta.x < rectangular_dim.x &&
+            p_delta.y > 0 && p_delta.y < rectangular_dim.y;
     }
 }
 
@@ -2150,15 +2228,28 @@ void mob::set_health(const bool add, const bool ratio, const float amount) {
  */
 void mob::set_radius(const float radius) {
     this->radius = radius;
-    max_span = radius;
-    max_span = std::max(max_span, type->anims.max_span);
-    if(type->rectangular_dim.x != 0) {
-        max_span =
-            std::max(
-                max_span,
-                dist(point(0, 0), type->rectangular_dim / 2.0).to_float()
-            );
-    }
+    max_span =
+    calculate_mob_max_span(
+        radius,
+        type->anims.max_span,
+        rectangular_dim
+    );
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Sets the mob's rectangular dimensions to a different value.
+ * rectangular_dim:
+ *   New rectangular dimensions.
+ */
+void mob::set_rectangular_dim(const point &rectangular_dim) {
+    this->rectangular_dim = rectangular_dim;
+    max_span =
+    calculate_mob_max_span(
+        radius,
+        type->anims.max_span,
+        rectangular_dim
+    );
 }
 
 

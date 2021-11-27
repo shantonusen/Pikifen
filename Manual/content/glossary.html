@@ -4,19 +4,15 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Glossary - Pikifen manual</title>
+  <title>Pikifen manual</title>
   <meta name="description" content="The Pikifen user manual">
   
   <link rel="stylesheet" href="../data/style.css">
   <script src="../data/script.js"></script>
 </head>
 
-<body>
-  <iframe id="header-frame" src="header.html"></iframe>
-  
+<body onload="setup('Glossary', undefined, undefined, false);">
   <div id="content">
-    
-    <h1>Glossary</h1>
     
     <p>A glossary of terms used in <i>Pikifen</i>, both for casual play, and for making content. This glossary will not include terms popular in the <i>Pikmin</i> franchise, since you can find more about those on <a href="https://www.pikminwiki.com">Pikipedia</a>, and will also not focus on terms used in the engine's code, even though most of them match what you'd read outside of the code.</p>
     
@@ -28,6 +24,14 @@
     
     <h2 id="A">A</h2>
 
+    <dl>
+      <dt>Absolute angle</dt>
+      <dd>Unlike a <a href="#R">relative angle</a>, this refers to the angle facing a cardinal direction in the area. 0 points to the right/east, 10 means 10 degrees anti-clockwise of east, etc.</dd>
+    </dl>
+    <dl>
+      <dt>Absolute coordinates, Area coordinates</dt>
+      <dd>Unlike <a href="#R">relative coordinates</a>, these specify the exact coordinates in the current area.</dd>
+    </dl>
     <dl>
       <dt>Action</dt>
       <dd>Something that an object can do in its <a href="#S">script</a>. This includes walking to a certain point, losing <a href="#H">health</a>, changing its <a href="#A">animation</a>, etc.</dd>
@@ -132,6 +136,10 @@
     <dl>
       <dt>Glow</dt>
       <dd>A way to brighten up an object. Due to Allegro limitations, it's not a real glow in the current versions of the engine because: 1. the brightness is limited to the bitmap's original pixels &#8211; darker bitmaps have a harder time becoming brighter; 2. the glow doesn't bleed and fade out, but is limited to the exact shape of the original bitmap.</dd>
+    </dl>
+    <dl>
+      <dt>Group</dt>
+      <dd>The group of objects that follow another object. Typically, the group of Pikmin+leaders following a leader.</dd>
     </dl>
     
     <h2 id="H">H</h2>
@@ -292,6 +300,14 @@
       <dt>Ramp</dt>
       <dd>Although <a href="#S">sectors</a> in the engine have a fixed height, and hence, cannot ramp smoothly from one height to another, the engine doesn't have real ramps. However, a convincing alternative is to just use stairs. Any wall that is 50 units or less in height can make an <a href="#O">object</a> walk up or down the sectors smoothly as they move forward and back.</dd>
       <dd>Further reading: <a href="area.html">Making areas</a>.</dd>
+    </dl>
+    <dl>
+      <dt>Relative angle</dt>
+      <dd>Unlike an <a href="#A">absolute angle</a>, a relative angle of 0 means the same angle that the object is facing, a relative angle of 10 means the same angle as the object but 10 degrees anti-clockwise, etc.</dd>
+    </dl>
+    <dl>
+      <dt>Relative coordinates</dt>
+      <dd>Unlike <a href="#A">absolute coordinates</a>, relative coordinates like for example "50,100" mean that this is at the object's position, plus 50 to the right, and 100 down. This is assuming the object is facing the right/east. If it isn't, the coordinates rotate around the object, such that a positive X is always in front of the object. So for coordinates "50,100", this would mean 50 units in front of the object, and 100 units to its right-hand side.</dd>
     </dl>
     <dl>
       <dt>Rotation</dt>

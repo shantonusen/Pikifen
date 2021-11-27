@@ -170,6 +170,62 @@ void area_editor::process_gui_control_panel() {
 
 
 /* ----------------------------------------------------------------------------
+ * Processes the ImGui area deletion dialog for this frame.
+ */
+void area_editor::process_gui_delete_area_dialog() {
+    //Explanation text.
+    string explanation_str;
+    if(!area_exists_on_disk) {
+        explanation_str =
+            "You have never saved this area to disk, so if you\n"
+            "delete, you will only lose your unsaved progress.";
+    } else {
+        explanation_str =
+            "If you delete, you will lose all unsaved progress,\n"
+            "and the area's files on the disk will be gone FOREVER!";
+    }
+    ImGui::SetupCentering(ImGui::CalcTextSize(explanation_str.c_str()).x);
+    ImGui::Text("%s", explanation_str.c_str());
+    
+    //Final warning text.
+    string final_warning_str =
+        "Are you sure you want to delete the area \"" +
+        area_folder_name + "\"?";
+    ImGui::SetupCentering(ImGui::CalcTextSize(final_warning_str.c_str()).x);
+    ImGui::TextColored(
+        ImVec4(0.8, 0.6, 0.6, 1.0),
+        "%s", final_warning_str.c_str()
+    );
+    
+    //Spacer dummy widget.
+    ImGui::Dummy(ImVec2(0, 16));
+    
+    //Cancel button.
+    ImGui::SetupCentering(100 + 100 + 30);
+    if(ImGui::Button("Cancel", ImVec2(100, 40))) {
+        close_top_dialog();
+    }
+    
+    //Delete button.
+    ImGui::SameLine(0.0f, 30);
+    ImGui::PushStyleColor(
+        ImGuiCol_Button, ImVec4(0.3, 0.1, 0.1, 1.0)
+    );
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonHovered, ImVec4(0.5, 0.1, 0.1, 1.0)
+    );
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonActive, ImVec4(0.4, 0.1, 0.1, 1.0)
+    );
+    if(ImGui::Button("Delete", ImVec2(100, 40))) {
+        close_top_dialog();
+        delete_current_area();
+    }
+    ImGui::PopStyleColor(3);
+}
+
+
+/* ----------------------------------------------------------------------------
  * Processes the ImGui menu bar for this frame.
  */
 void area_editor::process_gui_menu_bar() {
@@ -183,6 +239,11 @@ void area_editor::process_gui_menu_bar() {
                 press_reload_button();
             }
             reload_widget_pos = get_last_widget_pos();
+            
+            //Delete current area item.
+            if(ImGui::MenuItem("Delete current area")) {
+                press_delete_area_button();
+            }
             
             //Options menu item.
             if(ImGui::MenuItem("Options")) {
@@ -1553,7 +1614,10 @@ void area_editor::process_gui_panel_main() {
     ImGui::BeginChild("main");
     
     //Area name text.
-    ImGui::Text("Area: %s", cur_area_name.c_str());
+    ImGui::Text("Area folder: %s", area_folder_name.c_str());
+    set_tooltip(
+        "Full folder path: " + AREAS_FOLDER_PATH + "/" + area_folder_name
+    );
     
     //Spacer dummy widget.
     ImGui::Dummy(ImVec2(0, 16));
@@ -1658,11 +1722,10 @@ void area_editor::process_gui_panel_main() {
             "Tools"
         )
     ) {
-        update_backup_status();
         change_state(EDITOR_STATE_TOOLS);
     }
     set_tooltip(
-        "Special tools to help you develop the area."
+        "Special tools to help you make the area."
     );
     
     //Spacer dummy widget.
@@ -2161,7 +2224,34 @@ void area_editor::process_gui_panel_paths() {
             
             //Total travel distance text.
             if(show_path_preview) {
-                ImGui::Text("Total travel distance: %f", path_preview_dist);
+                if(path_preview.empty() && !path_preview_straight) {
+                    ImGui::Text("No valid path between A and B.");
+                    ImGui::Text(" ");
+                } else {
+                    ImGui::Text(
+                        "Total travel distance: %f",
+                        path_preview_dist
+                    );
+                    ImGui::Text(
+                        "Total stops visited: %lu",
+                        path_preview.size()
+                    );
+                }
+            }
+            
+            //Select links with label button.
+            if(ImGui::Button("Select all links with label...")) {
+                ImGui::OpenPopup("selectLinks");
+            }
+            set_tooltip(
+                "Selects all links (and their stops) that have the\n"
+                "specified label. The search is case-sensitive."
+            );
+            
+            //Select links with label popup.
+            string label_name;
+            if(input_popup("selectLinks", "Label:", &label_name)) {
+                select_path_links_with_label(label_name);
             }
             
             //Spacer dummy widget.
@@ -2923,9 +3013,21 @@ void area_editor::process_gui_panel_tools() {
     
         //Load auto-backup button.
         if(ImGui::Button("Load auto-backup")) {
-            if(can_load_backup) {
-                if(!check_new_unsaved_changes()) {
+            if(!check_new_unsaved_changes()) {
+                bool backup_exists = false;
+                if(!area_folder_name.empty()) {
+                    string file_path =
+                        USER_AREA_DATA_FOLDER_PATH + "/" +
+                        area_folder_name + "/Geometry_backup.txt";
+                    if(al_filename_exists(file_path.c_str())) {
+                        backup_exists = true;
+                    }
+                }
+                
+                if(backup_exists) {
                     load_backup();
+                } else {
+                    status_text = "There is no backup available.";
                 }
             }
         }

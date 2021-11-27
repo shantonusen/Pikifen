@@ -4,19 +4,15 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Areas - Pikifen manual</title>
+  <title>Pikifen manual</title>
   <meta name="description" content="The Pikifen user manual">
   
   <link rel="stylesheet" href="../data/style.css">
   <script src="../data/script.js"></script>
 </head>
 
-<body onload="make_toc();">
-  <iframe id="header-frame" src="header.html"></iframe>
-  
+<body onload="setup('Areas', ['Making content'], ['making.html']);">
   <div id="content">
-    
-    <h1>Areas</h1>
     
     <p>This page will explain how areas work in <i>Pikifen</i>, and how you can make your own. If you're in a hurry, feel free to read just the lines in bold, and even skip ahead to the section you need. Otherwise, read every step in the tutorial and follow along! Feel free to save your area after a section, and use the button in the toolbar to check out how it looks in-game.</p>
 
@@ -68,7 +64,7 @@
       <dt><b>Notes:</b></dt>
       <dd><ul>
         <li>As a general tip, save your area often, so you can go back in case you corrupt its geometry.</li>
-        <li>Check out the controls for the editor <a href="controls.html#area-editor">here</a>.</li>
+        <li>Check out the controls for the editor <a href="#controls">here</a>.</li>
       </ul></dd>
     </dl>
 
@@ -469,11 +465,12 @@
     <ol>
       <li>If a path link is blocked by an obstacle, it can't be used until the obstacle is destroyed.</li>
       <li>Objects won't take a path stop if that stop is on a sector with a hazard that they are vulnerable to. If the object or its carriers can fly, and the hazard is floor-only, then this rule is ignored since the object can naturally fly over the hazard without a care. Objects can take this path again if the sector loses that hazard (e.g. a destroyed clog drains the sector's water).</li>
-      <li>Path links of the "custom" type can only be used by objects if their script tells them to. This means Pikmin won't use this for carrying, for returning to piles, etc.</li>
-      <li>Path links of the "light load" type can only be used by objects that are not carrying anything, or by objects that only have a weight of 1. An object that's simply holding another won't count for this, like a leader holding a Pikmin, a Pikmin holding a tool, or an enemy with Pikmin latched onto it.</li>
-      <li>Path links of the "airborne" type can only be used by objects that can fly.</li>
+      <li>Path links of the "script use only" type can only be used by objects if their script tells them to. This means Pikmin won't use this for carrying, for returning to piles, etc.</li>
+      <li>Path links of the "light load only " type can only be used by objects that are not carrying anything, or by objects that only have a weight of 1. An object that's simply holding another won't count for this, like a leader holding a Pikmin, a Pikmin holding a tool, or an enemy with Pikmin latched onto it.</li>
+      <li>Path links of the "airborne only" type can only be used by objects that can fly.</li>
     </ol>
     <p>It's also worth keeping in mind that flying objects that follow a path will still go from one stop to the next in a linear fashion, but they will also go for the spot that's 100 units above the next path stop. This means, for instance, that Winged Pikmin carrying a corpse will aim for the spot 100 units above the path stop closest to the Onion, and then will need to descend to 0 height in order to deliver to the Onion. If you separate your path stops from the destination objects, this descent will happen sooner, but don't separate them so much that your pathing becomes unreliable!</p>
+    <p>If you want a given pathway to have multiple limitations, you can just split it into two, and give each half a different type. For instance, if you want a mid-air path for light load carcasses, split that link into two, where one gets the "light load only" type, and the other gets the "airborne only" type. Grounded carcasses won't go that way because one of the links is limiting it, and airborne heavy corpses won't pass there either because of the other link's limitation.</p>
 
     <h2 id="precautions">Precautions</h2>
     
@@ -513,7 +510,30 @@
     <ul>
       <li>If the area editor crashes or something breaks the area, remember that backups are automatically created. Before the game overwrites the backup with something you don't want, consider going into the area editor's tools, and loading from the backup.</li>
       <li>If Pikmin that are following a path to get to an object reach their destination, but aren't interacting with the object and are instead walking against it, that's probably because they're trying to reach the path stop inside the object. Consider placing the path stop outside.</li>
+      <li>If objects that are following a path are entering a path stop but not realizing where to go next, keep in mind that unless told to go straight, or told the path is impossible, an object will always head to the closest stop first, and try to leave the path graph at the stop closest to their destination. Maybe the start or end stop isn't where you think it is. Try using the path preview tool to understand what's going on.</li>
     </ul>
+
+    <h2 id="controls">Controls</h2>
+
+    <p>Though you can just use your mouse on the canvas and GUI, and use the keybord to type text on some GUI widgets, the area editor has many other controls and shortcuts you can make use of.</p>
+    <p>Some controls will only work if the canvas is focused (i.e. if beforehand you have clicked inside the canvas with any mouse button), others only when the GUI is focused, and others regardless of focus. As a general rule, if it's a key that usually writes text or messes with textboxes, then you will need to focus on the canvas to get it to do the action, otherwise pressing the key would just interact with the widgets in the GUI.</p>
+    <p>Some menu items have keyboard shortcuts, which show up in the item itself, to the right. Some widgets also have keyboard shortcuts, and if you have tooltips on (they can be enabled in the menu bar's "Help" menu), you can keep your cursor over them to learn what they are. In addition some widgets have special controls in and of themselves, due to the way they were implemented in <a href="https://github.com/ocornut/imgui">Dear ImGui</a>, and these controls also show up in tooltips. Other than that, here are some general keyboard and mouse controls for the area editor:</p>
+
+    <table>
+      <tr><th>Action</th><th>Focus</th><th>Control</th></tr>
+      <tr><td>Pan camera</td><td>Canvas</td><td>Arrow keys, or right mouse button</td></tr>
+      <tr><td>Zoom in and out</td><td>Canvas</td><td>Plus/Minus, or mouse wheel</td></tr>
+      <tr><td>Reset zoom; press again to reset camera position</td><td>Canvas</td><td>Zero, or middle mouse button</td></tr>
+      <tr><td>Change camera to fit whole scene snugly</td><td>Canvas</td><td>Home</td></tr>
+      <tr><td>Undo latest vertex, when drawing new sector</td><td>Canvas</td><td>Backspace</td></tr>
+      <tr><td>Quit out of certain panels</td><td>GUI</td><td>Escape</td></tr>
+      <tr><td>Free mouse cursor from snapping</td><td>Any</td><td>Shift</td></tr>
+      <tr><td>Force a selection box when dragging the left mouse button</td><td>Any</td><td>Shift</td></tr>
+      <tr><td>Add to existing selection, when selecting something</td><td>Any</td><td>Ctrl</td></tr>
+      <tr><td>Undo latest move</td><td>Any</td><td>Ctrl + Z</td></tr>
+      <tr><td>Select all objects, vertexes, path stops, etc.</td><td>Canvas</td><td>Ctrl + A</td></tr>
+      <tr><td>Make all selected objects face cursor position</td><td>Canvas</td><td>R</td></tr>
+    </table>
 
     <h2 id="tips">Tips</h2>
     
@@ -525,7 +545,7 @@
       <li>When creating a new vertex, object, etc. via double-click, you don't need to let go of the mouse button on the second click; you can move the vertex right away if you keep it held.</li>
       <li>When drawing out a new sector, if you accidentally placed the last vertex in the wrong spot, you can click that same vertex to try again.</li>
       <li>Use the options (in the menu bar) to customize the editor to your liking.</li>
-      <li>Although most of the work is done in the editor, you are free to edit the text file manually if you need to fine-tune some numbers. Be careful, though!</li>
+      <li>Although most of the work is done in the editor, you are free to edit the <a href="making.html#data-file">data file</a> manually if you need to fine-tune some numbers. Be careful, though!</li>
       <li>A "texture fader" sector will also fade between levels of brightness and texture tints. Use this creatively.</li>
       <li>With the stock content that comes with the engine, Pikmin or leaders thrown by the player's leader can reach a maximum height of:
         <ul>
@@ -533,13 +553,6 @@
           <li>Purple Pikmin: 210</li>
           <li>Standard Pikmin: 260</li>
           <li>Yellow Pikmin: 330</li>
-        </ul>
-      </li>
-      <li>
-        The GUI is built using Dear ImGui. Here are some tips on how to use the widgets:
-        <ul>
-          <li>When dragging your mouse on a slider widget, hold Alt to make the values change more slowly, and Shift to make them change faster.</li>
-          <li>Double-click or Ctrl + click a slider widget to be able to edit the number inside directly.</li>
         </ul>
       </li>
     </ul>

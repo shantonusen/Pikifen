@@ -85,7 +85,7 @@ bool pikmin::can_receive_status(status_type* s) const {
  * Draws a Pikmin, including its leaf/bud/flower, idle glow, etc.
  */
 void pikmin::draw_mob() {
-    sprite* s_ptr = anim.get_cur_sprite();
+    sprite* s_ptr = get_cur_sprite();
     if(!s_ptr) return;
     
     //The Pikmin itself.
@@ -193,7 +193,7 @@ void pikmin::get_group_spot_info(
 
 /* ----------------------------------------------------------------------------
  * Handles a status effect being applied.
- * s:
+ * sta_type:
  *   Status effect to handle.
  */
 void pikmin::handle_status_effect_gain(status_type* sta_type) {
@@ -223,7 +223,7 @@ void pikmin::handle_status_effect_gain(status_type* sta_type) {
 
 /* ----------------------------------------------------------------------------
  * Handles a status effect being removed.
- * s:
+ * sta_type:
  *   Status effect to handle.
  */
 void pikmin::handle_status_effect_loss(status_type* sta_type) {
@@ -293,6 +293,30 @@ void pikmin::handle_status_effect_loss(status_type* sta_type) {
 void pikmin::increase_maturity(const int amount) {
     int new_maturity = maturity + amount;
     maturity = clamp(new_maturity, 0, N_MATURITIES - 1);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Latches on to the specified mob.
+ * m:
+ *   Mob to latch on to.
+ * h:
+ *   Hitbox to latch on to.
+ */
+void pikmin::latch(mob* m, hitbox* h) {
+    speed.x = speed.y = speed_z = 0;
+    
+    float h_offset_dist;
+    float h_offset_angle;
+    m->get_hitbox_hold_point(
+        this, h, &h_offset_dist, &h_offset_angle
+    );
+    m->hold(
+        this, h->body_part_index, h_offset_dist, h_offset_angle,
+        true, true
+    );
+    
+    latched = true;
 }
 
 

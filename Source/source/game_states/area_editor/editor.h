@@ -130,7 +130,6 @@ private:
         EPT_PATH_STOP_OOB,        //A path stop is out of bounds.
         EPT_PATH_STOPS_TOGETHER,  //Two path stops are in the same place.
         EPT_PATH_STOP_ON_LINK,    //A path stop is on top of an unrelated link.
-        EPT_PATHS_UNCONNECTED,    //The path graph is unconnected.
         EPT_PILE_BRIDGE_PATH,     //Bridge blocks the path from pile to it.
         EPT_UNKNOWN_SHADOW,       //Unknown tree shadow image.
     };
@@ -210,10 +209,8 @@ private:
     
     //Time left until a backup is generated.
     timer backup_timer;
-    //Can the user load the backup?
-    bool can_load_backup;
-    //Can the user use the "reload" button?
-    bool can_reload;
+    //Does the area exist on disk, or RAM only?
+    bool area_exists_on_disk;
     //Where the cross-section tool points are.
     point cross_section_checkpoints[2];
     //Cross-section window's start coordinates.
@@ -224,8 +221,8 @@ private:
     point cross_section_z_window_start;
     //Cross-section Z legend window's end coordinates.
     point cross_section_z_window_end;
-    //Name of the area currently loaded.
-    string cur_area_name;
+    //Name of the folder of the currently loaded area.
+    string area_folder_name;
     //When showing a hazard in the list, this is the index of the current one.
     size_t cur_hazard_nr;
     //The current transformation widget.
@@ -302,10 +299,14 @@ private:
     path_stop* path_drawing_stop_1;
     //Path stops that make up the current path preview.
     vector<path_stop*> path_preview;
-    //Total distance of the previewed path.
-    float path_preview_dist;
     //Location of the two path preview checkpoints.
     point path_preview_checkpoints[2];
+    //The closest stop to the path preview start and end.
+    path_stop* path_preview_closest[2];
+    //Total distance of the previewed path.
+    float path_preview_dist;
+    //Is the path preview going straight?
+    bool path_preview_straight;
     //Only calculate the preview path when this time is up.
     timer path_preview_timer;
     //Area data before vertex movement.
@@ -443,6 +444,7 @@ private:
     void create_mob_under_cursor();
     void create_new_from_picker(const size_t picker_id, const string &name);
     sector* create_sector_for_layout_drawing(sector* copy_from);
+    void delete_current_area();
     void delete_edge(edge* e_ptr);
     bool delete_edges(const set<edge*> &which);
     void delete_mobs(const set<mob_gen*> &which);
@@ -530,6 +532,7 @@ private:
     );
     area_data* prepare_state();
     void press_circle_sector_button();
+    void press_delete_area_button();
     void press_duplicate_mobs_button();
     void press_load_button();
     void press_grid_interval_decrease_button();
@@ -552,6 +555,7 @@ private:
     void press_undo_button();
     void process_gui();
     void process_gui_control_panel();
+    void process_gui_delete_area_dialog();
     void process_gui_menu_bar();
     void process_gui_mob_script_vars(mob_gen* gen);
     void process_gui_panel_details();
@@ -582,6 +586,7 @@ private:
     void save_reference();
     void select_different_hazard(const bool next);
     void select_edge(edge* e_ptr);
+    void select_path_links_with_label(const string &label);
     void select_sector(sector* s_ptr);
     void select_tree_shadow(tree_shadow* s_ptr);
     void select_vertex(vertex* v_ptr);
@@ -609,7 +614,6 @@ private:
     void update_affected_sectors(
         const unordered_set<sector*> &affected_sectors
     );
-    bool update_backup_status();
     void update_inner_sectors_outer_sector(
         const vector<edge*> &edges_to_check,
         sector* old_outer, sector* new_outer

@@ -4,19 +4,15 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Maker toolkit - Pikifen manual</title>
+  <title>Pikifen manual</title>
   <meta name="description" content="The Pikifen user manual">
   
   <link rel="stylesheet" href="../data/style.css">
   <script src="../data/script.js"></script>
 </head>
 
-<body onload="make_toc();">
-  <iframe id="header-frame" src="header.html"></iframe>
-  
+<body onload="setup('Maker toolkit', ['Making content'], ['making.html']);">
   <div id="content">
-    
-    <h1>Maker toolkit</h1>
     
     <p>This page explains how to use and set up the maker toolkit on <i>Pikifen</i> &ndash; a set of tools that help while making content for the engine.</p>
 
@@ -28,7 +24,7 @@
 
     <h2 id="config">Configuration file</h2>
     
-    <p>First of all, open <code>User_data/Tools.txt</code>. This file will contain the information for the toolkit to work. The remainder of this section will explain what each line does, so if any of the properties listed are missing, add them yourself. See also: <a href="text_file.html">text files</a>.</p>
+    <p>First of all, open <code>User_data/Tools.txt</code>. This <a href="making.html#data-file">data file</a> will contain the information for the toolkit to work. The remainder of this section will explain what each line does, so if any of the properties listed are missing, add them yourself.</p>
 
     <p>The <code>enabled</code> property controls whether or not the toolkit is enabled.</p>
 
@@ -47,9 +43,9 @@
       <li>
         Settings:
         <ul>
-          <li><code>area_image_size</code>: Maximum image width or height, in pixels. 2048 is a good size for medium or large areas, otherwise 1024 works fine.</li>
-          <li><code>area_image_mobs</code>: Set to true or false depending on whether or not you want to see objects, particle effects, etc.</li>
-          <li><code>area_image_shadows</code>: Set to true or false depending on whether or not you want to see tree leaf shadows.</li>
+          <li><code>area_image_size</code>: Maximum image width or height, in pixels. 2048 is a good size for medium or large areas, otherwise 1024 works fine. Defaults to 2048.</li>
+          <li><code>area_image_mobs</code>: Set to true or false depending on whether or not you want to see objects, particle effects, etc. Defaults to true.</li>
+          <li><code>area_image_shadows</code>: Set to true or false depending on whether or not you want to see tree leaf shadows. Defaults to true.</li>
         </ul>
       </li>
     </ul>
@@ -63,7 +59,7 @@
       <li>
         Settings:
         <ul>
-          <li><code>change_speed_multiplier</code>: Game speed multiplier. 1 is normal speed, 0.5 is half speed, 2.0 is double speed, etc.</li>
+          <li><code>change_speed_multiplier</code>: Game speed multiplier. 1 is normal speed, 0.5 is half speed, 2.0 is double speed, etc. Defaults to 2.</li>
         </ul>
       </li>
     </ul>
@@ -86,7 +82,7 @@
       <li>
         Settings:
         <ul>
-          <li><code>mob_hurting_percentage</code>: How much of the mob's total health should be lost each time. The default is 50, for 50%. 100 will kill any mob instantly.</li>
+          <li><code>mob_hurting_percentage</code>: How much of the mob's total health should be lost each time. 50 is 50%, 100 will kill any mob instantly, etc. Defaults to 50.</li>
         </ul>
       </li>
     </ul>

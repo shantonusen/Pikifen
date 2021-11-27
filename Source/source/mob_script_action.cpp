@@ -306,7 +306,9 @@ bool mob_action_loaders::focus(mob_action_call &call) {
  *   Mob action call that called this.
  */
 bool mob_action_loaders::get_info(mob_action_call &call) {
-    if(call.args[1] == "body_part") {
+    if(call.args[1] == "angle") {
+        call.args[1] = i2s(MOB_ACTION_GET_INFO_ANGLE);
+    } else if(call.args[1] == "body_part") {
         call.args[1] = i2s(MOB_ACTION_GET_INFO_BODY_PART);
     } else if(call.args[1] == "chomped_pikmin") {
         call.args[1] = i2s(MOB_ACTION_GET_INFO_CHOMPED_PIKMIN);
@@ -872,6 +874,91 @@ void mob_action_runners::focus(mob_action_run_data &data) {
 
 
 /* ----------------------------------------------------------------------------
+ * Code for the follow path randomly mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::follow_path_randomly(mob_action_run_data &data) {
+    string label;
+    if(data.args.size() >= 1) {
+        label = data.args[0];
+    }
+    
+    //We need to decide what the final stop is going to be.
+    //First, get all eligible stops.
+    vector<path_stop*> choices;
+    if(label.empty()) {
+        //If there's no label, then any stop is eligible.
+        choices.insert(
+            choices.end(),
+            game.cur_area_data.path_stops.begin(),
+            game.cur_area_data.path_stops.end()
+        );
+    } else {
+        //If there's a label, it'd be nice to only pick stops that have SOME
+        //connection to the label. Checking the stop's outgoing links is
+        //the best we can do, as to not overengineer or hurt performance.
+        for(size_t s = 0; s < game.cur_area_data.path_stops.size(); ++s) {
+            path_stop* s_ptr = game.cur_area_data.path_stops[s];
+            for(size_t l = 0; l < s_ptr->links.size(); ++l) {
+                if(s_ptr->links[l]->label == label) {
+                    choices.push_back(s_ptr);
+                    break;
+                }
+            }
+        }
+    }
+    
+    //Pick a stop from the choices at random, but make sure we don't
+    //pick a stop that the mob is practically on already.
+    path_stop* final_stop = NULL;
+    size_t tries = 0;
+    if(!choices.empty()) {
+        while(!final_stop && tries < 5) {
+            size_t c = randomi(0, choices.size() - 1);
+            if(
+                dist(choices[c]->pos, data.m->pos) >
+                chase_info_struct::DEF_TARGET_DISTANCE
+            ) {
+                final_stop = choices[c];
+                break;
+            }
+            tries++;
+        }
+    }
+    
+    //Go! Though if something went wrong, make it follow a path to nowhere,
+    //so it can emit the MOB_EV_REACHED_DESTINATION event, and hopefully
+    //make it clear that there was an error.
+    data.m->follow_path(
+        final_stop ? final_stop->pos : data.m->pos, true,
+        data.m->get_base_speed(), chase_info_struct::DEF_TARGET_DISTANCE,
+        true, label
+    );
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Code for the follow path to absolute mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::follow_path_to_absolute(mob_action_run_data &data) {
+    float x = s2f(data.args[0]);
+    float y = s2f(data.args[1]);
+    string label;
+    if(data.args.size() >= 3) {
+        label = data.args[2];
+    }
+    
+    data.m->follow_path(
+        point(x, y), true, data.m->get_base_speed(),
+        chase_info_struct::DEF_TARGET_DISTANCE, true, label
+    );
+}
+
+
+/* ----------------------------------------------------------------------------
  * Code for the angle obtaining mob script action.
  * data:
  *   Data about the action call.
@@ -888,21 +975,6 @@ void mob_action_runners::get_angle(mob_action_run_data &data) {
 
 
 /* ----------------------------------------------------------------------------
- * Code for the coordinate from angle obtaining mob script action.
- * data:
- *   Data about the action call.
- */
-void mob_action_runners::get_coordinates_from_angle(mob_action_run_data &data) {
-    float angle = s2f(data.args[2]);
-    angle = deg_to_rad(angle);
-    float magnitude = s2f(data.args[3]);
-    point p = angle_to_coordinates(angle, magnitude);
-    data.m->vars[data.args[0]] = f2s(p.x);
-    data.m->vars[data.args[1]] = f2s(p.y);
-}
-
-
-/* ----------------------------------------------------------------------------
  * Code for the mob script action for getting chomped.
  * data:
  *   Data about the action call.
@@ -914,6 +986,21 @@ void mob_action_runners::get_chomped(mob_action_run_data &data) {
             (hitbox*) (data.custom_data_2)
         );
     }
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Code for the coordinate from angle obtaining mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::get_coordinates_from_angle(mob_action_run_data &data) {
+    float angle = s2f(data.args[2]);
+    angle = deg_to_rad(angle);
+    float magnitude = s2f(data.args[3]);
+    point p = angle_to_coordinates(angle, magnitude);
+    data.m->vars[data.args[0]] = f2s(p.x);
+    data.m->vars[data.args[1]] = f2s(p.y);
 }
 
 
@@ -1066,20 +1153,6 @@ void mob_action_runners::if_function(mob_action_run_data &data) {
 
 
 /* ----------------------------------------------------------------------------
- * Code for the load focused mob memory mob script action.
- * data:
- *   Data about the action call.
- */
-void mob_action_runners::load_focus_memory(mob_action_run_data &data) {
-    if(data.m->focused_mob_memory.empty()) {
-        return;
-    }
-    
-    data.m->focus_on_mob(data.m->focused_mob_memory[s2i(data.args[0])]);
-}
-
-
-/* ----------------------------------------------------------------------------
  * Code for the link with focus mob script action.
  * data:
  *   Data about the action call.
@@ -1097,6 +1170,20 @@ void mob_action_runners::link_with_focus(mob_action_run_data &data) {
     }
     
     data.m->links.push_back(data.m->focused_mob);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Code for the load focused mob memory mob script action.
+ * data:
+ *   Data about the action call.
+ */
+void mob_action_runners::load_focus_memory(mob_action_run_data &data) {
+    if(data.m->focused_mob_memory.empty()) {
+        return;
+    }
+    
+    data.m->focus_on_mob(data.m->focused_mob_memory[s2i(data.args[0])]);
 }
 
 
@@ -1232,7 +1319,7 @@ void mob_action_runners::print(mob_action_run_data &data) {
  *   Data about the action call.
  */
 void mob_action_runners::receive_status(mob_action_run_data &data) {
-    data.m->apply_status_effect(game.status_types[data.args[0]], true, false);
+    data.m->apply_status_effect(game.status_types[data.args[0]], false);
 }
 
 
@@ -1705,6 +1792,7 @@ void mob_action_runners::start_particles(mob_action_run_data &data) {
 void mob_action_runners::stop(mob_action_run_data &data) {
     data.m->stop_chasing();
     data.m->stop_turning();
+    data.m->stop_following_path();
 }
 
 
@@ -2054,7 +2142,11 @@ void get_info_runner(mob_action_run_data &data, mob* target_mob) {
     size_t t = s2i(data.args[1]);
     
     switch(t) {
-    case MOB_ACTION_GET_INFO_BODY_PART: {
+    case MOB_ACTION_GET_INFO_ANGLE: {
+        *var = f2s(rad_to_deg(target_mob->angle));
+        break;
+        
+    } case MOB_ACTION_GET_INFO_BODY_PART: {
         if(
             data.call->parent_event == MOB_EV_HITBOX_TOUCH_A_N ||
             data.call->parent_event == MOB_EV_HITBOX_TOUCH_N_A ||

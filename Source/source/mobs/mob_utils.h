@@ -67,6 +67,7 @@ enum CHASE_FLAGS {
     CHASE_FLAG_ANY_ANGLE = 4,
 };
 
+
 enum CHASE_STATES {
     //No chasing in progress.
     CHASE_STATE_STOPPED,
@@ -389,12 +390,15 @@ struct path_info_struct {
     vector<hazard*> invulnerabilities;
     //Flags for the path-taker. Use PATH_TAKER_FLAG_*.
     unsigned char taker_flags;
+    //If not empty, only follow path links with this label.
+    string label;
     
     path_info_struct(
         mob* m,
         const point &target,
         const vector<hazard*> invulnerabilities,
-        const unsigned char taker_flags
+        const unsigned char taker_flags,
+        const string &label
     );
     bool check_blockage();
 };
@@ -484,7 +488,9 @@ struct track_info_struct {
 };
 
 
-float calculate_mob_max_span(mob_type* type, const float radius);
+float calculate_mob_max_span(
+    const float radius, const float anim_max_span, const point &rectangular_dim
+);
 mob* create_mob(
     mob_category* category, const point &pos, mob_type* type,
     const float angle, const string &vars,

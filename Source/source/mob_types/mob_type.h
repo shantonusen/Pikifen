@@ -33,6 +33,7 @@ enum ENEMY_EXTRA_STATES {
     ENEMY_EXTRA_STATE_CARRIABLE_WAITING,
     ENEMY_EXTRA_STATE_CARRIABLE_MOVING,
     ENEMY_EXTRA_STATE_CARRIABLE_STUCK,
+    ENEMY_EXTRA_STATE_CARRIABLE_THROWN,
     ENEMY_EXTRA_STATE_BEING_DELIVERED,
 };
 
@@ -292,6 +293,9 @@ public:
     virtual anim_conversion_vector get_anim_conversions() const;
     virtual void unload_resources();
     void add_carrying_states();
+    
+    //Custom behavior callbacks.
+    void(*draw_mob_callback)(mob* m);
 };
 
 

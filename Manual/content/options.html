@@ -4,23 +4,19 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Options - Pikifen manual</title>
+  <title>Pikifen manual</title>
   <meta name="description" content="The Pikifen user manual">
   
   <link rel="stylesheet" href="../data/style.css">
   <script src="../data/script.js"></script>
 </head>
 
-<body onload="make_toc();">
-  <iframe id="header-frame" src="header.html"></iframe>
-  
+<body onload="setup('Options', ['Gameplay'], ['gameplay.html']);">
   <div id="content">
-    
-    <h1>Options</h1>
     
     <p>The following is an explanation of the player options in <i>Pikifen</i>.</p>
 
-    <p>Some of these can be changed in the options menu, controls included. The rest of the options are tucked away in the <code>/User_data/Options.txt</code> since they don't have a large impact for most players. The following options (besides controls) can be found in that text file:</p>
+    <p>Some of these can be changed in the options menu, controls included. The rest of the options are tucked away in the <code>/User_data/Options.txt</code> file since they don't have a large impact for most players. The following options (besides controls) can be found in that <a href="making.html#data-file">data file</a>:</p>
 
     <table>
       <tr>
@@ -205,6 +201,12 @@
         <td>If true, images that need to shrink or grow big will do so smoothly. Otherwise it will look pixelated, but it might help with performance.</td>
         <td><code>true</code></td>
         <td><b>Yes</b></td>
+      </tr>
+      <tr>
+        <th><code>true_fullscreen</code></th>
+        <td>If true, fullscreen mode will really use a fullscreen window. If false, it will use a borderless window. Borderless window is recommended, since true fullscreen can cause issues when you Alt+Tab to a different window, as well as when a message box pops up (like browsing for a file in an editor).</td>
+        <td><code>false</code></td>
+        <td>No</td>
       </tr>
       <tr>
         <th><code>window_position_hack</code></th>

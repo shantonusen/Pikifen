@@ -58,6 +58,7 @@ enum TRIANGULATION_ERRORS {
     TRIANGULATION_ERROR_NO_EARS,
 };
 
+
 enum PATH_LINK_TYPES {
     //Normal.
     PATH_LINK_TYPE_NORMAL,
@@ -68,6 +69,7 @@ enum PATH_LINK_TYPES {
     //Only for objects that can fly.
     PATH_LINK_TYPE_AIRBORNE_ONLY,
 };
+
 
 enum PATH_TAKER_FLAGS {
     //The mob was told to use this path by a script.
@@ -512,7 +514,8 @@ struct path_manager {
 
 bool can_traverse_path_link(
     path_link* link_ptr, const bool ignore_obstacles,
-    const vector<hazard*> &invulnerabilities, const unsigned char taker_flags
+    const vector<hazard*> &invulnerabilities, const unsigned char taker_flags,
+    const string &label
 );
 void depth_first_search(
     vector<path_stop*> &nodes,
@@ -522,6 +525,7 @@ vector<path_stop*> dijkstra(
     path_stop* start_node, path_stop* end_node,
     const bool ignore_obstacles,
     const vector<hazard*> &invulnerabilities, const unsigned char taker_flags,
+    const string &label,
     float* total_dist
 );
 void get_cce(
@@ -534,8 +538,9 @@ vector<std::pair<dist, vertex*> > get_merge_vertexes(
 vector<path_stop*> get_path(
     const point &start, const point &end,
     const vector<hazard*> invulnerabilities,
-    const unsigned char taker_flags,
-    bool* go_straight, float* get_dist
+    const unsigned char taker_flags, const string &label,
+    bool* go_straight, float* get_dist,
+    path_stop** start_stop, path_stop** end_stop
 );
 mob* get_path_link_obstacle(path_stop* s1, path_stop* s2);
 TRIANGULATION_ERRORS get_polys(

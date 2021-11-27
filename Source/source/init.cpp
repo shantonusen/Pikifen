@@ -336,14 +336,14 @@ void init_event_things(
 ) {
     if(game.options.window_position_hack) al_set_new_window_position(64, 64);
     if(game.win_fullscreen) {
-#ifdef __APPLE__
-        //Fullscreen locks up on Mac OS, so for now, it will use
-        //windowed fullscreen only.
-        int fs_flags = ALLEGRO_FULLSCREEN_WINDOW;
-#else
-        int fs_flags = ALLEGRO_FULLSCREEN;
-#endif
-        al_set_new_display_flags(al_get_new_display_flags() | fs_flags);
+        al_set_new_display_flags(
+            al_get_new_display_flags() |
+            (
+                game.options.true_fullscreen ?
+                ALLEGRO_FULLSCREEN :
+                ALLEGRO_FULLSCREEN_WINDOW
+            )
+        );
     }
     game.display = al_create_display(game.win_w, game.win_h);
     
@@ -535,6 +535,24 @@ void init_mob_actions() {
         "focus",
         mob_action_runners::focus,
         mob_action_loaders::focus
+    );
+    
+    reg_param("label", MOB_ACTION_PARAM_STRING, false, true);
+    reg_action(
+        MOB_ACTION_FOLLOW_PATH_RANDOMLY,
+        "follow_path_randomly",
+        mob_action_runners::follow_path_randomly,
+        nullptr
+    );
+    
+    reg_param("x", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("y", MOB_ACTION_PARAM_FLOAT, false, false);
+    reg_param("label", MOB_ACTION_PARAM_STRING, false, true);
+    reg_action(
+        MOB_ACTION_FOLLOW_PATH_TO_ABSOLUTE,
+        "follow_path_to_absolute",
+        mob_action_runners::follow_path_to_absolute,
+        nullptr
     );
     
     reg_param("destination var name", MOB_ACTION_PARAM_STRING, true, false);

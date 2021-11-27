@@ -304,6 +304,8 @@ void area_data::clone(area_data &other) {
                 s_ptr->links[l]->end_nr
             );
             new_link->distance = s_ptr->links[l]->distance;
+            new_link->type = s_ptr->links[l]->type;
+            new_link->label = s_ptr->links[l]->label;
             os_ptr->links.push_back(new_link);
         }
     }
@@ -1018,6 +1020,20 @@ void blockmap::clear() {
 
 
 /* ----------------------------------------------------------------------------
+ * Returns the block column in which an X coordinate is contained.
+ * Returns INVALID on error.
+ * x:
+ *   X coordinate.
+ */
+size_t blockmap::get_col(const float x) const {
+    if(x < top_left_corner.x) return INVALID;
+    float final_x = (x - top_left_corner.x) / BLOCKMAP_BLOCK_SIZE;
+    if(final_x >= n_cols) return INVALID;
+    return final_x;
+}
+
+
+/* ----------------------------------------------------------------------------
  * Obtains a list of edges that are within the specified rectangular region.
  * Returns true on success, false on error.
  * tl:
@@ -1057,20 +1073,6 @@ bool blockmap::get_edges_in_region(
     }
     
     return true;
-}
-
-
-/* ----------------------------------------------------------------------------
- * Returns the block column in which an X coordinate is contained.
- * Returns INVALID on error.
- * x:
- *   X coordinate.
- */
-size_t blockmap::get_col(const float x) const {
-    if(x < top_left_corner.x) return INVALID;
-    float final_x = (x - top_left_corner.x) / BLOCKMAP_BLOCK_SIZE;
-    if(final_x >= n_cols) return INVALID;
-    return final_x;
 }
 
 
@@ -1414,44 +1416,6 @@ void path_manager::handle_area_load() {
 
 
 /* ----------------------------------------------------------------------------
- * Handles an obstacle having been cleared. This way, any link with that
- * obstruction can get updated.
- * m:
- *   Pointer to the obstacle mob that got cleared.
- */
-void path_manager::handle_obstacle_remove(mob* m) {
-    //Remove the obstacle from our list, if it's there.
-    bool paths_changed = false;
-    
-    for(auto o = obstructions.begin(); o != obstructions.end();) {
-        bool to_delete = false;
-        if(o->second.erase(m) > 0) {
-            if(o->second.empty()) {
-                o->first->blocked_by_obstacle = false;
-                to_delete = true;
-                paths_changed = true;
-            }
-        }
-        if(to_delete) {
-            o = obstructions.erase(o);
-        } else {
-            ++o;
-        }
-    }
-    
-    if(paths_changed) {
-        //Re-calculate the paths of mobs taking paths.
-        for(size_t m = 0; m < game.states.gameplay->mobs.all.size(); ++m) {
-            mob* m_ptr = game.states.gameplay->mobs.all[m];
-            if(!m_ptr->path_info) continue;
-            
-            m_ptr->fsm.run_event(MOB_EV_PATHS_CHANGED);
-        }
-    }
-}
-
-
-/* ----------------------------------------------------------------------------
  * Handles an obstacle having been placed. This way, any link with that
  * obstruction can get updated.
  * m:
@@ -1494,9 +1458,47 @@ void path_manager::handle_obstacle_add(mob* m) {
 
 
 /* ----------------------------------------------------------------------------
+ * Handles an obstacle having been cleared. This way, any link with that
+ * obstruction can get updated.
+ * m:
+ *   Pointer to the obstacle mob that got cleared.
+ */
+void path_manager::handle_obstacle_remove(mob* m) {
+    //Remove the obstacle from our list, if it's there.
+    bool paths_changed = false;
+    
+    for(auto o = obstructions.begin(); o != obstructions.end();) {
+        bool to_delete = false;
+        if(o->second.erase(m) > 0) {
+            if(o->second.empty()) {
+                o->first->blocked_by_obstacle = false;
+                to_delete = true;
+                paths_changed = true;
+            }
+        }
+        if(to_delete) {
+            o = obstructions.erase(o);
+        } else {
+            ++o;
+        }
+    }
+    
+    if(paths_changed) {
+        //Re-calculate the paths of mobs taking paths.
+        for(size_t m = 0; m < game.states.gameplay->mobs.all.size(); ++m) {
+            mob* m_ptr = game.states.gameplay->mobs.all[m];
+            if(!m_ptr->path_info) continue;
+            
+            m_ptr->fsm.run_event(MOB_EV_PATHS_CHANGED);
+        }
+    }
+}
+
+
+/* ----------------------------------------------------------------------------
  * Handles a sector having changed its hazards. This way, any stop on that
  * sector can be updated.
- * s:
+ * sector_ptr:
  *   Pointer to the sector whose hazards got updated.
  */
 void path_manager::handle_sector_hazard_change(sector* sector_ptr) {
@@ -1568,12 +1570,31 @@ path_stop::~path_stop() {
  *   Normal link? False means one-way link.
  */
 void path_stop::add_link(path_stop* other_stop, const bool normal) {
-    remove_link(other_stop);
+    PATH_LINK_TYPES link_type = PATH_LINK_TYPE_NORMAL;
+    string link_label;
+    
+    path_link* old_link_data = get_link(other_stop);
+    if(!old_link_data) {
+        old_link_data = other_stop->get_link(this);
+    }
+    if(old_link_data) {
+        link_type = old_link_data->type;
+        link_label = old_link_data->label;
+    }
+    
+    remove_link(old_link_data);
     other_stop->remove_link(this);
     
-    links.push_back(new path_link(this, other_stop, INVALID));
+    path_link* new_link = new path_link(this, other_stop, INVALID);
+    new_link->type = link_type;
+    new_link->label = link_label;
+    links.push_back(new_link);
+    
     if(normal) {
-        other_stop->links.push_back(new path_link(other_stop, this, INVALID));
+        new_link = new path_link(other_stop, this, INVALID);
+        new_link->type = link_type;
+        new_link->label = link_label;
+        other_stop->links.push_back(new_link);
     }
 }
 
@@ -2490,10 +2511,13 @@ void vertex::remove_edge(edge* e_ptr) {
  *   has any hazard that won't be resisted.
  * taker_flags:
  *   Flags for the path-taker. Use PATH_TAKER_FLAG_*.
+ * label:
+ *   If not empty, only follow path links with this label.
  */
 bool can_traverse_path_link(
     path_link* link_ptr, const bool ignore_obstacles,
-    const vector<hazard*> &invulnerabilities, const unsigned char taker_flags
+    const vector<hazard*> &invulnerabilities, const unsigned char taker_flags,
+    const string &label
 ) {
     //Check if there's an obstacle in the way.
     if(!ignore_obstacles && link_ptr->blocked_by_obstacle) {
@@ -2522,9 +2546,15 @@ bool can_traverse_path_link(
     }
     }
     
+    //Check if the travel is limited to links with a certain label.
+    if(!label.empty() && link_ptr->label != label) {
+        return false;
+    }
+    
     //Check if the link's end path stop is hazardous, by checking its sector.
     if(
         !ignore_obstacles &&
+        link_ptr->end_ptr->sector_ptr &&
         !link_ptr->end_ptr->sector_ptr->hazards.empty()
     ) {
         sector* end_sector = link_ptr->end_ptr->sector_ptr;
@@ -2601,6 +2631,8 @@ void depth_first_search(
  *   List of hazards that whoever wants to traverse is invulnerable to.
  * taker_flags:
  *   Flags for the path-taker. Use PATH_TAKER_FLAG_*.
+ * label:
+ *   If not empty, only follow path links with this label.
  * total_dist:
  *   If not NULL, place the total path distance here.
  */
@@ -2608,6 +2640,7 @@ vector<path_stop*> dijkstra(
     path_stop* start_node, path_stop* end_node,
     const bool ignore_obstacles,
     const vector<hazard*> &invulnerabilities, const unsigned char taker_flags,
+    const string &label,
     float* total_dist
 ) {
     //https://en.wikipedia.org/wiki/Dijkstra's_algorithm
@@ -2682,7 +2715,7 @@ vector<path_stop*> dijkstra(
             if(
                 !can_traverse_path_link(
                     l_ptr, ignore_obstacles,
-                    invulnerabilities, taker_flags
+                    invulnerabilities, taker_flags, label
                 )
             ) {
                 continue;
@@ -2702,11 +2735,11 @@ vector<path_stop*> dijkstra(
     //If we got to this point, there means that there is no available path!
     
     if(!ignore_obstacles) {
-        //Let's try again, this time ignoring everything.
+        //Let's try again, this time ignoring obstacles.
         return
             dijkstra(
                 start_node, end_node,
-                true, vector<hazard*>(), taker_flags,
+                true, invulnerabilities, taker_flags, label,
                 total_dist
             );
     } else {
@@ -2794,17 +2827,25 @@ vector<std::pair<dist, vertex*> > get_merge_vertexes(
  *   List of hazards that whoever wants to traverse is invulnerable to.
  * taker_flags:
  *   Flags for the path-taker. Use PATH_TAKER_FLAG_*.
+ * label:
+ *   If not empty, only follow path links with this label.
  * go_straight:
  *   This is set according to whether it's better
  *   to go straight to the end point.
  * total_dist:
  *   If not NULL, place the total path distance here.
+ * start_stop:
+ *   If not NULL, the closest stop to the start is returned here.
+ * end_stop:
+ *   If not NULL, the closest stop to the end is returned here.
  */
 vector<path_stop*> get_path(
     const point &start, const point &end,
     const vector<hazard*> invulnerabilities,
     const unsigned char taker_flags,
-    bool* go_straight, float* total_dist
+    const string &label,
+    bool* go_straight, float* total_dist,
+    path_stop** start_stop, path_stop** end_stop
 ) {
 
     vector<path_stop*> full_path;
@@ -2838,6 +2879,9 @@ vector<path_stop*> get_path(
         }
     }
     
+    if(start_stop) *start_stop = closest_to_start;
+    if(end_stop) *end_stop = closest_to_end;
+    
     //Let's just check something real quick:
     //if the destination is closer than any stop,
     //just go there right away!
@@ -2870,7 +2914,7 @@ vector<path_stop*> get_path(
     full_path =
         dijkstra(
             closest_to_start, closest_to_end,
-            false, invulnerabilities, taker_flags, total_dist
+            false, invulnerabilities, taker_flags, label, total_dist
         );
         
     if(total_dist && !full_path.empty()) {

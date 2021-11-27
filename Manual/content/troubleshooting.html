@@ -4,19 +4,15 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Troubleshooting - Pikifen manual</title>
+  <title>Pikifen manual</title>
   <meta name="description" content="The Pikifen user manual">
   
   <link rel="stylesheet" href="../data/style.css">
   <script src="../data/script.js"></script>
 </head>
 
-<body onload="make_toc();">
-  <iframe id="header-frame" src="header.html"></iframe>
-  
+<body onload="setup('Troubleshooting');">
   <div id="content">
-    
-    <h1>Troubleshooting</h1>
     
     <p>If something is wrong, this page will try to fix your problem.</p>
 
@@ -56,7 +52,7 @@
     <h2 id="making">Problems while making</h2>
     
     <dl>
-      <dt><b>Why do I see everything in a single line when I open a text file with Notepad?</b></dt>
+      <dt><b>Why do I see everything in a single line when I open a <a href="making.html#data-file">data file</a> with Notepad?</b></dt>
       <dd>Don't use Notepad. It has a hard time doing LF-only line breaks, which most of the engine's files use.</dd>
       <dd>Install Notepad++ and start using that instead, since it's better in every way.</dd>
 
@@ -88,6 +84,12 @@
 
       <dt><b>In the area editor, if a vertex has two edges at opposite angles, but said angles are not axis-aligned, then you start drawing a new sector by starting on one edge, and clicking the other, then that will break the geometry.</b></dt>
       <dd>Please do not do that.</dd>
+
+      <dt><b>Objects blindly pick the start and end path stops in a path by just checking which are closest to the start and end coordinates.</b></dt>
+      <dd>I could make the objects also check if they're not entering a path graph with no return, or a path stop that's in a hazard they are vulnerable to, or a path stop that's meant for airborne travel only (which isn't even a thing, since only path links determine that), or so on. But that would be very difficult, and would lead to bizarre unintuitive behaviors, not to mention performance issues.</dd>
+      
+      <dt><b>Some wall shadows that fade away into a small size look really thin.</b></dt>
+      <dd>Technically the engine is drawing the shapes of the shadows correctly, from a thick size to a small size, but the color interpolation done by the graphics backend sometimes does a bad job when the final two points of the shadow are so thin. There is not much that can be done to fix this.</dd>
     </dl>
 
   </div>

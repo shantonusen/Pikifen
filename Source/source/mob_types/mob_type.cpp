@@ -19,6 +19,7 @@
 #include "../mob_fsms/gen_mob_fsm.h"
 #include "../mob_script_action.h"
 #include "../utils/string_utils.h"
+#include "../mobs/bridge.h"
 #include "enemy_type.h"
 #include "leader_type.h"
 #include "onion_type.h"
@@ -74,7 +75,8 @@ mob_type::mob_type(size_t category_id) :
     can_block_paths(false),
     default_vulnerability(1.0f),
     spike_damage(nullptr),
-    max_span(0.0f) {
+    max_span(0.0f),
+    draw_mob_callback(nullptr) {
     
 }
 
@@ -145,6 +147,9 @@ void mob_type::add_carrying_states() {
         efc.new_event(MOB_EV_CARRY_DELIVERED); {
             efc.change_state("being_delivered");
         }
+        efc.new_event(MOB_EV_TOUCHED_BOUNCER); {
+            efc.change_state("carriable_thrown");
+        }
     }
     
     efc.new_state("carriable_stuck", ENEMY_EXTRA_STATE_CARRIABLE_STUCK); {
@@ -168,6 +173,14 @@ void mob_type::add_carrying_states() {
         }
         efc.new_event(MOB_EV_PATHS_CHANGED); {
             efc.run(gen_mob_fsm::carry_stop_being_stuck);
+            efc.run(gen_mob_fsm::carry_get_path);
+            efc.change_state("carriable_moving");
+        }
+    }
+    
+    efc.new_state("carriable_thrown", ENEMY_EXTRA_STATE_CARRIABLE_THROWN); {
+        efc.new_event(MOB_EV_LANDED); {
+            efc.run(gen_mob_fsm::lose_momentum);
             efc.run(gen_mob_fsm::carry_get_path);
             efc.change_state("carriable_moving");
         }
@@ -232,6 +245,40 @@ mob_type::area_editor_prop_struct::area_editor_prop_struct() :
 
 
 /* ----------------------------------------------------------------------------
+ * Creates a new vulnerability structure.
+ */
+mob_type::vulnerability_struct::vulnerability_struct() :
+    damage_mult(1.0f),
+    status_to_apply(nullptr),
+    status_overrides(true) {
+    
+}
+
+
+
+/* ----------------------------------------------------------------------------
+ * Creates special mob types, needed by the engine, that are beyond the ones
+ * loaded from the game data folder.
+ */
+void create_special_mob_types() {
+    mob_category* custom_category =
+        game.mob_categories.get(MOB_CATEGORY_CUSTOM);
+        
+    mob_type* bridge_component_type = custom_category->create_type();
+    bridge_component_type->name = "Bridge component";
+    bridge_component_type->appears_in_area_editor = false;
+    bridge_component_type->casts_shadow = false;
+    bridge_component_type->height = 8.0f;
+    bridge_component_type->max_span = 8.0f;
+    bridge_component_type->radius = 8.0f;
+    bridge_component_type->walkable = true;
+    bridge_component_type->draw_mob_callback = bridge::draw_component;
+    bridge_component_type->pushes = true;
+    custom_category->register_type(bridge_component_type);
+}
+
+
+/* ----------------------------------------------------------------------------
  * Grabs an animation conversion vector, filled with base animations,
  * and outputs one that combines all base animations with their groups.
  * v:
@@ -258,7 +305,6 @@ mob_type_with_anim_groups::get_anim_conversions_with_groups(
     
     return new_v;
 }
-
 
 
 /* ----------------------------------------------------------------------------
@@ -438,11 +484,10 @@ void load_mob_type_from_file(
             );
             
         } else {
-            mt->spike_damage_vulnerabilities[&(sdv_it->second)].damage_mult =
-                percentage / 100.0f;
-            mt->spike_damage_vulnerabilities[&(sdv_it->second)].status_to_apply =
-                status_it->second;
-                
+            auto &s = mt->spike_damage_vulnerabilities[&(sdv_it->second)];
+            s.damage_mult = percentage / 100.0f;
+            s.status_to_apply = status_it->second;
+            
         }
     }
     
@@ -767,19 +812,12 @@ void load_mob_type_from_file(
         mt->anims.create_conversions(mt->get_anim_conversions(), &file);
     }
     
-    mt->max_span = mt->radius;
-    
-    if(load_resources) {
-        mt->max_span = std::max(mt->max_span, mt->anims.max_span);
-    }
-    
-    if(mt->rectangular_dim.x != 0) {
-        mt->max_span =
-            std::max(
-                mt->max_span,
-                dist(point(0, 0), mt->rectangular_dim / 2.0).to_float()
-            );
-    }
+    mt->max_span =
+        calculate_mob_max_span(
+            mt->radius,
+            (load_resources ? mt->anims.max_span : 0),
+            mt->rectangular_dim
+        );
 }
 
 
@@ -883,6 +921,8 @@ void load_mob_types(bool load_resources) {
             );
         }
     }
+    
+    create_special_mob_types();
 }
 
 
@@ -977,15 +1017,4 @@ void unload_mob_types(mob_category* category, bool unload_resources) {
     }
     
     category->clear_types();
-}
-
-
-/* ----------------------------------------------------------------------------
- * Creates a new vulnerability structure.
- */
-mob_type::vulnerability_struct::vulnerability_struct() :
-    damage_mult(1.0f),
-    status_to_apply(nullptr),
-    status_overrides(true) {
-    
 }

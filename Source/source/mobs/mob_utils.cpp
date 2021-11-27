@@ -727,14 +727,19 @@ parent_info_struct::parent_info_struct(mob* m) :
  *   Mob this path info struct belongs to.
  * target:
  *   Its target destination.
+ * invulnerabilities:
+ *   List of hazards that whoever wants to traverse is invulnerable to.
  * taker_flags:
  *   Flags for the path-taker. Use PATH_TAKER_FLAG_*.
+ * label:
+ *   If not empty, only follow path links with this label.
  */
 path_info_struct::path_info_struct(
     mob* m,
     const point &target,
     const vector<hazard*> invulnerabilities,
-    const unsigned char taker_flags
+    const unsigned char taker_flags,
+    const string &label
 ) :
     m(m),
     target_point(target),
@@ -747,8 +752,8 @@ path_info_struct::path_info_struct(
     path =
         get_path(
             m->pos, target,
-            invulnerabilities, taker_flags,
-            &go_straight, NULL
+            invulnerabilities, taker_flags, label,
+            &go_straight, NULL, NULL, NULL
         );
 }
 
@@ -768,7 +773,7 @@ bool path_info_struct::check_blockage() {
         return
             !can_traverse_path_link(
                 cur_stop->get_link(next_stop), false,
-                invulnerabilities, taker_flags
+                invulnerabilities, taker_flags, label
             );
     }
     return false;
@@ -1077,6 +1082,31 @@ track_info_struct::track_info_struct(
     cur_cp_progress(0.0f),
     ride_speed(ride_speed) {
     
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Calculates the maximum span that a mob can ever reach from its center.
+ * radius:
+ *   The mob's radius.
+ * anim_max_span:
+ *   Maximum span of its animation-related data.
+ * rectangular_dim:
+ *   Rectangular dimensions of the mob, if any.
+ */
+float calculate_mob_max_span(
+    const float radius, const float anim_max_span, const point &rectangular_dim
+) {
+    float max_span = std::max(radius, anim_max_span);
+    
+    if(rectangular_dim.x != 0) {
+        max_span =
+            std::max(
+                max_span, dist(point(0, 0), rectangular_dim / 2.0).to_float()
+            );
+    }
+    
+    return max_span;
 }
 
 

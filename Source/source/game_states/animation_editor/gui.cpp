@@ -395,7 +395,7 @@ void animation_editor::process_gui_load_dialog() {
             vector<string> f =
                 prompt_file_dialog(
                     last_file_opened,
-                    "Please choose an animation text file to load or create.",
+                    "Please choose an animation data file to load or create.",
                     "*.txt", 0
                 );
                 
@@ -722,7 +722,7 @@ void animation_editor::process_gui_panel_animation() {
                 ImVec2(EDITOR_ICON_BMP_SIZE, EDITOR_ICON_BMP_SIZE)
             )
         ) {
-            rename_anim_name = cur_anim->name;
+            duplicate_string(cur_anim->name, rename_anim_name);
             ImGui::OpenPopup("renameAnim");
         }
         set_tooltip(
@@ -889,6 +889,7 @@ void animation_editor::process_gui_panel_animation() {
                 } else {
                     cur_anim->frames.push_back(frame());
                     cur_frame_nr = 0;
+                    set_best_frame_sprite();
                 }
                 frame_ptr = &(cur_anim->frames[cur_frame_nr]);
                 made_new_changes = true;
@@ -965,7 +966,7 @@ void animation_editor::process_gui_panel_animation() {
                 //Duration value.
                 if(
                     ImGui::DragFloat(
-                        "Duration", &frame_ptr->duration, 0.005, 0.0f, FLT_MAX
+                        "Duration", &frame_ptr->duration, 0.0005, 0.0f, FLT_MAX
                     )
                 ) {
                     made_new_changes = true;
@@ -1132,7 +1133,9 @@ void animation_editor::process_gui_panel_body_part() {
                 ImVec2(EDITOR_ICON_BMP_SIZE, EDITOR_ICON_BMP_SIZE)
             )
         ) {
-            rename_part_name = anims.body_parts[selected_part]->name;
+            duplicate_string(
+                anims.body_parts[selected_part]->name, rename_part_name
+            );
             ImGui::OpenPopup("renamePart");
         }
         set_tooltip(
@@ -1500,7 +1503,7 @@ void animation_editor::process_gui_panel_sprite() {
                 ImVec2(EDITOR_ICON_BMP_SIZE, EDITOR_ICON_BMP_SIZE)
             )
         ) {
-            rename_sprite_name = cur_sprite->name;
+            duplicate_string(cur_sprite->name, rename_sprite_name);
             ImGui::OpenPopup("renameSprite");
         }
         set_tooltip(

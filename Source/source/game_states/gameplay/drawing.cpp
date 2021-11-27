@@ -381,7 +381,7 @@ void gameplay_state::draw_ingame_text() {
         
         //Maker tool -- draw hitboxes.
         if(game.maker_tools.hitboxes) {
-            sprite* s = mob_ptr->anim.get_cur_sprite();
+            sprite* s = mob_ptr->get_cur_sprite();
             if(s) {
                 for(size_t h = 0; h < s->hitboxes.size(); ++h) {
                     hitbox* h_ptr = &s->hitboxes[h];
@@ -860,8 +860,7 @@ void gameplay_state::draw_message_box() {
     
     al_use_transform(&game.identity_transform);
     
-    draw_bitmap(
-        bmp_message_box,
+    draw_textured_box(
         point(
             game.win_w / 2,
             game.win_h - al_get_font_line_height(game.fonts.standard) * 2 - 4
@@ -869,7 +868,8 @@ void gameplay_state::draw_message_box() {
         point(
             game.win_w - 16,
             al_get_font_line_height(game.fonts.standard) * 4
-        )
+        ),
+        game.sys_assets.bmp_bubble_box
     );
     
     if(msg_box->speaker_icon) {
@@ -960,7 +960,7 @@ void gameplay_state::draw_mouse_cursor(const ALLEGRO_COLOR &color) {
  */
 void gameplay_state::draw_onion_menu() {
     al_draw_filled_rectangle(
-        0, 0, game.win_w, game.win_h, al_map_rgba(24, 64, 60, 200)
+        0, 0, game.win_w, game.win_h, al_map_rgba(24, 64, 60, 220)
     );
     
     onion_menu->gui.draw();
@@ -1054,51 +1054,6 @@ void gameplay_state::draw_system_stuff() {
             al_map_rgba(128, 224, 128, 48), 1
         );
     }
-}
-
-
-/* ----------------------------------------------------------------------------
- * Draws the current area and mobs to a bitmap and returns it.
- */
-ALLEGRO_BITMAP* gameplay_state::draw_to_bitmap() {
-    //First, get the full dimensions of the map.
-    float min_x = FLT_MAX, min_y = FLT_MAX, max_x = -FLT_MAX, max_y = -FLT_MAX;
-    
-    for(size_t v = 0; v < game.cur_area_data.vertexes.size(); v++) {
-        vertex* v_ptr = game.cur_area_data.vertexes[v];
-        min_x = std::min(v_ptr->x, min_x);
-        min_y = std::min(v_ptr->y, min_y);
-        max_x = std::max(v_ptr->x, max_x);
-        max_y = std::max(v_ptr->y, max_y);
-    }
-    
-    //Figure out the scale that will fit on the image.
-    float area_w = max_x - min_x;
-    float area_h = max_y - min_y;
-    float scale = 1.0f;
-    float final_bmp_w = game.maker_tools.area_image_size;
-    float final_bmp_h = game.maker_tools.area_image_size;
-    
-    if(area_w > area_h) {
-        scale = game.maker_tools.area_image_size / area_w;
-        final_bmp_h *= area_h / area_w;
-    } else {
-        scale = game.maker_tools.area_image_size / area_h;
-        final_bmp_w *= area_w / area_h;
-    }
-    
-    //Create the bitmap.
-    ALLEGRO_BITMAP* bmp = al_create_bitmap(final_bmp_w, final_bmp_h);
-    
-    ALLEGRO_TRANSFORM t;
-    al_identity_transform(&t);
-    al_translate_transform(&t, -min_x, -min_y);
-    al_scale_transform(&t, scale, scale);
-    
-    //Begin drawing!
-    do_game_drawing(bmp, &t);
-    
-    return bmp;
 }
 
 
@@ -1364,6 +1319,51 @@ void gameplay_state::draw_throw_preview() {
 
 
 /* ----------------------------------------------------------------------------
+ * Draws the current area and mobs to a bitmap and returns it.
+ */
+ALLEGRO_BITMAP* gameplay_state::draw_to_bitmap() {
+    //First, get the full dimensions of the map.
+    float min_x = FLT_MAX, min_y = FLT_MAX, max_x = -FLT_MAX, max_y = -FLT_MAX;
+    
+    for(size_t v = 0; v < game.cur_area_data.vertexes.size(); v++) {
+        vertex* v_ptr = game.cur_area_data.vertexes[v];
+        min_x = std::min(v_ptr->x, min_x);
+        min_y = std::min(v_ptr->y, min_y);
+        max_x = std::max(v_ptr->x, max_x);
+        max_y = std::max(v_ptr->y, max_y);
+    }
+    
+    //Figure out the scale that will fit on the image.
+    float area_w = max_x - min_x;
+    float area_h = max_y - min_y;
+    float scale = 1.0f;
+    float final_bmp_w = game.maker_tools.area_image_size;
+    float final_bmp_h = game.maker_tools.area_image_size;
+    
+    if(area_w > area_h) {
+        scale = game.maker_tools.area_image_size / area_w;
+        final_bmp_h *= area_h / area_w;
+    } else {
+        scale = game.maker_tools.area_image_size / area_h;
+        final_bmp_w *= area_w / area_h;
+    }
+    
+    //Create the bitmap.
+    ALLEGRO_BITMAP* bmp = al_create_bitmap(final_bmp_w, final_bmp_h);
+    
+    ALLEGRO_TRANSFORM t;
+    al_identity_transform(&t);
+    al_translate_transform(&t, -min_x, -min_y);
+    al_scale_transform(&t, scale, scale);
+    
+    //Begin drawing!
+    do_game_drawing(bmp, &t);
+    
+    return bmp;
+}
+
+
+/* ----------------------------------------------------------------------------
  * Draws tree shadows.
  */
 void gameplay_state::draw_tree_shadows() {
@@ -1377,7 +1377,7 @@ void gameplay_state::draw_tree_shadows() {
             s_ptr->bitmap,
             point(
                 s_ptr->center.x + TREE_SHADOW_SWAY_AMOUNT*
-                sin(TREE_SHADOW_SWAY_SPEED * area_time_passed) *
+                cos(TREE_SHADOW_SWAY_SPEED * area_time_passed) *
                 s_ptr->sway.x,
                 s_ptr->center.y + TREE_SHADOW_SWAY_AMOUNT*
                 sin(TREE_SHADOW_SWAY_SPEED * area_time_passed) *
@@ -1657,6 +1657,9 @@ void gameplay_state::draw_world_components(ALLEGRO_BITMAP* bmp_output) {
         
             if(!c_ptr->mob_ptr->hide) {
                 c_ptr->mob_ptr->draw_mob();
+                if(c_ptr->mob_ptr->type->draw_mob_callback) {
+                    c_ptr->mob_ptr->type->draw_mob_callback(c_ptr->mob_ptr);
+                }
             }
             
         } else if(c_ptr->particle_ptr) {

@@ -32,6 +32,18 @@ enum FILE_DIALOG_RESULTS {
 };
 
 
+enum WIPE_FOLDER_RESULTS {
+    //Wipe successful.
+    WIPE_FOLDER_RESULT_OK,
+    //Folder not found.
+    WIPE_FOLDER_RESULT_NOT_FOUND,
+    //Folder has important files inside, or has folders inside.
+    WIPE_FOLDER_RESULT_HAS_IMPORTANT,
+    //An error occurred somewhere when deleting a file or folder.
+    WIPE_FOLDER_RESULT_DELETE_ERROR,
+};
+
+
 //A custom-made assertion.
 #define engine_assert(expr, message) \
     if(!(expr)) { \
@@ -201,6 +213,9 @@ void update_offset_effect_buffer(
     offset_effect_color_getter_ptr color_getter
 );
 string vector_tail_to_string(const vector<string> &v, const size_t pos);
+WIPE_FOLDER_RESULTS wipe_folder(
+    const string &folder_path, const vector<string> &non_important_files
+);
 
 void al_fwrite(ALLEGRO_FILE* f, string s);
 string c2s(const ALLEGRO_COLOR &c);

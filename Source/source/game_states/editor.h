@@ -169,6 +169,8 @@ protected:
         string title;
         //Is it open?
         bool is_open;
+        //Custom dialog size.
+        point custom_size;
         
         dialog_info();
         void process();
@@ -241,6 +243,10 @@ protected:
     bool is_shift_pressed;
     //Number of the mouse button pressed.
     size_t last_mouse_click;
+    //Location of the cursor on the last mouse button press.
+    point last_mouse_click_pos;
+    //Editor sub-state during the last mouse click.
+    size_t last_mouse_click_sub_state;
     //Was the last user input a keyboard press?
     bool last_input_was_keyboard;
     //Has the user picked any content to load yet?

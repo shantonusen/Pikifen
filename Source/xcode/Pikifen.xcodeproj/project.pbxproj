@@ -144,6 +144,9 @@
 		BA65C2932692324A00E9BE05 /* edge_offset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BA65C0AE2692323F00E9BE05 /* edge_offset.cpp */; };
 		BA65C2942692324A00E9BE05 /* game.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BA65C0AF2692323F00E9BE05 /* game.cpp */; };
 		BA65C2952692324A00E9BE05 /* spray_type.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BA65C0B12692323F00E9BE05 /* spray_type.cpp */; };
+		BA86FFA5280241A9005FCCF4 /* pathing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BA86FFA3280241A9005FCCF4 /* pathing.cpp */; };
+		BA86FFAE280241E4005FCCF4 /* hud.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BA86FFA8280241E3005FCCF4 /* hud.cpp */; };
+		BA86FFAF280241E4005FCCF4 /* in_world_hud.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BA86FFAD280241E3005FCCF4 /* in_world_hud.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1198,6 +1201,16 @@
 		BA65C0F62692323F00E9BE05 /* Whistle wave.ogg */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Whistle wave.ogg"; sourceTree = "<group>"; };
 		BA65C0F82692323F00E9BE05 /* makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = makefile; sourceTree = "<group>"; };
 		BA65C0F92692323F00E9BE05 /* README.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README.txt; sourceTree = "<group>"; };
+		BA86FFA3280241A9005FCCF4 /* pathing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pathing.cpp; sourceTree = "<group>"; };
+		BA86FFA4280241A9005FCCF4 /* pathing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pathing.h; sourceTree = "<group>"; };
+		BA86FFA6280241BF005FCCF4 /* mob_enums.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mob_enums.h; sourceTree = "<group>"; };
+		BA86FFA7280241E3005FCCF4 /* in_world_hud.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = in_world_hud.h; sourceTree = "<group>"; };
+		BA86FFA8280241E3005FCCF4 /* hud.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hud.cpp; sourceTree = "<group>"; };
+		BA86FFA9280241E3005FCCF4 /* gameplay_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gameplay_utils.h; sourceTree = "<group>"; };
+		BA86FFAA280241E3005FCCF4 /* hud.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hud.h; sourceTree = "<group>"; };
+		BA86FFAB280241E3005FCCF4 /* onion_menu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = onion_menu.h; sourceTree = "<group>"; };
+		BA86FFAC280241E3005FCCF4 /* pause_menu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pause_menu.h; sourceTree = "<group>"; };
+		BA86FFAD280241E3005FCCF4 /* in_world_hud.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = in_world_hud.cpp; sourceTree = "<group>"; };
 		BA9CCBF926938B6E008E48CE /* Animations.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Animations.txt; sourceTree = "<group>"; };
 		BA9CCBFA26938B6E008E48CE /* Data.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Data.txt; sourceTree = "<group>"; };
 		BA9CCBFC26938D27008E48CE /* Animations.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Animations.txt; sourceTree = "<group>"; };
@@ -3361,6 +3374,8 @@
 		BA65BE8C2692323D00E9BE05 /* source */ = {
 			isa = PBXGroup;
 			children = (
+				BA86FFA3280241A9005FCCF4 /* pathing.cpp */,
+				BA86FFA4280241A9005FCCF4 /* pathing.h */,
 				BA65BE8F2692323D00E9BE05 /* world_component.cpp */,
 				BA65BE902692323D00E9BE05 /* misc_structs.cpp */,
 				BA65BE912692323D00E9BE05 /* particle.cpp */,
@@ -3427,6 +3442,7 @@
 		BA65BE9B2692323E00E9BE05 /* mobs */ = {
 			isa = PBXGroup;
 			children = (
+				BA86FFA6280241BF005FCCF4 /* mob_enums.h */,
 				BA65BE9D2692323E00E9BE05 /* ship.h */,
 				BA65BE9E2692323E00E9BE05 /* scale.h */,
 				BA65BEA22692323E00E9BE05 /* group_task.h */,
@@ -3687,6 +3703,13 @@
 		BA65C05A2692323E00E9BE05 /* gameplay */ = {
 			isa = PBXGroup;
 			children = (
+				BA86FFA9280241E3005FCCF4 /* gameplay_utils.h */,
+				BA86FFA8280241E3005FCCF4 /* hud.cpp */,
+				BA86FFAA280241E3005FCCF4 /* hud.h */,
+				BA86FFAD280241E3005FCCF4 /* in_world_hud.cpp */,
+				BA86FFA7280241E3005FCCF4 /* in_world_hud.h */,
+				BA86FFAB280241E3005FCCF4 /* onion_menu.h */,
+				BA86FFAC280241E3005FCCF4 /* pause_menu.h */,
 				BA65C05E2692323E00E9BE05 /* logic.cpp */,
 				BA65C0602692323E00E9BE05 /* onion_menu.cpp */,
 				BA65C0612692323E00E9BE05 /* gameplay.h */,
@@ -3943,6 +3966,7 @@
 				BA65C1172692323F00E9BE05 /* resource.cpp in Sources */,
 				BA65C2912692324A00E9BE05 /* main.cpp in Sources */,
 				BA65C2892692324A00E9BE05 /* liquid.cpp in Sources */,
+				BA86FFAE280241E4005FCCF4 /* hud.cpp in Sources */,
 				BA65C16A2692324000E9BE05 /* scale_type.cpp in Sources */,
 				BA65C25C2692324700E9BE05 /* gameplay.cpp in Sources */,
 				BA65C1C52692324200E9BE05 /* treasure_fsm.cpp in Sources */,
@@ -3996,10 +4020,12 @@
 				BA65C13C2692323F00E9BE05 /* treasure.cpp in Sources */,
 				BA65C2272692324500E9BE05 /* bridge_category.cpp in Sources */,
 				BA65C2882692324A00E9BE05 /* init.cpp in Sources */,
+				BA86FFA5280241A9005FCCF4 /* pathing.cpp in Sources */,
 				BA65C2742692324800E9BE05 /* editor.cpp in Sources */,
 				BA65C2042692324400E9BE05 /* tool_category.cpp in Sources */,
 				BA65C1D22692324200E9BE05 /* pellet_fsm.cpp in Sources */,
 				BA65C24C2692324700E9BE05 /* main_menu.cpp in Sources */,
+				BA86FFAF280241E4005FCCF4 /* in_world_hud.cpp in Sources */,
 				BA65C1E32692324300E9BE05 /* string_utils.cpp in Sources */,
 				BA65C2942692324A00E9BE05 /* game.cpp in Sources */,
 				BA65C2622692324800E9BE05 /* game_state.cpp in Sources */,
@@ -4207,12 +4233,14 @@
 				LIBRARY_SEARCH_PATHS = /opt/brew/Cellar/allegro/5.2.7.0/lib;
 				OTHER_LDFLAGS = (
 					"-lallegro_main",
-					"-lallegro_image",
-					"-lallegro_font",
 					"-lallegro_acodec",
 					"-lallegro_audio",
-					"-lallegro_primitives",
+					"-lallegro_color",
 					"-lallegro_dialog",
+					"-lallegro_image",
+					"-lallegro_primitives",
+					"-lallegro_font",
+					"-lallegro_ttf",
 					"-lallegro",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4227,12 +4255,14 @@
 				LIBRARY_SEARCH_PATHS = /opt/brew/Cellar/allegro/5.2.7.0/lib;
 				OTHER_LDFLAGS = (
 					"-lallegro_main",
-					"-lallegro_image",
-					"-lallegro_font",
 					"-lallegro_acodec",
 					"-lallegro_audio",
-					"-lallegro_primitives",
+					"-lallegro_color",
 					"-lallegro_dialog",
+					"-lallegro_image",
+					"-lallegro_primitives",
+					"-lallegro_font",
+					"-lallegro_ttf",
 					"-lallegro",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";

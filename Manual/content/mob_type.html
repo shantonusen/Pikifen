@@ -43,6 +43,7 @@
     <p>The following are properties that you really should have, but the engine can run without them.</p>
 
     <ul>
+      <li><b><code>description</code></b>: A small blurb-like description of this object type. This should be written from a gameplay perspective, not a content-making perspective, so describe the object how it works in-game, not how it should be used in areas or with other objects. This description is useful for whoever reads the data file, but also shows up in the area editor, and in the case of Pikmin types, the help page of the in-game pause menu.</li>
       <li><b><code>can_hunt</code></b>: This object will only want to hunt down objects of this target type. i.e. it will only consider those an "opponent" (provided they're also in an opposing team). See <code>target_type</code> below for more information. Defaults to "player" and "enemy".</li>
       <li><b><code>can_hurt</code></b>: This object can only cause damage to objects of this target type (provided they're also in an opposing team). See <code>target_type</code> below for more information. Defaults to "player", "enemy", and "fragile".</li>
       <li><b><code>height</code></b>: Object's height. This doesn't need to be <i>very</i> specific. For reference, leaders are usually 32, Pikmin are usually 24. Defaults to 0.</li>
@@ -97,10 +98,12 @@
       <li><b><code>pushes_with_hitboxes</code></b>: If true, this object pushes with its (normal or attack) hitboxes, instead of pushing using its object's center and radius. Defaults to false.</li>
       <li><b><code>rectangular_dimensions</code></b>: If this object is meant to have rectangular collision, specify the rectangle's dimensions here, in the format <code>&lt;width&gt; &lt;height&gt;</code>. This is useful for objects like gates, but shouldn't be used by objects that can move (among other things, the engine is not ready to handle rectangular object vs rectangular object collisions). Defaults to no rectangular dimensions.</li>
       <li><b><code>show_health</code></b>: If set to <code>false</code>, the object's health wheel will not appear on top of it. Defaults to true.</li>
-      <li><b><code>spike_damage</code></b>: If this object is meant to cause <a href="misc_features.html">spike damage</a>, specify the spike damage type's name here. Defaults to none.</li>
+      <li><b><code>spike_damage</code></b>: If this object is meant to cause <a href="misc_config.html#spike-damage">spike damage</a>, specify the spike damage type's name here. Defaults to none.</li>
       <li><b><code>spike_damage_vulnerabilities</code></b>: Normally, objects hit by a spike damage attack will receive the damage specified by the attack's type. If you want this mob type to take more or less damage instead, or even receive a status effect, you can specify it here. This property is a block, and the format is the same as the <a href="#vulnerabilities">regular damage vulnerabilities property</a>. Defaults to not set.</li>
+      <li><b><code>status_vulnerabilities</code></b>: If you want this mob type to take more or less damage from a status effect's health changing effect, or even receive a different status effect instead, you can specify it here. This property is a block, and the format is the same as the <a href="#vulnerabilities">regular damage vulnerabilities property</a>, without the third word. Defaults to not set.</li>
+      <li><b><code>terrain_radius</code></b>: The object's radius for collisions against the terrain. Useful if you want collisions between your object and other objects to be tight, but you also want your object to not get too close to walls so it doesn't visually appear inside them. Any negative number will make the engine use the same radius as the <code>radius</code> property. This property is only used while the object is alive, so a carriable corpse will use the regular radius property. Defaults to -1.</li>
       <li><b><code>territory_radius</code></b>: How far away from the spawn point must the enemy be before being considered "far from home". For reference, a Red Bulborb has this set to 500. Defaults to 0.</li>
-      <li><b><code>walkable</code></b>: If <code>true</code>, this object can be walked on top of by other objects. Other objects will be able to mount it if they fall on it from above, or if they are on a floor that's within 50 units of height from the top of this object (much like how climbing up <a href="area.html#ramps">stairs</a> work). Defaults to false.</li>
+      <li><b><code>walkable</code></b>: If <code>true</code>, this object can be walked on top of by other objects. Other objects will be able to mount it if they fall on it from above, or if they are on a floor that's within 50 units of height from the top of this object (much like how climbing up <a href="area.html#ramps">stairs</a> works). Defaults to false.</li>
       <li><b><code>weight</code></b>: How much Pikmin strength does it take to carry the object. Defaults to 0.</li>
     </ul>
 
@@ -324,7 +327,7 @@
     
     <h3 id="area-editor-tips">Area editor tips</h3>
     
-    <p>Some objects require certain things to be set up in certain ways in the area editor before they work as intended. e.g. bridges must be on a bridge sector, seesaw blocks need to link to each other before they work together, etc. Users who are not very familiar with these tricks may take a while to realize what's wrong. To help with this, you can also specify a property that, when read by the area editor, will make it display a specific widget. This widget, when the user places their mouse over it, will show some helpful tips about how to make use of the object.</p>
+    <p>Some objects require certain things to be set up in certain ways in the area editor before they work as intended. e.g. bridge fragment piles need to know what bridge they belong to, seesaw blocks need to link to each other before they work together, etc. Users who are not very familiar with these tricks may take a while to realize what's wrong. To help with this, you can also specify a property that, when read by the area editor, will make it display a specific widget. This widget, when the user places their mouse over it, will show some helpful tips about how to make use of the object.</p>
     
     <p>In <code>Data.txt</code>, add a property titled <code>area_editor_tips</code>. Then, simply write the tip(s) you want as the value. Remember that these are displayed in a tooltip, and if you don't keep it short, or cut your text into multiple lines, it will all be in one large line, which may not even fit on-screen. To add a line break, write <code>\n</code> in your text. To write a literal backslash, you will need to type <code>\\</code>.
     
@@ -367,6 +370,7 @@
           <li>The object is not invisible via a <a href="status.html">status effect</a>.</li>
         </ul>
       </li>
+      <li>If you're having trouble understanding why your custom object is acting the way it is, try aiming your cursor at it and using the "mob info" <a href="maker_toolkit.html">maker tool</a> (5 key, by default).</li>
     </ul>
     
   </div>

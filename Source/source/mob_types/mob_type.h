@@ -17,42 +17,18 @@
 #include <allegro5/allegro.h>
 
 #include "../animation.h"
+#include "../const.h"
 #include "../misc_structs.h"
 #include "../mob_categories/mob_category.h"
 #include "../mob_script.h"
 #include "../status.h"
 #include "../utils/data_file.h"
+#include "../mobs/mob_enums.h"
 
 
 using std::size_t;
 using std::string;
 using std::vector;
-
-
-enum ENEMY_EXTRA_STATES {
-    ENEMY_EXTRA_STATE_CARRIABLE_WAITING,
-    ENEMY_EXTRA_STATE_CARRIABLE_MOVING,
-    ENEMY_EXTRA_STATE_CARRIABLE_STUCK,
-    ENEMY_EXTRA_STATE_CARRIABLE_THROWN,
-    ENEMY_EXTRA_STATE_BEING_DELIVERED,
-};
-
-
-//Area editor mob property types.
-enum AEMP_TYPES {
-    //Any user text.
-    AEMP_TEXT,
-    //Integer number.
-    AEMP_INT,
-    //Decimal number.
-    AEMP_DECIMAL,
-    //Boolean.
-    AEMP_BOOL,
-    //One of a list of strings.
-    AEMP_LIST,
-    //One of a list of numbers, though each has a name.
-    AEMP_NUMBER_LIST,
-};
 
 
 typedef vector<std::pair<size_t, string> > anim_conversion_vector;
@@ -70,10 +46,15 @@ const size_t ANIM_IDLING = 0;
 class mob_type {
 public:
     struct reach_struct {
+        //Name of this reach.
         string name;
+        //Radius of possibility 1.
         float radius_1;
+        //Angle of possibility 1.
         float angle_1;
+        //Radius of possibility 2.
         float radius_2;
+        //Angle of possibility 2.
         float angle_2;
         
         reach_struct() :
@@ -82,15 +63,25 @@ public:
     };
     
     struct spawn_struct {
+        //Name of this spawn information block.
         string name;
+        //Name of the mob type to spawn.
         string mob_type_name;
+        //Spawn in coordinates relative to the spawner?
         bool relative;
+        //Coordenates to spawn on.
         point coords_xy;
+        //Z coordinate to spawn on.
         float coords_z;
+        //Angle of the spawned object. Could be relative or absolute.
         float angle;
+        //Script vars to give the spawned object.
         string vars;
+        //Should the spawner link to the spawned?
         bool link_object_to_spawn;
+        //Should the spawned link to the spawner?
         bool link_spawn_to_object;
+        //Momentum to apply in a random direction upon spawn, if any.
         float momentum;
         
         spawn_struct() :
@@ -103,28 +94,46 @@ public:
     };
     
     struct child_struct {
+        //Name of this child information block.
         string name;
+        //Name of the spawn information block to use.
         string spawn_name;
+        //Does the parent mob hold the child mob?
         bool parent_holds;
+        //If the parent holds, this is the name of the body part that holds.
         string hold_body_part;
+        //If the parent holds, this is how far from the body part center.
         float hold_offset_dist;
+        //If the parent holds, this is in what direction from the body part.
         float hold_offset_angle;
-        unsigned char hold_rotation_method;
-        
+        //Method by which the parent should hold the child.
+        HOLD_ROTATION_METHODS hold_rotation_method;
+        //Should the child handle damage?
         bool handle_damage;
+        //Should the child relay damage to the parent?
         bool relay_damage;
+        //Should the child handle script events?
         bool handle_events;
+        //Should the child relay script events to the parent?
         bool relay_events;
+        //Should the child handle status effects?
         bool handle_statuses;
+        //Should the child relay status effects to the parent?
         bool relay_statuses;
-        
+        //Name of the limb animation between parent and child.
         string limb_anim_name;
+        //Thickness of the limb.
         float limb_thickness;
+        //Body part of the parent to link the limb to.
         string limb_parent_body_part;
+        //Offset from the parent body part to link the limb at.
         float limb_parent_offset;
+        //Body part of the child to link the limb to.
         string limb_child_body_part;
+        //Offset from the child body part to link the limb at.
         float limb_child_offset;
-        unsigned char limb_draw_method;
+        //Method by which the limb should be drawn.
+        LIMB_DRAW_METHODS limb_draw_method;
         
         child_struct() :
             parent_holds(false),
@@ -164,11 +173,15 @@ public:
         area_editor_prop_struct();
     };
     
-    //Info on how vulnerable the object is to a certain hazard.
+    //Info on how vulnerable the object is to a certain source.
     struct vulnerability_struct {
+        //Multiply damage taken by this.
         float damage_mult;
+        //When affected by the source, receive this status effect.
         status_type* status_to_apply;
+        //If "status_to_apply" overrides any status effect that'd be received.
         bool status_overrides;
+        
         vulnerability_struct();
     };
     
@@ -176,6 +189,8 @@ public:
     //Technical things.
     //Its full name.
     string name;
+    //Blurb-like description. Mostly used for gameplay, not content-making.
+    string description;
     //Name of the folder its data is on.
     string folder_name;
     //Mob category.
@@ -210,6 +225,8 @@ public:
     bool pushable;
     //If true, the push is via hitbox, as opposed to the mob's radius?
     bool pushes_with_hitboxes;
+    //Radius for terrain collision. Negative = use regular radius property.
+    float terrain_radius;
     //Can you walk on top of this mob?
     bool walkable;
     //Rectangular dimensions, if it's meant to use them instead of a radius.
@@ -239,13 +256,13 @@ public:
     //Does this mob have a group of other mobs following it (e.g. leader)?
     bool has_group;
     //Other mobs decide if they can/want to hurt it by this target type.
-    unsigned char target_type;
+    MOB_TARGET_TYPES target_type;
     //What types of targets this mob can hunt down.
     uint16_t huntable_targets;
     //What types of targets this mob can hurt.
     uint16_t hurtable_targets;
     //Its initial team.
-    unsigned char starting_team;
+    MOB_TEAMS starting_team;
     
     //Script things.
     //Actions to run on spawn.
@@ -280,13 +297,15 @@ public:
     spike_damage_type* spike_damage;
     //For every type of spike damage, multiply damage taken by this much.
     map<spike_damage_type*, vulnerability_struct> spike_damage_vulnerabilities;
+    //For every type of status, multiply damage taken by this much.
+    map<status_type*, vulnerability_struct> status_vulnerabilities;
     
     //Caches and such.
     //How far its hitboxes or radius can reach from the center.
     float max_span;
     
     //General functions.
-    mob_type(size_t category_id);
+    mob_type(MOB_CATEGORIES category_id);
     virtual ~mob_type();
     virtual void load_properties(data_node* file);
     virtual void load_resources(data_node* file);
@@ -299,7 +318,8 @@ public:
 };
 
 
-/* A mob type that has animation groups.
+/* ----------------------------------------------------------------------------
+ * A mob type that has animation groups.
  * These have a series of "base" animations, like idling, dying, etc.,
  * but can also have several looks for these same base animations.
  * So in practice, it can have an idling blue animation, idling yellow,
@@ -311,6 +331,7 @@ public:
  */
 class mob_type_with_anim_groups {
 public:
+    //Suffixes used for each animation group.
     vector<string> animation_group_suffixes;
     anim_conversion_vector get_anim_conversions_with_groups(
         const anim_conversion_vector &v, const size_t base_anim_total

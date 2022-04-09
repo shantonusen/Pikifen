@@ -35,7 +35,7 @@ using std::string;
  * category_id:
  *   The ID of the category it belongs to.
  */
-mob_type::mob_type(size_t category_id) :
+mob_type::mob_type(MOB_CATEGORIES category_id) :
     category(game.mob_categories.get(category_id)),
     main_color(al_map_rgb(128, 128, 128)),
     show_health(true),
@@ -49,6 +49,7 @@ mob_type::mob_type(size_t category_id) :
     pushes(false),
     pushable(false),
     pushes_with_hitboxes(false),
+    terrain_radius(-1),
     walkable(false),
     max_health(100),
     health_regen(0),
@@ -351,6 +352,7 @@ void load_mob_type_from_file(
     );
     rs.set("casts_shadow", mt->casts_shadow);
     rs.set("default_vulnerability", mt->default_vulnerability);
+    rs.set("description", mt->description);
     rs.set("has_group", mt->has_group);
     rs.set("health_regen", mt->health_regen);
     rs.set("height", mt->height);
@@ -371,6 +373,7 @@ void load_mob_type_from_file(
     rs.set("spike_damage", spike_damage_str, &spike_damage_node);
     rs.set("target_type", target_type_str, &target_type_node);
     rs.set("team", team_str, &team_node);
+    rs.set("terrain_radius", mt->terrain_radius);
     rs.set("territory_radius", mt->territory_radius);
     rs.set("walkable", mt->walkable);
     rs.set("weight", mt->weight);
@@ -439,7 +442,7 @@ void load_mob_type_from_file(
     }
     
     if(team_node) {
-        size_t t = string_to_team_nr(team_str);
+        MOB_TEAMS t = string_to_team_nr(team_str);
         if(t != INVALID) {
             mt->starting_team = t;
         } else {
@@ -458,8 +461,8 @@ void load_mob_type_from_file(
     
         data_node* vul_node = spike_damage_vuln_node->get_child(v);
         auto sdv_it = game.spike_damage_types.find(vul_node->name);
-        vector<string> words = split(vulnerabilities_node->value);
-        float percentage = mt->default_vulnerability;
+        vector<string> words = split(vul_node->value);
+        float percentage = 1.0f;
         string status_name;
         if(!words.empty()) {
             percentage = s2f(words[0]);
@@ -489,6 +492,51 @@ void load_mob_type_from_file(
             s.status_to_apply = status_it->second;
             
         }
+    }
+    
+    data_node* status_vuln_node =
+        file.get_child_by_name("status_vulnerabilities");
+    size_t n_s_vuln =
+        status_vuln_node->get_nr_of_children();
+    for(size_t v = 0; v < n_s_vuln; ++v) {
+    
+        data_node* vul_node = status_vuln_node->get_child(v);
+        auto sv_it = game.status_types.find(vul_node->name);
+        vector<string> words = split(vul_node->value);
+        float percentage = 1.0f;
+        string status_override_name;
+        if(!words.empty()) {
+            percentage = s2f(words[0]);
+        }
+        if(words.size() >= 2) {
+            status_override_name = words[1];
+        }
+        auto status_override_it = game.status_types.find(status_override_name);
+        
+        if(sv_it == game.status_types.end()) {
+            log_error(
+                "Unknown status type \"" + vul_node->name + "\"!",
+                vul_node
+            );
+            
+        } else if(
+            !status_override_name.empty() &&
+            status_override_it == game.status_types.end()
+        ) {
+            log_error(
+                "Unknown status type \"" + status_override_name + "\"!",
+                vul_node
+            );
+            
+        } else {
+            auto &s = mt->status_vulnerabilities[sv_it->second];
+            s.damage_mult = percentage / 100.0f;
+            if(status_override_it != game.status_types.end()) {
+                s.status_to_apply = status_override_it->second;
+            }
+            s.status_overrides = true;
+        }
+        
     }
     
     data_node* reaches_node = file.get_child_by_name("reaches");
@@ -693,7 +741,7 @@ void load_mob_type_from_file(
     }
     
     if(target_type_node) {
-        size_t target_type_value =
+        MOB_TARGET_TYPES target_type_value =
             string_to_mob_target_type(target_type_str);
         if(target_type_value == INVALID) {
             log_error(
@@ -834,7 +882,7 @@ void load_mob_types(bool load_resources) {
             continue;
         }
         
-        mob_category* category = game.mob_categories.get(c);
+        mob_category* category = game.mob_categories.get((MOB_CATEGORIES) c);
         if(game.perf_mon) {
             game.perf_mon->start_measurement(
                 "Object types -- " + category->name
@@ -992,7 +1040,7 @@ void unload_mob_types(const bool unload_resources) {
     game.config.pikmin_order.clear();
     
     for(size_t c = 0; c < N_MOB_CATEGORIES; ++c) {
-        mob_category* category = game.mob_categories.get(c);
+        mob_category* category = game.mob_categories.get((MOB_CATEGORIES) c);
         unload_mob_types(category, unload_resources);
     }
 }

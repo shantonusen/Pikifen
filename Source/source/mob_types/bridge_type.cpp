@@ -22,7 +22,9 @@
 bridge_type::bridge_type() :
     mob_type(MOB_CATEGORY_BRIDGES),
     bmp_main_texture(nullptr),
-    bmp_rail_texture(nullptr) {
+    bmp_left_rail_texture(nullptr),
+    bmp_right_rail_texture(nullptr),
+    rail_width(16.0f) {
     
     radius = 32;
     max_health = 2000;
@@ -34,12 +36,23 @@ bridge_type::bridge_type() :
     starting_team = MOB_TEAM_OBSTACLE;
     
     area_editor_tips =
-        "Place this object on a sector of the \"Bridge\" type.\n"
-        "When the bridge object is destroyed, that sector, as well as\n"
-        "all neighboring sectors of the \"Bridge\" and \"Bridge rail\" types\n"
-        "will be converted into bridges. Their heights will also change to\n"
-        "whatever you specify in the sector's \"bridge height\" property.";
+        "Link this object to another object, so that\n"
+        "you can specify where the bridge ends.\n"
+        "A \"Dummy\" object works perfectly for this.";
         
+    area_editor_prop_struct aep_chunks;
+    aep_chunks.name = "Chunks";
+    aep_chunks.var = "chunks";
+    aep_chunks.type = AEMP_INT;
+    aep_chunks.def_value = "10";
+    aep_chunks.min_value = 1;
+    aep_chunks.max_value = 50;
+    aep_chunks.tooltip =
+        "How many chunks it's divided by.\n"
+        "If the bridge goes up or down, it may need\n"
+        "more chunks in order to allow enough steps.";
+    area_editor_props.push_back(aep_chunks);
+    
     bridge_fsm::create_fsm(this);
 }
 
@@ -56,6 +69,18 @@ anim_conversion_vector bridge_type::get_anim_conversions() const {
 
 
 /* ----------------------------------------------------------------------------
+ * Loads properties from a data file.
+ * file:
+ *   File to read from.
+ */
+void bridge_type::load_properties(data_node* file) {
+    reader_setter rs(file);
+    
+    rs.set("rail_width", rail_width);
+}
+
+
+/* ----------------------------------------------------------------------------
  * Loads resources into memory.
  * file:
  *   File to read from.
@@ -64,13 +89,19 @@ void bridge_type::load_resources(data_node* file) {
     reader_setter rs(file);
     
     rs.set("main_texture", main_texture_file_name);
-    rs.set("rail_texture", rail_texture_file_name);
+    rs.set("left_rail_texture", left_rail_texture_file_name);
+    rs.set("right_rail_texture", right_rail_texture_file_name);
     
     if(!main_texture_file_name.empty()) {
         bmp_main_texture = game.textures.get(main_texture_file_name);
     }
-    if(!rail_texture_file_name.empty()) {
-        bmp_rail_texture = game.textures.get(rail_texture_file_name);
+    if(!left_rail_texture_file_name.empty()) {
+        bmp_left_rail_texture =
+            game.textures.get(left_rail_texture_file_name);
+    }
+    if(!right_rail_texture_file_name.empty()) {
+        bmp_right_rail_texture =
+            game.textures.get(right_rail_texture_file_name);
     }
 }
 
@@ -80,5 +111,6 @@ void bridge_type::load_resources(data_node* file) {
  */
 void bridge_type::unload_resources() {
     game.textures.detach(main_texture_file_name);
-    game.textures.detach(rail_texture_file_name);
+    game.textures.detach(left_rail_texture_file_name);
+    game.textures.detach(right_rail_texture_file_name);
 }

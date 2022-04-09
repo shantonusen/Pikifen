@@ -20,6 +20,7 @@
 #include "misc_structs.h"
 
 
+const float CONTROL_ICON_PADDING = 2.0f;
 const float DEF_HEALTH_WHEEL_RADIUS = 20;
 const float LIQUID_WOBBLE_TIME_SCALE = 2.0f;
 const float LIQUID_WOBBLE_DELTA_X = 3.0f;
@@ -29,10 +30,80 @@ const unsigned char NOTIFICATION_ALPHA = 160;
 //A water wave ring lasts this long.
 const float WAVE_RING_DURATION = 1.0f;
 
+
+//Possible shapes for a control icon.
+enum CONTROL_ICON_SHAPES {
+    //Doesn't really have a shape, but instead draws a bitmap.
+    CONTROL_ICON_SHAPE_BITMAP,
+    //Rectangle shape, representing keyboard keys.
+    CONTROL_ICON_SHAPE_RECTANGLE,
+    //Circle/rounded rectangle shape, representing buttons.
+    CONTROL_ICON_SHAPE_ROUNDED,
+};
+
+
+//Control icon spritesheet sprites. The order matches what's in the spritesheet.
+enum CONTROL_ICON_SPRITES {
+    //Left mouse button.
+    CONTROL_ICON_SPRITE_LMB,
+    //Right mouse button.
+    CONTROL_ICON_SPRITE_RMB,
+    //Middle mouse button.
+    CONTROL_ICON_SPRITE_MMB,
+    //Mouse wheel up.
+    CONTROL_ICON_SPRITE_MWU,
+    //Mouse wheel down.
+    CONTROL_ICON_SPRITE_MWD,
+    //Up key.
+    CONTROL_ICON_SPRITE_UP,
+    //Left key.
+    CONTROL_ICON_SPRITE_LEFT,
+    //Down key.
+    CONTROL_ICON_SPRITE_DOWN,
+    //Right key.
+    CONTROL_ICON_SPRITE_RIGHT,
+    //Backspace key.
+    CONTROL_ICON_SPRITE_BACKSPACE,
+    //Shift key.
+    CONTROL_ICON_SPRITE_SHIFT,
+    //Tab key.
+    CONTROL_ICON_SPRITE_TAB,
+    //Enter key.
+    CONTROL_ICON_SPRITE_ENTER,
+    //Gamepad analog stick up.
+    CONTROL_ICON_SPRITE_STICK_UP,
+    //Gamepad analog stick left.
+    CONTROL_ICON_SPRITE_STICK_LEFT,
+    //Gamepad analog stick down.
+    CONTROL_ICON_SPRITE_STICK_DOWN,
+    //Gamepad analog stick right.
+    CONTROL_ICON_SPRITE_STICK_RIGHT,
+};
+
+
+//Methods for easing numbers.
 enum EASING_METHODS {
+    //Eased as it goes in, then gradually goes out normally.
     EASE_IN,
+    //Gradually goes in normally, then eased as it goes out.
     EASE_OUT,
+    //Springs backwards before going in.
+    EASE_IN_ELASTIC,
+    //Goes up to 1, then back down to 0, in a sine-wave.
     EASE_UP_AND_DOWN,
+    //Goes up to 1, then down to 0, and wobbles around 0 for a bit.
+    EASE_UP_AND_DOWN_ELASTIC,
+};
+
+
+//Ways to vertically align text when rendering it.
+enum TEXT_VALIGN_MODES {
+    //Align to the top.
+    TEXT_VALIGN_TOP,
+    //Align to the center.
+    TEXT_VALIGN_CENTER,
+    //Align to the bottom.
+    TEXT_VALIGN_BOTTOM,
 };
 
 
@@ -44,12 +115,12 @@ void draw_background_logos(
 void draw_bitmap(
     ALLEGRO_BITMAP* bmp, const point &center,
     const point &size, const float angle = 0,
-    const ALLEGRO_COLOR &tint = al_map_rgb(255, 255, 255)
+    const ALLEGRO_COLOR &tint = COLOR_WHITE
 );
 void draw_bitmap_in_box(
     ALLEGRO_BITMAP* bmp, const point &center,
     const point &box_size, const float angle = 0,
-    const ALLEGRO_COLOR &tint = al_map_rgb(255, 255, 255)
+    const ALLEGRO_COLOR &tint = COLOR_WHITE
 );
 void draw_bitmap_with_effects(
     ALLEGRO_BITMAP* bmp, const bitmap_effect_info &effects
@@ -60,19 +131,19 @@ void draw_button(
     const bool selected,
     const float juicy_grow_amount = 0.0f
 );
-void draw_control(
-    const ALLEGRO_FONT* const font, const control_info &c,
+void draw_control_icon(
+    const ALLEGRO_FONT* const font, const control_info* c, const bool condensed,
     const point &where, const point &max_size
 );
 void draw_compressed_scaled_text(
     const ALLEGRO_FONT* const font, const ALLEGRO_COLOR &color,
     const point &where, const point &scale,
-    const int flags, const unsigned char valign,
-    const point &max_size, const string &text
+    const int flags, const TEXT_VALIGN_MODES valign,
+    const point &max_size, const bool scale_past_max, const string &text
 );
 void draw_compressed_text(
     const ALLEGRO_FONT* const font, const ALLEGRO_COLOR &color,
-    const point &where, const int flags, const unsigned char valign,
+    const point &where, const int flags, const TEXT_VALIGN_MODES valign,
     const point &max_size, const string &text
 );
 void draw_filled_diamond(
@@ -83,8 +154,9 @@ void draw_filled_rounded_rectangle(
     const ALLEGRO_COLOR &color
 );
 void draw_fraction(
-    const point &center, const size_t current,
-    const size_t needed, const ALLEGRO_COLOR &color
+    const point &bottom, const size_t value_nr,
+    const size_t requirement_nr, const ALLEGRO_COLOR &color,
+    const float scale = 1.0f
 );
 void draw_health(
     const point &center, const float ratio,
@@ -122,20 +194,28 @@ void draw_mob_shadow(
 void draw_scaled_text(
     const ALLEGRO_FONT* const font, const ALLEGRO_COLOR &color,
     const point &where, const point &scale,
-    const int flags, const unsigned char valign, const string &text
+    const int flags, const TEXT_VALIGN_MODES valign, const string &text
 );
 void draw_status_effect_bmp(mob* m, bitmap_effect_info &effects);
 void draw_text_lines(
     const ALLEGRO_FONT* const font, const ALLEGRO_COLOR &color,
-    const point &where, const int flags, const unsigned char valign,
+    const point &where, const int flags, const TEXT_VALIGN_MODES valign,
     const string &text
 );
 void draw_textured_box(
     const point &center, const point &size, ALLEGRO_BITMAP* texture,
-    const ALLEGRO_COLOR &tint = al_map_rgb(255, 255, 255)
+    const ALLEGRO_COLOR &tint = COLOR_WHITE
 );
 float ease(
-    const unsigned char method, float y
+    const EASING_METHODS method, float y
+);
+void get_control_icon_info(
+    const ALLEGRO_FONT* font, const control_info* c, const bool condensed,
+    CONTROL_ICON_SHAPES* shape, CONTROL_ICON_SPRITES* bitmap_sprite,
+    string* text
+);
+float get_control_icon_width(
+    const ALLEGRO_FONT* font, const control_info* c, const bool condensed
 );
 
 

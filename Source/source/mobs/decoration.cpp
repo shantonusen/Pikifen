@@ -29,8 +29,7 @@ decoration::decoration(
     mob(pos, type, angle),
     dec_type(type),
     individual_scale(1.0f),
-    individual_rotation(0.0f),
-    has_done_first_animation(false) {
+    individual_rotation(0.0f) {
     
     float tint_interpol_ratio = randomf(0.0f, 1.0f);
     ALLEGRO_COLOR tint_limit = dec_type->tint_random_maximum;
@@ -72,7 +71,7 @@ void decoration::draw_mob() {
     if(!s_ptr) return;
     
     bitmap_effect_info eff;
-    get_sprite_bitmap_effects(s_ptr, &eff, true, true);
+    get_sprite_bitmap_effects(s_ptr, &eff, true, true, true, false, false);
     
     eff.tint_color.r *= individual_tint.r;
     eff.tint_color.g *= individual_tint.g;

@@ -27,8 +27,11 @@
  */
 asset_file_names_struct::asset_file_names_struct() :
     area_name_font("Area_name_font.png"),
+    bright_circle("Bright_circle.png"),
+    bright_ring("Bright_ring.png"),
     bubble_box("Bubble_box.png"),
     checkbox_check("Checkbox_check.png"),
+    control_icons("Control_icons.png"),
     counter_font("Counter_font.png"),
     cursor("Cursor.png"),
     cursor_counter_font("Cursor_counter_font.png"),
@@ -41,12 +44,11 @@ asset_file_names_struct::asset_file_names_struct() :
     main_menu("Main_menu.jpg"),
     more("More.png"),
     mouse_cursor("Mouse_cursor.png"),
-    mouse_wd_icon("Mouse_wheel_down_icon.png"),
-    mouse_wu_icon("Mouse_wheel_up_icon.png"),
     notification("Notification.png"),
     pikmin_silhouette("Pikmin_silhouette.png"),
     pikmin_spirit("Pikmin_spirit.png"),
     rock("Rock.png"),
+    slim_font("Slim_font.otf"),
     shadow("Shadow.png"),
     smack("Smack.png"),
     smoke("Smoke.png"),
@@ -59,10 +61,6 @@ asset_file_names_struct::asset_file_names_struct() :
     value_font("Value_font.png"),
     wave_ring("Wave_ring.png") {
     
-    for(unsigned char i = 0; i < 3; ++i) {
-        mouse_button_icon[i] =
-            "Mouse_button_" + i2s(i + 1) + "_icon.png";
-    }
 }
 
 
@@ -75,8 +73,11 @@ void asset_file_names_struct::load(data_node* file) {
     reader_setter rs(file);
     
     rs.set("area_name_font", area_name_font);
+    rs.set("bright_circle", bright_circle);
+    rs.set("bright_ring", bright_ring);
     rs.set("bubble_box", bubble_box);
     rs.set("checkbox_check", checkbox_check);
+    rs.set("control_icons", control_icons);
     rs.set("counter_font", counter_font);
     rs.set("cursor", cursor);
     rs.set("cursor_counter_font", cursor_counter_font);
@@ -89,8 +90,6 @@ void asset_file_names_struct::load(data_node* file) {
     rs.set("main_menu", main_menu);
     rs.set("more", more);
     rs.set("mouse_cursor", mouse_cursor);
-    rs.set("mouse_wheel_down_icon", mouse_wd_icon);
-    rs.set("mouse_wheel_up_icon", mouse_wu_icon);
     rs.set("notification", notification);
     rs.set("pikmin_silhouette", pikmin_silhouette);
     rs.set("pikmin_spirit", pikmin_spirit);
@@ -105,13 +104,6 @@ void asset_file_names_struct::load(data_node* file) {
     rs.set("throw_preview_dashed", throw_preview_dashed);
     rs.set("value_font", value_font);
     rs.set("wave_ring", wave_ring);
-    
-    for(unsigned char i = 0; i < 3; ++i) {
-        rs.set(
-            "mouse_button_" + i2s(i + 1) + "_icon",
-            mouse_button_icon[i]
-        );
-    }
 }
 
 
@@ -122,8 +114,8 @@ bitmap_effect_info::bitmap_effect_info() :
     translation(0, 0),
     rotation(0),
     scale(1, 1),
-    tint_color(al_map_rgb(255, 255, 255)),
-    glow_color(al_map_rgb(0, 0, 0)) {
+    tint_color(COLOR_WHITE),
+    glow_color(COLOR_BLACK) {
     
 }
 
@@ -264,31 +256,6 @@ bmp_manager::bmp_info::bmp_info(ALLEGRO_BITMAP* b) :
 
 
 /* ----------------------------------------------------------------------------
- * Adds a new button to the list.
- * id:
- *   Its ID.
- * name:
- *   Its name.
- * option_name:
- *   The name of its property in the options file.
- * default_control_str:
- *   A string representing the default controls for this button.
- */
-void button_manager::add(
-    const size_t id, const string &name, const string &option_name,
-    const string &default_control_str
-) {
-    button_manager::button b;
-    b.id = id;
-    b.name = name;
-    b.option_name = option_name;
-    b.default_control_str = default_control_str;
-    
-    list.push_back(b);
-}
-
-
-/* ----------------------------------------------------------------------------
  * Creates a camera info struct.
  */
 camera_info::camera_info() :
@@ -323,9 +290,9 @@ void camera_info::set_zoom(const float new_zoom) {
 const float CAMERA_SMOOTHNESS_MULT = 4.5f;
 
 /* ----------------------------------------------------------------------------
- * Ticks one frame of camera movement.
+ * Ticks camera movement by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void camera_info::tick(const float delta_t) {
     pos.x += (target_pos.x - pos.x) * (CAMERA_SMOOTHNESS_MULT * delta_t);
@@ -428,13 +395,13 @@ void fade_manager::start_fade(
 
 
 /* ----------------------------------------------------------------------------
- * Ticks the fade manager by one frame.
- * time:
- *   How many seconds to tick by.
+ * Ticks time by one frame of logic.
+ * delta_t:
+ *   How long the frame's tick is, in seconds.
  */
-void fade_manager::tick(const float time) {
+void fade_manager::tick(const float delta_t) {
     if(time_left == 0) return;
-    time_left -= time;
+    time_left -= delta_t;
     if(time_left <= 0) {
         time_left = 0;
         if(on_end) on_end();
@@ -451,134 +418,12 @@ font_list::font_list() :
     builtin(nullptr),
     counter(nullptr),
     cursor_counter(nullptr),
+    slim(nullptr),
     standard(nullptr),
     value(nullptr) {
     
 }
 
-
-
-/* ----------------------------------------------------------------------------
- * Creates a new HUD item.
- * center:
- *   Center coordinates, in screen dimension ratio.
- * size:
- *   Dimensions, in screen dimension ratio.
- */
-hud_item::hud_item(const point center, const point size) :
-    center(center),
-    size(size) {
-    
-}
-
-
-/* ----------------------------------------------------------------------------
- * Initializes a HUD item manager.
- * item_total:
- *   How many HUD items exist in total.
- */
-hud_item_manager::hud_item_manager(const size_t item_total) {
-    items.assign(item_total, hud_item());
-}
-
-
-/* ----------------------------------------------------------------------------
- * Retrieves the data necessary for the drawing routine.
- * Returns false if this element shouldn't be drawn.
- * id:
- *   ID of the HUD item.
- * center:
- *   Pointer to place the final center coordinates in, if any.
- * size:
- *   Pointer to place the final dimensions in, if any.
- */
-bool hud_item_manager::get_draw_data(
-    const size_t id, point* center, point* size
-) const {
-    const hud_item* h = &items[id];
-    if(h->size.x <= 0 || h->size.y <= 0) return false;
-    if(h->center.x + h->size.x / 2.0f < 0)    return false;
-    if(h->center.x - h->size.x / 2.0f > 1.0f) return false;
-    if(h->center.y + h->size.y / 2.0f < 0)    return false;
-    if(h->center.y - h->size.y / 2.0f > 1.0f) return false;
-    
-    if(center) {
-        center->x = h->center.x * game.win_w;
-        center->y = h->center.y * game.win_h;
-    }
-    if(size) {
-        size->x = h->size.x * game.win_w;
-        size->y = h->size.y * game.win_h;
-    }
-    
-    return true;
-}
-
-
-/* ----------------------------------------------------------------------------
- * Returns whether the mouse cursor is inside the specified item or not.
- * id:
- *   ID of the item to check.
- */
-bool hud_item_manager::is_mouse_in(const size_t id) {
-    const hud_item* h = &items[id];
-    if(
-        game.mouse_cursor_s.x >
-        h->center.x * game.win_w + h->size.x * game.win_w
-    ) {
-        return false;
-    }
-    if(
-        game.mouse_cursor_s.x <
-        h->center.x * game.win_w - h->size.x * game.win_w
-    ) {
-        return false;
-    }
-    if(
-        game.mouse_cursor_s.y >
-        h->center.y * game.win_h + h->size.y * game.win_h
-    ) {
-        return false;
-    }
-    if(
-        game.mouse_cursor_s.y <
-        h->center.y * game.win_h - h->size.y * game.win_h
-    ) {
-        return false;
-    }
-    return true;
-}
-
-
-/* ----------------------------------------------------------------------------
- * Sets a HUD item's data.
- * id:
- *   ID of the HUD item.
- * x:
- *   Horizontal coordinate, in screen width percentage (0 to 100, normally).
- * y:
- *   Vertical coordinate, in screen height percentage (0 to 100, normally).
- * w:
- *   Total width, in screen width percentage (0 to 100, normally).
- * h:
- *   Total height, in screen height percentage (0 to 100, normally).
- */
-void hud_item_manager::set_item(
-    const size_t id,
-    const float x, const float y, const float w, const float h
-) {
-    items[id] =
-        hud_item(point(x / 100.0f, y / 100.0f), point(w / 100.0f, h / 100.0f));
-}
-
-
-/* ----------------------------------------------------------------------------
- * Ticks the manager one frame in time.
- * time:
- *   Seconds to tick by.
- */
-void hud_item_manager::tick(const float time) {
-}
 
 
 /* ----------------------------------------------------------------------------
@@ -781,9 +626,9 @@ vector<string> msg_box_info::get_current_lines() const {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks one frame of gameplay.
+ * Ticks time by one frame of logic.
  * delta_t:
- *   Seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void msg_box_info::tick(const float delta_t) {
     if(cur_char < stopping_chars[cur_section + 1]) {
@@ -965,9 +810,11 @@ void performance_monitor_struct::save_log() {
         get_current_time(false) +
         "; Pikifen version " +
         i2s(VERSION_MAJOR) + "." + i2s(VERSION_MINOR) +
-        "." + i2s(VERSION_REV) + ", game version " +
-        game.config.version;
-        
+        "." + i2s(VERSION_REV);
+    if(!game.config.version.empty()) {
+        s += ", game version " + game.config.version;
+    }
+    
     s +=
         "\nData from the latest played area, " + area_name + ", with " +
         i2s(frame_samples) + " gameplay frames sampled.\n";
@@ -1554,61 +1401,6 @@ bool script_var_reader::get(const string &name, point &dest) const {
 
 
 /* ----------------------------------------------------------------------------
- * Returns the name of a sector type, given its number.
- * Returns an empty string on error.
- * nr:
- *   Number of the sector type.
- */
-string sector_types_manager::get_name(const unsigned char nr) const {
-    if(nr < names.size()) return names[nr];
-    return "";
-}
-
-
-/* ----------------------------------------------------------------------------
- * Returns the number of a sector type, given its name.
- * Returns 255 on error.
- * name:
- *   Name of the sector type.
- */
-unsigned char sector_types_manager::get_nr(const string &name) const {
-    for(unsigned char n = 0; n < names.size(); ++n) {
-        if(names[n] == name) return n;
-    }
-    return 255;
-}
-
-
-/* ----------------------------------------------------------------------------
- * Returns the number of sector types registered.
- */
-unsigned char sector_types_manager::get_nr_of_types() const {
-    return names.size();
-}
-
-
-/* ----------------------------------------------------------------------------
- * Registers a new type of sector.
- * nr:
- *   Its ID number.
- * name:
- *   Its name.
- */
-void sector_types_manager::register_type(
-    const unsigned char nr, const string &name
-) {
-    if(nr >= names.size()) {
-        names.insert(names.end(), (nr + 1) - names.size(), "");
-    }
-    names[nr] = name;
-}
-
-
-
-
-
-
-/* ----------------------------------------------------------------------------
  * Clears the list of registered subgroup types.
  */
 void subgroup_type_manager::clear() {
@@ -1714,8 +1506,11 @@ void subgroup_type_manager::register_type(
  * Creates a system asset list struct.
  */
 system_asset_list::system_asset_list():
+    bmp_bright_circle(nullptr),
+    bmp_bright_ring(nullptr),
     bmp_bubble_box(nullptr),
     bmp_checkbox_check(nullptr),
+    bmp_control_icons(nullptr),
     bmp_cursor(nullptr),
     bmp_enemy_spirit(nullptr),
     bmp_focus_box(nullptr),
@@ -1723,8 +1518,6 @@ system_asset_list::system_asset_list():
     bmp_idle_glow(nullptr),
     bmp_more(nullptr),
     bmp_mouse_cursor(nullptr),
-    bmp_mouse_wd_icon(nullptr),
-    bmp_mouse_wu_icon(nullptr),
     bmp_notification(nullptr),
     bmp_pikmin_silhouette(nullptr),
     bmp_pikmin_spirit(nullptr),
@@ -1740,9 +1533,6 @@ system_asset_list::system_asset_list():
     bmp_throw_preview_dashed(nullptr),
     bmp_wave_ring(nullptr) {
     
-    bmp_mouse_button_icon[0] = NULL;
-    bmp_mouse_button_icon[1] = NULL;
-    bmp_mouse_button_icon[2] = NULL;
 }
 
 
@@ -1750,7 +1540,7 @@ system_asset_list::system_asset_list():
 /* ----------------------------------------------------------------------------
  * Creates a timer.
  * duration:
- *   How long before it ticks, in seconds.
+ *   How long before it reaches the end, in seconds.
  * on_end:
  *   Code to run when time ends.
  */
@@ -1812,13 +1602,13 @@ void timer::stop() {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks a timer.
- * amount:
- *   Time to tick.
+ * Ticks time by one frame of logic.
+ * delta_t:
+ *   How long the frame's tick is, in seconds.
  */
-void timer::tick(const float amount) {
+void timer::tick(const float delta_t) {
     if(time_left == 0.0f) return;
-    time_left = std::max(time_left - amount, 0.0f);
+    time_left = std::max(time_left - delta_t, 0.0f);
     if(time_left == 0.0f && on_end) {
         on_end();
     }
@@ -1893,9 +1683,9 @@ void whistle_struct::stop_whistling() {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks one frame of gameplay.
+ * Ticks time by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  * center:
  *   What its center is on this frame.
  * whistle_range:
@@ -1914,10 +1704,7 @@ void whistle_struct::tick(
     if(whistling) {
         //Create rings.
         next_ring_timer.tick(delta_t);
-        
-        if(game.options.pretty_whistle) {
-            next_dot_timer.tick(delta_t);
-        }
+        next_dot_timer.tick(delta_t);
         
         for(unsigned char d = 0; d < 6; ++d) {
             if(dot_radius[d] == -1) continue;

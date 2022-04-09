@@ -38,7 +38,7 @@ area_menu_state::area_menu_state() :
  * Draws the area menu.
  */
 void area_menu_state::do_drawing() {
-    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_clear_to_color(COLOR_BLACK);
     draw_bitmap(
         bmp_menu_bg, point(game.win_w * 0.5, game.win_h * 0.5),
         point(game.win_w, game.win_h), 0, map_gray(64)
@@ -53,7 +53,7 @@ void area_menu_state::do_drawing() {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks one frame's worth of logic.
+ * Ticks time by one frame of logic.
  */
 void area_menu_state::do_logic() {
     game.fade_mgr.tick(game.delta_t);
@@ -150,7 +150,6 @@ void area_menu_state::load() {
     //Area list scrollbar.
     scroll_gui_item* list_scroll = new scroll_gui_item();
     list_scroll->list_item = list_box;
-    list_box->scroll_item = list_scroll;
     gui.add_item(list_scroll, "list_scroll");
     
     //Items for the various areas.
@@ -187,8 +186,10 @@ void area_menu_state::load() {
         [this]
     (const point & center, const point & size) {
         draw_compressed_scaled_text(
-            game.fonts.standard, al_map_rgb(255, 255, 255),
-            center, point(0.7f, 0.7f), ALLEGRO_ALIGN_CENTER, 1, size,
+            game.fonts.standard, COLOR_WHITE,
+            center, point(0.7f, 0.7f),
+            ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER, size,
+            false,
             gui.get_current_tooltip()
         );
     };

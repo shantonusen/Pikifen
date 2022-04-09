@@ -141,6 +141,10 @@
         <td>Triggered when the object takes any sort of damage.</td>
       </tr>
       <tr>
+        <th style="text-align: left;"><code>on_finish_receiving_delivery</code></th>
+        <td>Triggered when another object, delivered to it by carrier Pikmin, finishes being received.</td>
+      </tr>
+      <tr>
         <th style="text-align: left;"><code>on_held</code></th>
         <td>Triggered when the object is picked up by another one. Particularly useful for tool objects.</td>
       </tr>
@@ -155,6 +159,10 @@
       <tr>
         <th style="text-align: left;"><code>on_released</code></th>
         <td>Triggered when the object was being held by another, but has now been released. Particularly useful for tool objects.</td>
+      </tr>
+      <tr>
+        <th style="text-align: left;"><code>on_start_receiving_delivery</code></th>
+        <td>Triggered when another object, delivered to it by carrier Pikmin, starts being received.</td>
       </tr>
       <tr>
         <th style="text-align: left;"><code>on_weight_added</code></th>
@@ -766,7 +774,7 @@
       </tr>
       <tr>
         <th><code>drain_liquid</code></th>
-        <td>Makes the liquid in the sector it is on start draining. After a few seconds, it will be completely liquid-free. This will affect the sector it is on as well as all neighboring sectors that have liquid, or are bridges (or bridge rails).</td>
+        <td>Makes the liquid in the sector it is on start draining. After a few seconds, it will be completely liquid-free. This will affect the sector it is on as well as all neighboring sectors that have liquid.</td>
       </tr>
       <tr>
         <th><code>print</code></th>
@@ -781,7 +789,11 @@
           <dt><code><b>set_animation</b> &lt;animation&gt;</code></dt>
           <dd>Changes to and begins the animation &lt;animation&gt;.</dd>
           <dt><code><b>set_animation</b> &lt;animation&gt; no_restart</code></dt>
-          <dd>Same as above, but doesn't set the frame number to 0, meaning that animation will continue from whatever frame number the previous one left off.</dd>
+          <dd>Same as normal, but doesn't set the frame number to 0, meaning that animation will continue from whatever frame number the previous one left off.</dd>
+          <dt><code><b>set_animation</b> &lt;animation&gt; random_time</code></dt>
+          <dd>Same as normal, but starts on a random time.</dd>
+          <dt><code><b>set_animation</b> &lt;animation&gt; random_time_on_spawn</code></dt>
+          <dd>Same as above, but only when the enemy has just spawned. Otherwise it starts the animation from the beginning.</dd>
         </dl></td>
       </tr>
       <tr>

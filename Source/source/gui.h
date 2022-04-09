@@ -20,6 +20,7 @@
 #include <allegro5/allegro_font.h>
 
 #include "const.h"
+#include "controls.h"
 #include "misc_structs.h"
 #include "utils/data_file.h"
 #include "utils/geometry_utils.h"
@@ -28,11 +29,22 @@ using std::map;
 using std::vector;
 
 
+//Animations for the GUI manager to animate its items with.
 enum GUI_MANAGER_ANIMS {
+    //None.
     GUI_MANAGER_ANIM_NONE,
+    //Items are outward out of view, and slide inward into view.
     GUI_MANAGER_ANIM_OUT_TO_IN,
+    //Items are in view, and slide outward out of view.
     GUI_MANAGER_ANIM_IN_TO_OUT,
+    //Items are above out of view, and slide downard into view.
+    GUI_MANAGER_ANIM_UP_TO_CENTER,
+    //Items are in view, and slide up out of view.
+    GUI_MANAGER_ANIM_CENTER_TO_UP
 };
+
+
+class gui_manager;
 
 
 /* ----------------------------------------------------------------------------
@@ -40,9 +52,28 @@ enum GUI_MANAGER_ANIMS {
  */
 class gui_item {
 public:
-    //On-screen position, in screen ratio.
+
+    //Juicy animation types for GUI items.
+    enum JUICE_TYPES {
+        //None.
+        JUICE_TYPE_NONE,
+        //Text grow effect, low impact.
+        JUICE_TYPE_GROW_TEXT_LOW,
+        //Text grow effect, high impact.
+        JUICE_TYPE_GROW_TEXT_HIGH,
+        //Elastic text grow effect, low impact.
+        JUICE_TYPE_GROW_TEXT_ELASTIC_LOW,
+        //Elastic text grow effect, high impact.
+        JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH,
+        //Icon grow effect.
+        JUICE_TYPE_GROW_ICON,
+    };
+    
+    //What GUI manager it belongs to, if any.
+    gui_manager* manager;
+    //Its raw on-screen position, in screen ratio (or parent ratio).
     point center;
-    //Width and height, in screen ratio.
+    //Its raw width and height, in screen ratio (or parent ratio).
     point size;
     //Is it currently visible?
     bool visible;
@@ -60,7 +91,9 @@ public:
     float padding;
     //Can this item's activation be auto-repeated by holding the button down?
     bool can_auto_repeat;
-    //Timer that controls it growing in size. Used for juice.
+    //Type of the current juice animation.
+    JUICE_TYPES juice_type;
+    //Timer that controls the current juice animation.
     float juice_timer;
     
     //What to do when it's time to draw it.
@@ -71,6 +104,8 @@ public:
     std::function<void(const ALLEGRO_EVENT &ev)> on_event;
     //What to do when the item is activated.
     std::function<void(const point &cursor_pos)> on_activate;
+    //What to do when the mouse cursor is on top of it this frame.
+    std::function<void(const point &cursor_pos)> on_mouse_over;
     //What to do when a directional button's pressed with the item selected.
     std::function<bool(const size_t button_id)> on_menu_dir_button;
     //What to do when one of its children became the selected item.
@@ -82,23 +117,48 @@ public:
     void add_child(gui_item* item);
     //Returns the bottommost Y coordinate of the item's children items.
     float get_child_bottom();
-    //Returns the juicy grow amount for the current juicy grow animation.
-    float get_juicy_grow_amount();
-    //Returns the real center coordinates.
-    point get_real_center();
-    //Returns the real size coordinates.
-    point get_real_size();
+    //Returns the value related to the current juice animation.
+    float get_juice_value();
+    //Returns the reference center coordinates.
+    point get_reference_center();
+    //Returns the reference size.
+    point get_reference_size();
     //Returns whether the mouse cursor is on top of it.
     bool is_mouse_on(const point &cursor_pos);
     //Removes an item from the list of children.
     void remove_child(gui_item* item);
-    //Starts the process of animation a juicy grow effect.
-    void start_juicy_grow();
+    //Starts some juice animation.
+    void start_juice_animation(JUICE_TYPES type);
     
     gui_item(const bool selectable = false);
     
     static const float JUICY_GROW_DURATION;
-    static const float JUICY_GROW_DELTA;
+    static const float JUICY_GROW_ELASTIC_DURATION;
+    static const float JUICY_GROW_ICON_MULT;
+    static const float JUICY_GROW_TEXT_LOW_MULT;
+    static const float JUICY_GROW_TEXT_HIGH_MULT;
+};
+
+
+/* ----------------------------------------------------------------------------
+ * A GUI item with fields ready to make it behave like a bullet point in a list.
+ */
+class bullet_point_gui_item : public gui_item {
+public:
+    static const float BULLET_PADDING;
+    static const float BULLET_RADIUS;
+    
+    //Text to display on the bullet point.
+    string text;
+    //Font to display the text with.
+    ALLEGRO_FONT* font;
+    //Color to tint the text with.
+    ALLEGRO_COLOR color;
+    
+    bullet_point_gui_item(
+        const string &text, ALLEGRO_FONT* font,
+        const ALLEGRO_COLOR &color = COLOR_WHITE
+    );
 };
 
 
@@ -116,7 +176,7 @@ public:
     
     button_gui_item(
         const string &text, ALLEGRO_FONT* font,
-        const ALLEGRO_COLOR &color = al_map_rgb(255, 255, 255)
+        const ALLEGRO_COLOR &color = COLOR_WHITE
     );
 };
 
@@ -137,7 +197,7 @@ public:
     
     check_gui_item(
         bool* value, const string &text, ALLEGRO_FONT* font,
-        const ALLEGRO_COLOR &color = al_map_rgb(255, 255, 255)
+        const ALLEGRO_COLOR &color = COLOR_WHITE
     );
 };
 
@@ -149,8 +209,6 @@ class scroll_gui_item;
  */
 class list_gui_item : public gui_item {
 public:
-    //What scrollbar item controls it, if any.
-    scroll_gui_item* scroll_item;
     //What the offset is supposed to be, after it finishes animating.
     float target_offset;
     
@@ -175,6 +233,10 @@ public:
     std::function<void()> on_next;
     
     picker_gui_item(const string &base_text, const string &option);
+    
+private:
+    //Highlight one of the arrows due to mouse-over. 255 = none.
+    unsigned char arrow_highlight;
 };
 
 
@@ -206,7 +268,7 @@ public:
     
     text_gui_item(
         const string &text, ALLEGRO_FONT* font,
-        const ALLEGRO_COLOR &color = al_map_rgb(255, 255, 255),
+        const ALLEGRO_COLOR &color = COLOR_WHITE,
         const int flags = ALLEGRO_ALIGN_CENTER
     );
 };
@@ -229,6 +291,10 @@ public:
     gui_item* selected_item;
     //Item to activate when the user chooses to go back.
     gui_item* back_item;
+    //Is it currently responding to input?
+    bool responsive;
+    //Should it ignore input while animating?
+    bool ignore_input_on_animation;
     
     //Add an item to the list.
     void add_item(gui_item* item, const string &id = "");
@@ -238,12 +304,18 @@ public:
     void tick(const float delta_t);
     //Returns the current item's tooltip, if any.
     string get_current_tooltip();
+    //Get an item's draw information.
+    bool get_item_draw_info(
+        gui_item* item, point* draw_center, point* draw_size
+    );
     //Handle an Allegro event.
     void handle_event(const ALLEGRO_EVENT &ev);
     //Handle a button press or release.
-    void handle_menu_button(
-        const size_t action, const float pos, const size_t player
+    bool handle_menu_button(
+        const BUTTONS action, const float pos, const size_t player
     );
+    //Hides items until an animation shows them again.
+    void hide_items();
     //Reads item coordinates from a data node.
     void read_coords(data_node* node);
     //Registers an item's default centers and size.
@@ -259,6 +331,8 @@ public:
     void start_animation(
         const GUI_MANAGER_ANIMS type, const float duration
     );
+    //Was the last input a mouse input?
+    bool was_last_input_mouse();
     
     //Destroys all allocated items and information.
     void destroy();
@@ -282,6 +356,8 @@ private:
     bool ok_pressed;
     //Is the back button pressed?
     bool back_pressed;
+    //Was the last input given a mouse movement?
+    bool last_input_was_mouse;
     //Is the current item's activation auto-repeat mode on?
     bool auto_repeat_on;
     //How long the activation button has been held for.
@@ -292,6 +368,8 @@ private:
     GUI_MANAGER_ANIMS anim_type;
     //Timer for the current animation.
     timer anim_timer;
+    //Are the items currently visible?
+    bool visible;
     
     static const float AUTO_REPEAT_MAX_INTERVAL;
     static const float AUTO_REPEAT_MIN_INTERVAL;

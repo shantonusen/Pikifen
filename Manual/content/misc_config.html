@@ -110,6 +110,7 @@
       <li><b><code>is_damage_ratio</code></b>: If <code>true</code>, then the number specified in <code>damage</code> is the ratio of total health to sap away. For instance, <code>0.5</code> means one half of the enemy's total health is removed. If <code>false</code>, the number is just a normal amount of damage. Defaults to <code>false</code>.</li>
       <li><b><code>particle_generator</code></b>: When the damage is applied, some particles can be spawned. This is the name of the particle generator to use, if any. The particles are spawned in the position of the object that receives the damage.</li>
       <li><b><code>particle_offset</code></b>: If particles are meant to spawn, you can offset them from the object's center here. The format is <code>x y z</code>, and these are <a href="glossary.html#R">relative coordinates</a>.</li>
+      <li><b><code>status_to_apply</code></b>: A status effect to apply when the spike damage is dealt. Leave empty for none. Default is empty.</li>
     </ul>
 
     <p>Remember to change the object type properties for the objects you want to deal this spike damage, as well as the different spike damage vulnerability modifiers, as explained <a href="mob_type.html">here</a>.</p>
@@ -120,8 +121,11 @@
     
     <ul>
       <li><b><code>area_name_font</code></b>: Font to use for area names.</li>
+      <li><b><code>bright_circle</code></b>: A bright circular shape. Used for the whistle's dots.</li>
+      <li><b><code>bright_ring</code></b>: A bright ring shape. Used for the control point in front of a ship.</li>
       <li><b><code>bubble_box</code></b>: Bubble-like box. In-engine, it is split into three equal-sized rows and three equal-sized columns, and uses that split to texture the boxes.</li>
       <li><b><code>checkbox_check</code></b>: The checkmark of checkboxes in menus.</li>
+      <li><b><code>control_icons</code></b>: A spritesheet of icons for specific controls, like mouse buttons, certain keys, etc.</li>
       <li><b><code>cursor</code></b>: Leader cursor.</li>
       <li><b><code>cursor_counter_font</code></b>: Font to use for the standby Pikmin count near the cursor.</li>
       <li><b><code>counter_font</code></b>: Font to use for counters in the HUD.</li>
@@ -133,12 +137,7 @@
       <li><b><code>main_font</code></b>: The game's main text font.</li>
       <li><b><code>main_menu</code></b>: Background for the main menu.</li>
       <li><b><code>more</code></b>: Icon used in menus to indicate there is still more content beyond. This graphic faces the right, and gets flipped in-engine when needed.</li>
-      <li><b><code>mouse_button_1_icon</code></b>: Icon for the left mouse button.</li>
-      <li><b><code>mouse_button_2_icon</code></b>: Icon for the right mouse button.</li>
-      <li><b><code>mouse_button_3_icon</code></b>: Icon for the middle mouse button.</li>
       <li><b><code>mouse_cursor</code></b>: Mouse cursor.</li>
-      <li><b><code>mouse_wheel_down_icon</code></b>: Icon for the mouse wheel scrolling down.</li>
-      <li><b><code>mouse_wheel_up_icon</code></b>: Icon for the mouse wheel scrolling up.</li>
       <li><b><code>notification</code></b>: Notification bubble.</li>
       <li><b><code>pikmin_silhouette</code></b>: Silhouette of a Pikmin. Used in the area editor's cross-section feature.</li>
       <li><b><code>pikmin_spirit</code></b>: Pikmin spirit.</li>

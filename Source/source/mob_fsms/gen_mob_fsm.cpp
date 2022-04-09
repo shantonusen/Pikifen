@@ -14,6 +14,7 @@
 
 #include "../const.h"
 #include "../functions.h"
+#include "../mobs/bridge.h"
 #include "../mobs/enemy.h"
 #include "../mobs/onion.h"
 #include "../mobs/pikmin.h"
@@ -81,7 +82,7 @@ void gen_mob_fsm::carry_begin_move(mob* m, void* info1, void* info2) {
     m->carry_info->is_moving = true;
     
     m->can_move_in_midair =
-        (m->path_info->taker_flags & PATH_TAKER_FLAG_AIRBORNE);
+        (m->path_info->settings.flags & PATH_FOLLOW_FLAG_AIRBORNE);
         
     if(m->carry_info->intended_mob == NULL) {
         m->fsm.run_event(MOB_EV_PATH_BLOCKED);
@@ -100,30 +101,50 @@ void gen_mob_fsm::carry_begin_move(mob* m, void* info1, void* info2) {
  *   Unused.
  */
 void gen_mob_fsm::carry_get_path(mob* m, void* info1, void* info2) {
-    float target_distance = 3.0f;
+    path_follow_settings settings;
+    settings.flags |= PATH_FOLLOW_FLAG_CAN_CONTINUE;
+    
     if(m->carry_info->destination == CARRY_DESTINATION_SHIP) {
-        //Because the ship's beam can be offset, and because
+        //Special case: ships.
+        //Because the ship's control point can be offset, and because
         //the ship is normally in the way, let's consider a
         //"reached destination" event if the treasure is
-        //covering the beam, and not necessarily if the treasure
-        //is on the same coordinates as the beam.
+        //covering the control point, and not necessarily if the treasure
+        //is on the same coordinates as the control point.
         if(m->carry_info->intended_mob) {
-            ship* s_ptr = (ship*) m->carry_info->intended_mob;
-            target_distance =
+            ship* shi_ptr = (ship*) m->carry_info->intended_mob;
+            settings.final_target_distance =
                 std::max(
                     m->radius -
-                    s_ptr->shi_type->beam_radius,
+                    shi_ptr->shi_type->control_point_radius,
                     3.0f
                 );
         }
+        
+    } else if(m->carry_info->destination == CARRY_DESTINATION_LINKED_MOB) {
+        //Special case: bridges.
+        //Pikmin are meant to carry to the current tip of the bridge,
+        //but whereas the start of the bridge is on firm ground, the tip may
+        //be above a chasm or water, so the Pikmin might want to take a
+        //different path, or be unable to take a path at all.
+        //Let's fake the end point to be the start of the bridge,
+        //for the sake of path calculations.
+        if(
+            m->carry_info->intended_mob &&
+            m->carry_info->intended_mob->type->category->id ==
+            MOB_CATEGORY_BRIDGES
+        ) {
+            bridge* bri_ptr = (bridge*) m->carry_info->intended_mob;
+            settings.flags |= PATH_FOLLOW_FLAG_FAKED_END;
+            settings.flags |= PATH_FOLLOW_FLAG_FOLLOW_MOB;
+            settings.faked_end = bri_ptr->get_start_point();
+        }
     }
+
+    settings.target_point = m->carry_info->intended_point;
+    settings.target_mob = m->carry_info->intended_mob;
     
-    m->follow_path(
-        m->carry_info->intended_point, true,
-        m->carry_info->get_speed(), target_distance, false, ""
-    );
-    
-    m->path_info->target_point = m->carry_info->intended_point;
+    m->follow_path(settings, m->carry_info->get_speed());
     
     if(m->path_info->path.empty() && !m->path_info->go_straight) {
         m->fsm.run_event(MOB_EV_PATH_BLOCKED);
@@ -268,7 +289,7 @@ void gen_mob_fsm::handle_carrier_added(mob* m, void* info1, void* info2) {
     //Now, check if the fact that it can fly or not changed.
     if(!must_update && m->path_info) {
         bool old_is_airborne =
-            (m->path_info->taker_flags & PATH_TAKER_FLAG_AIRBORNE);
+            (m->path_info->settings.flags & PATH_FOLLOW_FLAG_AIRBORNE);
         bool new_is_airborne = m->carry_info->can_fly();
         must_update = old_is_airborne != new_is_airborne;
     }
@@ -281,7 +302,7 @@ void gen_mob_fsm::handle_carrier_added(mob* m, void* info1, void* info2) {
         if(
             !vectors_contain_same(
                 new_invulnerabilities,
-                m->path_info->invulnerabilities
+                m->path_info->settings.invulnerabilities
             )
         ) {
             must_update = true;
@@ -346,7 +367,7 @@ void gen_mob_fsm::handle_carrier_removed(mob* m, void* info1, void* info2) {
     //Now, check if the fact that it can fly or not changed.
     if(!must_update && m->path_info) {
         bool old_is_airborne =
-            (m->path_info->taker_flags & PATH_TAKER_FLAG_AIRBORNE);
+            (m->path_info->settings.flags & PATH_FOLLOW_FLAG_AIRBORNE);
         bool new_is_airborne = m->carry_info->can_fly();
         must_update = old_is_airborne != new_is_airborne;
     }
@@ -359,7 +380,7 @@ void gen_mob_fsm::handle_carrier_removed(mob* m, void* info1, void* info2) {
         if(
             !vectors_contain_same(
                 new_invulnerabilities,
-                m->path_info->invulnerabilities
+                m->path_info->settings.invulnerabilities
             )
         ) {
             must_update = true;
@@ -387,7 +408,7 @@ void gen_mob_fsm::handle_delivery(mob* m, void* info1, void* info2) {
     engine_assert(m->focused_mob != NULL, m->print_state_history());
     
     m->focused_mob->fsm.run_event(
-        MOB_EV_RECEIVE_DELIVERY, (void*) m
+        MOB_EV_FINISHED_RECEIVING_DELIVERY, (void*) m
     );
     
     m->to_delete = true;
@@ -419,16 +440,28 @@ void gen_mob_fsm::lose_momentum(mob* m, void* info1, void* info2) {
  */
 void gen_mob_fsm::start_being_delivered(mob* m, void* info1, void* info2) {
     for(size_t p = 0; p < m->carry_info->spot_info.size(); ++p) {
-        mob* p_ptr = m->carry_info->spot_info[p].pik_ptr;
-        if(p_ptr) {
-            p_ptr->fsm.run_event(MOB_EV_FINISHED_CARRYING);
+        mob* pik_ptr = m->carry_info->spot_info[p].pik_ptr;
+        if(pik_ptr) {
+            pik_ptr->fsm.run_event(MOB_EV_FINISHED_CARRYING);
         }
     }
     
     m->focus_on_mob(m->carry_info->intended_mob);
     m->tangible = false;
     m->become_uncarriable();
-    m->set_timer(DELIVERY_SUCK_TIME);
+    
+    m->focused_mob->fsm.run_event(MOB_EV_STARTED_RECEIVING_DELIVERY);
+    
+    switch(m->delivery_info->anim_type) {
+    case DELIVERY_ANIM_SUCK: {
+        m->set_timer(DELIVERY_SUCK_TIME);
+        break;
+    }
+    case DELIVERY_ANIM_TOSS: {
+        m->set_timer(DELIVERY_TOSS_TIME);
+        break;
+    }
+    }
 }
 
 

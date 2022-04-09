@@ -18,9 +18,10 @@
 #include <allegro5/allegro.h>
 
 #include "../animation.h"
+#include "../game_states/gameplay/in_world_hud.h"
 #include "../misc_structs.h"
 #include "../mob_script.h"
-#include "../mob_types/pikmin_type.h"
+#include "../mob_script_action.h"
 #include "../particle.h"
 #include "../sector.h"
 #include "../status.h"
@@ -33,6 +34,7 @@ using std::string;
 using std::vector;
 
 class mob_type;
+class pikmin_type;
 
 extern size_t next_mob_id;
 
@@ -41,71 +43,6 @@ const float GRAVITY_ADDER = -2600.0f;
 const float MOB_KNOCKBACK_H_POWER = 64.0f;
 const float MOB_KNOCKBACK_V_POWER = 800.0f;
 const float MOB_PUSH_EXTRA_AMOUNT = 50.0f;
-
-enum MOB_PARTICLE_GENERATOR_IDS {
-    MOB_PARTICLE_GENERATOR_NONE,
-    //Custom particle generator issued by the script.
-    MOB_PARTICLE_GENERATOR_SCRIPT,
-    //Trail effect left behind by a throw.
-    MOB_PARTICLE_GENERATOR_THROW,
-    //Ring-shaped wave when going in water.
-    MOB_PARTICLE_GENERATOR_WAVE_RING,
-    
-    //Specific status effects are numbered starting on this.
-    //So make sure this is the last on the enum.
-    MOB_PARTICLE_GENERATOR_STATUS,
-};
-
-
-enum MOB_TEAMS {
-    //Has no friends!
-    MOB_TEAM_NONE,
-    //Players -- usually leaders and Pikmin.
-    MOB_TEAM_PLAYER_1,
-    MOB_TEAM_PLAYER_2,
-    MOB_TEAM_PLAYER_3,
-    MOB_TEAM_PLAYER_4,
-    //Enemies -- useful if you want enemy in-fighting.
-    MOB_TEAM_ENEMY_1,
-    MOB_TEAM_ENEMY_2,
-    MOB_TEAM_ENEMY_3,
-    MOB_TEAM_ENEMY_4,
-    //Miscellaneous obstacles.
-    MOB_TEAM_OBSTACLE,
-    //Whatever else.
-    MOB_TEAM_OTHER,
-    //Number of teams.
-    N_MOB_TEAMS,
-};
-
-
-enum MOB_TARGET_TYPES {
-    //Cannot be damaged or hunted down.
-    MOB_TARGET_TYPE_NONE = 0x00,
-    //Leaders and Pikmin. Can be damaged by enemies, mostly.
-    MOB_TARGET_TYPE_PLAYER = 0x01,
-    //Enemies. Can be damaged by Pikmin and leaders, mostly.
-    MOB_TARGET_TYPE_ENEMY = 0x02,
-    //Weaker objects that can be damaged by many things.
-    MOB_TARGET_TYPE_WEAK_PLAIN_OBSTACLE = 0x04,
-    //Stronger objects that can be damaged by less-than-many things.
-    MOB_TARGET_TYPE_STRONG_PLAIN_OBSTACLE = 0x08,
-    //Objects that only Pikmin can damage.
-    MOB_TARGET_TYPE_PIKMIN_OBSTACLE = 0x10,
-    //Objects that can only be taken down with explosive force.
-    MOB_TARGET_TYPE_EXPLODABLE = 0x20,
-    //Objects that Pikmin and explosives can damage.
-    MOB_TARGET_TYPE_EXPLODABLE_PIKMIN_OBSTACLE = 0x40,
-    //Objects that can get hurt by pretty much everything.
-    MOB_TARGET_TYPE_FRAGILE = 0x80,
-};
-
-
-enum H_MOVE_RESULTS {
-    H_MOVE_OK,
-    H_MOVE_TELEPORTED,
-    H_MOVE_FAIL,
-};
 
 
 /* ----------------------------------------------------------------------------
@@ -117,6 +54,9 @@ enum H_MOVE_RESULTS {
  */
 class mob {
 public:
+    static const float DAMAGE_SQUASH_DURATION;
+    static const float DAMAGE_SQUASH_AMOUNT;
+    
     //Basic information.
     //What type of (generic) mob it is. (e.g. Olimar, Red Bulborb, etc.)
     mob_type* type;
@@ -189,7 +129,7 @@ public:
     float push_amount;
     //Angle that another mob is pushing it to.
     float push_angle;
-    //Is it currently in a state where it cannot be pushed?
+    //Can it not be pushed?
     bool unpushable;
     //Can it be touched by other mobs?
     bool tangible;
@@ -231,12 +171,6 @@ public:
     //If it's stored inside another mob, this indicates which mob it is.
     mob* stored_inside_another;
     
-    //Health wheel properties.
-    //How much the health wheel is filled. Slowly moves to its target amount.
-    float health_wheel_smoothed_ratio;
-    //Current health wheel alpha. Moves to 0 when health <= 0.
-    float health_wheel_alpha;
-    
     //Other properties.
     //Incremental ID. Used for minor things.
     size_t id;
@@ -244,8 +178,8 @@ public:
     float health;
     //During this period, the mob cannot be attacked.
     timer invuln_period;
-    //Mob's team (who it can damage); use MOB_TEAM_*.
-    unsigned char team;
+    //Mob's team (who it can damage).
+    MOB_TEAMS team;
     //If it should be hidden (not drawn, no shadow, no health).
     bool hide;
     //If its shadow should be visible.
@@ -278,6 +212,12 @@ public:
     parent_info_struct* parent;
     //How long it's been alive for.
     float time_alive;
+    //Time left in the current damage squash-and-stretch animation.
+    float damage_squash_time;
+    //Data about its on-screen health wheel, if any.
+    in_world_health_wheel* health_wheel;
+    //Data about its on-screen fraction numbers, if any.
+    in_world_fraction* fraction;
     //Cached value of the angle's cosine.
     float angle_cos;
     //Cached value of the angle's sine.
@@ -292,9 +232,13 @@ public:
     
     void set_animation(
         const size_t nr,
-        const bool pre_named = true, const bool auto_start = true
+        const bool pre_named = true,
+        const START_ANIMATION_OPTIONS options = START_ANIMATION_NORMAL
     );
-    void set_animation(const string &name, const bool auto_start = true);
+    void set_animation(
+        const string &name,
+        const START_ANIMATION_OPTIONS options = START_ANIMATION_NORMAL
+    );
     void set_health(const bool add, const bool ratio, const float amount);
     void set_timer(const float time);
     void set_var(const string &name, const string &value);
@@ -302,7 +246,7 @@ public:
     void set_rectangular_dim(const point &rectangular_dim);
     void set_can_block_paths(const bool blocks);
     
-    void become_carriable(const size_t destination);
+    void become_carriable(const CARRY_DESTINATIONS destination);
     void become_uncarriable();
     
     void apply_attack_damage(
@@ -341,7 +285,7 @@ public:
     void hold(
         mob* m, const size_t hitbox_nr,
         const float offset_dist, const float offset_angle,
-        const bool above_holder, const unsigned char rotation_method
+        const bool above_holder, const HOLD_ROTATION_METHODS rotation_method
     );
     void release(mob* m);
     bool can_hurt(mob* m) const;
@@ -359,10 +303,14 @@ public:
     void start_dying();
     void finish_dying();
     void respawn();
+    dist get_distance_between(
+        mob* m2_ptr, dist* regular_distance_cache = NULL
+    ) const;
     hitbox* get_hitbox(const size_t nr) const;
     hitbox* get_closest_hitbox(
         const point &p, const size_t h_type = INVALID, dist* d = NULL
     ) const;
+    bool has_clear_line(mob* target_mob) const;
     
     void chase(
         point* orig_coords, float* orig_z,
@@ -380,9 +328,7 @@ public:
     void stop_chasing();
     void stop_turning();
     bool follow_path(
-        const point &target, const bool can_continue,
-        const float speed, const float final_target_distance,
-        const bool is_script_action, const string &label
+        const path_follow_settings &settings, const float speed
     );
     void stop_following_path();
     void circle_around(
@@ -397,16 +343,20 @@ public:
     virtual float get_base_speed() const;
     
     void arachnorb_head_turn_logic();
-    void arachnorb_plan_logic(const unsigned char goal);
+    void arachnorb_plan_logic(const MOB_ACTION_ARACHNORB_PLAN_LOGIC_TYPES goal);
     void arachnorb_foot_move_logic();
     
     void apply_status_effect(status_type* s, const bool given_by_parent);
     void delete_old_status_effects();
-    void remove_particle_generator(const size_t id);
+    void remove_particle_generator(const MOB_PARTICLE_GENERATOR_IDS id);
     ALLEGRO_BITMAP* get_status_bitmap(float* bmp_scale) const;
     virtual bool can_receive_status(status_type* s) const;
     virtual void get_group_spot_info(
         point* final_spot, float* final_dist
+    ) const;
+    virtual bool get_fraction_numbers_info(
+        float* fraction_value_nr, float* fraction_req_nr,
+        ALLEGRO_COLOR* fraction_color
     ) const;
     virtual void handle_status_effect_gain(status_type* sta_type);
     virtual void handle_status_effect_loss(status_type* sta_type);
@@ -420,8 +370,8 @@ public:
     void get_sprite_bitmap_effects(
         sprite* s_ptr, bitmap_effect_info* info,
         const bool add_status, const bool add_sector_brightness,
-        const float delivery_time_ratio_left = LARGE_FLOAT,
-        const ALLEGRO_COLOR &delivery_color = al_map_rgb(0, 0, 0)
+        const bool add_delivery, const bool add_damage_squash,
+        const bool add_carry_sway
     ) const;
     point get_sprite_center(sprite* s) const;
     point get_sprite_dimensions(sprite* s, point* scale = NULL) const;
@@ -452,6 +402,8 @@ protected:
         edge* e_ptr, unsigned char wall_sector, const float move_angle,
         float* slide_angle
     ) const;
+    //Goes to the path's final destination.
+    void move_to_path_end(const float speed);
     //Tick its animation logic.
     void tick_animation(const float delta_t);
     //Tick the mob's "thinking" logic.
@@ -482,11 +434,14 @@ protected:
 };
 
 
-/* See mob_type_with_anim_groups.
+/* ----------------------------------------------------------------------------
+ * See mob_type_with_anim_groups.
  */
 class mob_with_anim_groups {
 public:
+    //Index number of its current base animation.
     size_t cur_base_anim_nr;
+    
     size_t get_animation_nr_from_base_and_group(
         const size_t base_anim_nr, const size_t group_nr,
         const size_t base_anim_total

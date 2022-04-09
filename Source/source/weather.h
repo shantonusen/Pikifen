@@ -23,6 +23,18 @@ using std::string;
 using std::vector;
 
 
+//Types of precipitation.
+enum PRECIPITATION_TYPES {
+    //None.
+    PRECIPITATION_TYPE_NONE,
+    //Rain.
+    PRECIPITATION_TYPE_RAIN,
+    //Wind.
+    PRECIPITATION_TYPE_WIND,
+};
+
+
+
 /* ----------------------------------------------------------------------------
  * Weather information.
  * Daylight is mixed in with the weather, as
@@ -34,6 +46,7 @@ using std::vector;
  */
 class weather {
 public:
+    //Name of this weather type.
     string name;
     //Vector with the lighting colors for specific times of day, in minutes.
     vector<std::pair<size_t, ALLEGRO_COLOR> > daylight;
@@ -48,24 +61,18 @@ public:
     float fog_far;
     //Fog -- color and density at 100% fogginess. Values throughout the day.
     vector<std::pair<size_t, ALLEGRO_COLOR> > fog_color;
-    unsigned char precipitation_type;
+    //Precipitation type, if any.
+    PRECIPITATION_TYPES precipitation_type;
     
     weather();
     weather(
         const string &n, const vector<std::pair<size_t, ALLEGRO_COLOR> > &dl,
         const vector<std::pair<size_t, unsigned char> > &ss,
         const vector<std::pair<size_t, unsigned char> > &bs,
-        const unsigned char pt
+        const PRECIPITATION_TYPES pt
     );
 };
 
-
-
-enum PRECIPITATION_TYPES {
-    PRECIPITATION_TYPE_NONE,
-    PRECIPITATION_TYPE_RAIN,
-    PRECIPITATION_TYPE_WIND,
-};
 
 
 #endif //ifndef WEATHER_INCLUDED

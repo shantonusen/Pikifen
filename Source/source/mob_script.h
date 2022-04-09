@@ -37,6 +37,7 @@ const unsigned char STATE_HISTORY_SIZE = 3;
 enum MOB_EV_TYPES {
     //"Special" events.
     
+    //Unknown.
     MOB_EV_UNKNOWN,
     //When the state is entered.
     MOB_EV_ON_ENTER,
@@ -44,6 +45,8 @@ enum MOB_EV_TYPES {
     MOB_EV_ON_LEAVE,
     //When the game ticks a frame.
     MOB_EV_ON_TICK,
+    //When the mob has been created, and has links and such set up and ready.
+    MOB_EV_ON_READY,
     
     //Script file stuff.
     
@@ -163,8 +166,10 @@ enum MOB_EV_TYPES {
     MOB_EV_PATHS_CHANGED,
     //When the focused mob stops being able to be focused.
     MOB_EV_FOCUSED_MOB_UNAVAILABLE,
-    //When the mob receives an object that was carried to it.
-    MOB_EV_RECEIVE_DELIVERY,
+    //When the mob starts to receive an object that was carried to it.
+    MOB_EV_STARTED_RECEIVING_DELIVERY,
+    //When the mob finishes receiving an object that was carried to it.
+    MOB_EV_FINISHED_RECEIVING_DELIVERY,
     //When the mob touches a drop that it can consume.
     MOB_EV_TOUCHED_DROP,
     //When the mob touches a track object.
@@ -205,30 +210,46 @@ enum MOB_EV_TYPES {
     //When the leader's pluck is canceled.
     LEADER_EV_CANCEL,
     
+    //Total.
+    
+    //Total amount of mob event types.
     N_MOB_EVENTS,
 };
 
 
+/* ----------------------------------------------------------------------------
+ * Actions to run on an event, inside a FSM.
+ */
 class mob_event {
 public:
-    unsigned char type;
+    //Type of event.
+    MOB_EV_TYPES type;
+    //Actions to run.
     vector<mob_action_call*> actions;
     
     void run(mob* m, void* custom_data_1 = NULL, void* custom_data_2 = NULL);
     mob_event(data_node* node, const vector<mob_action_call*> &actions);
     mob_event(
-        const unsigned char t,
+        const MOB_EV_TYPES t,
         const vector<mob_action_call*> &a = vector<mob_action_call*>()
     );
 };
 
 
+/* ----------------------------------------------------------------------------
+ * A mob's state in its FSM. A mob can only be in one state at any given
+ * time. Multiple mobs can share these states.
+ */
 class mob_state {
 public:
+    //Name of the state.
     string name;
+    //State ID.
     size_t id;
+    //List of events to handle in this state.
     mob_event* events[N_MOB_EVENTS];
-    mob_event* get_event(const size_t type) const;
+    
+    mob_event* get_event(const MOB_EV_TYPES type) const;
     
     mob_state(const string &name);
     mob_state(const string &name, mob_event* evs[N_MOB_EVENTS]);
@@ -236,9 +257,16 @@ public:
 };
 
 
+/* ----------------------------------------------------------------------------
+ * A mob's instance of a finite state machine. It contains information about
+ * what state it is in, and so on, but does not contain the list of states,
+ * events, and actions.
+ */
 class mob_fsm {
 public:
+    //Mob that this FSM belongs to.
     mob* m;
+    //Current state the mob is in.
     mob_state* cur_state;
     //Conversion between pre-named states and in-file states.
     vector<size_t> pre_named_conversions;
@@ -247,10 +275,10 @@ public:
     //If this is INVALID, use the mob type's first state nr. Else, use this.
     size_t first_state_override;
     
-    mob_event* get_event(const size_t type) const;
+    mob_event* get_event(const MOB_EV_TYPES type) const;
     size_t get_state_nr(const string &name) const;
     void run_event(
-        const size_t type,
+        const MOB_EV_TYPES type,
         void* custom_data_1 = NULL, void* custom_data_2 = NULL
     );
     bool set_state(
@@ -276,15 +304,18 @@ public:
 class easy_fsm_creator {
 public:
     void new_state(const string &name, const size_t id);
-    void new_event(const unsigned char type);
+    void new_event(const MOB_EV_TYPES type);
     void change_state(const string &new_state);
     void run(custom_action_code code);
     vector<mob_state*> finish();
     easy_fsm_creator();
     
 private:
+    //List of registered states.
     vector<mob_state*> states;
+    //State currently being staged.
     mob_state* cur_state;
+    //Event currently being staged.
     mob_event* cur_event;
     void commit_state();
     void commit_event();
@@ -292,10 +323,16 @@ private:
 };
 
 
+/* ----------------------------------------------------------------------------
+ * Information about how two hitboxes interacted.
+ */
 struct hitbox_interaction {
-    mob* mob2;  //Mob that touched our mob.
-    hitbox* h1; //Hitbox of our mob that got touched.
-    hitbox* h2; //Hitbox of the other mob.
+    //Mob that touched our mob.
+    mob* mob2;  
+    //Hitbox of our mob that got touched.
+    hitbox* h1; 
+    //Hitbox of the other mob.
+    hitbox* h2; 
     hitbox_interaction(
         mob* mob2 = NULL,
         hitbox* h1 = NULL, hitbox* h2 = NULL

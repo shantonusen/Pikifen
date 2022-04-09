@@ -22,7 +22,7 @@
 ship_type::ship_type() :
     mob_type(MOB_CATEGORY_SHIPS),
     can_heal(false),
-    beam_radius(0.0f) {
+    control_point_radius(45.0f) {
     
     nest = new pikmin_nest_type_struct();
     
@@ -70,10 +70,10 @@ anim_conversion_vector ship_type::get_anim_conversions() const {
 void ship_type::load_properties(data_node* file) {
     reader_setter rs(file);
     
-    rs.set("beam_offset_x", beam_offset.x);
-    rs.set("beam_offset_y", beam_offset.y);
-    rs.set("beam_radius", beam_radius);
     rs.set("can_heal", can_heal);
+    rs.set("control_point_radius", control_point_radius);
+    rs.set("control_point_offset", control_point_offset);
+    rs.set("receptacle_offset", receptacle_offset);
     
     nest->load_properties(file);
 }

@@ -27,9 +27,10 @@ status::status(status_type* type) :
 
 
 /* ----------------------------------------------------------------------------
- * Ticks a status effect instance's logic, but not its effects.
+ * Ticks a status effect instance's time by one frame of logic, but does not
+ * tick its effects logic.
  * delta_t:
- *   Seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void status::tick(const float delta_t) {
     if(type->auto_remove_time > 0.0f) {
@@ -46,13 +47,14 @@ void status::tick(const float delta_t) {
  */
 status_type::status_type() :
     affects(0),
-    color(al_map_rgba(0, 0, 0, 0)),
-    tint(al_map_rgb(255, 255, 255)),
-    glow(al_map_rgba(0, 0, 0, 0)),
+    color(COLOR_EMPTY),
+    tint(COLOR_WHITE),
+    glow(COLOR_EMPTY),
     removable_with_whistle(false),
     remove_on_hazard_leave(false),
     auto_remove_time(0.0f),
     reapply_rule(STATUS_REAPPLY_KEEP_TIME),
+    health_change(0.0f),
     health_change_ratio(0.0f),
     maturity_change_amount(0),
     state_change_type(STATUS_STATE_CHANGE_NONE),

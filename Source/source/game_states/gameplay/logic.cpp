@@ -36,20 +36,20 @@ void gameplay_state::do_aesthetic_logic() {
     
     //Swarming arrows.
     if(swarm_magnitude) {
-        swarm_next_arrow_timer.tick(game.delta_t);
+        cur_leader_ptr->swarm_next_arrow_timer.tick(game.delta_t);
     }
     
     dist leader_to_cursor_dist(cur_leader_ptr->pos, leader_cursor_w);
-    for(size_t a = 0; a < swarm_arrows.size(); ) {
-        swarm_arrows[a] += SWARM_ARROW_SPEED * game.delta_t;
+    for(size_t a = 0; a < cur_leader_ptr->swarm_arrows.size(); ) {
+        cur_leader_ptr->swarm_arrows[a] += SWARM_ARROW_SPEED * game.delta_t;
         
         dist max_dist =
             (swarm_magnitude > 0) ?
             game.config.cursor_max_dist * swarm_magnitude :
             leader_to_cursor_dist;
             
-        if(max_dist < swarm_arrows[a]) {
-            swarm_arrows.erase(swarm_arrows.begin() + a);
+        if(max_dist < cur_leader_ptr->swarm_arrows[a]) {
+            cur_leader_ptr->swarm_arrows.erase(cur_leader_ptr->swarm_arrows.begin() + a);
         } else {
             a++;
         }
@@ -270,6 +270,19 @@ void gameplay_state::do_gameplay_logic() {
             }
         }
         
+        if(!cur_leader_ptr) {
+            return;
+        }
+        
+        if(cur_leader_ptr->to_delete) {
+            if(process_total_leader_ko()) {
+                return;
+            } else {
+                game.states.gameplay->update_available_leaders();
+                change_to_next_leader(true, true, true);
+            }
+        }
+        
         for(size_t m = 0; m < n_mobs;) {
             //Mob deletion.
             mob* m_ptr = mobs.all[m];
@@ -320,7 +333,7 @@ void gameplay_state::do_gameplay_logic() {
             for(size_t s = 0; s < mobs.ships.size(); ++s) {
                 ship* s_ptr = mobs.ships[s];
                 d = dist(cur_leader_ptr->pos, s_ptr->pos);
-                if(!s_ptr->is_leader_under_beam(cur_leader_ptr)) {
+                if(!s_ptr->is_leader_on_cp(cur_leader_ptr)) {
                     continue;
                 }
                 if(cur_leader_ptr->health == cur_leader_ptr->type->max_health) {
@@ -362,7 +375,7 @@ void gameplay_state::do_gameplay_logic() {
                 }
                 for(size_t s = 0; s < mobs.ships.size(); ++s) {
                     d = dist(cur_leader_ptr->pos, mobs.ships[s]->pos);
-                    if(!mobs.ships[s]->is_leader_under_beam(cur_leader_ptr)) {
+                    if(!mobs.ships[s]->is_leader_on_cp(cur_leader_ptr)) {
                         continue;
                     }
                     if(mobs.ships[s]->shi_type->nest->pik_types.empty()) {
@@ -581,7 +594,7 @@ void gameplay_state::do_menu_logic() {
         }
     }
     
-    hud.tick(game.delta_t);
+    hud->tick(game.delta_t);
     
     //Process and print framerate and system info.
     if(game.show_system_info) {
@@ -650,15 +663,19 @@ void gameplay_state::do_menu_logic() {
         string resolution_str =
             i2s(game.win_w) + "x" + i2s(game.win_h);
         string area_v_str =
+            game.cur_area_data.version.empty() ?
+            "-" :
             game.cur_area_data.version;
         string area_maker_str =
+            game.cur_area_data.maker.empty() ?
+            "-" :
             game.cur_area_data.maker;
         string engine_v_str =
             i2s(VERSION_MAJOR) + "." +
             i2s(VERSION_MINOR) + "." +
             i2s(VERSION_REV);
         string game_v_str =
-            game.config.version;
+            game.config.version.empty() ? "-" : game.config.version;
             
         print_info(
             "FPS: " + fps_str +
@@ -915,17 +932,14 @@ void gameplay_state::process_mob_misc_interactions(
     if(
         nco_event &&
         m2_ptr->carry_info &&
-        !m2_ptr->carry_info->is_full() &&
-        d <=
-        m_ptr->radius + m2_ptr->radius + task_range(m_ptr)
+        !m2_ptr->carry_info->is_full()
     ) {
-    
-        pending_intermob_events.push_back(
-            pending_intermob_event(
-                d, nco_event, m2_ptr
-            )
-        );
-        
+        dist d_between = m_ptr->get_distance_between(m2_ptr, &d);
+        if(d_between <= task_range(m_ptr)) {
+            pending_intermob_events.push_back(
+                pending_intermob_event(d_between, nco_event, m2_ptr)
+            );
+        }
     }
     
     //Find a tool mob.
@@ -933,17 +947,18 @@ void gameplay_state::process_mob_misc_interactions(
         m_ptr->fsm.get_event(MOB_EV_NEAR_TOOL);
     if(
         nto_event &&
-        d <=
-        m_ptr->radius + m2_ptr->radius + task_range(m_ptr) &&
         typeid(*m2_ptr) == typeid(tool)
     ) {
-        tool* too_ptr = (tool*) m2_ptr;
-        if(too_ptr->reserved && too_ptr->reserved != m_ptr) {
-            //Another Pikmin is already going for it. Ignore it.
-        } else {
-            pending_intermob_events.push_back(
-                pending_intermob_event(d, nto_event, m2_ptr)
-            );
+        dist d_between = m_ptr->get_distance_between(m2_ptr, &d);
+        if(d_between <= task_range(m_ptr)) {
+            tool* too_ptr = (tool*) m2_ptr;
+            if(too_ptr->reserved && too_ptr->reserved != m_ptr) {
+                //Another Pikmin is already going for it. Ignore it.
+            } else {
+                pending_intermob_events.push_back(
+                    pending_intermob_event(d_between, nto_event, m2_ptr)
+                );
+            }
         }
     }
     
@@ -953,19 +968,21 @@ void gameplay_state::process_mob_misc_interactions(
     if(
         ngto_event &&
         m2_ptr->health > 0 &&
-        d <=
-        m_ptr->radius + m2_ptr->radius + task_range(m_ptr) &&
         typeid(*m2_ptr) == typeid(group_task)
     ) {
-        group_task* tas_ptr = (group_task*) m2_ptr;
-        group_task::group_task_spot* free_spot = tas_ptr->get_free_spot();
-        if(!free_spot) {
-            //There are no free spots here. Ignore it.
-        } else {
-            pending_intermob_events.push_back(
-                pending_intermob_event(d, ngto_event, m2_ptr)
-            );
+        dist d_between = m_ptr->get_distance_between(m2_ptr, &d);
+        if(d_between <= task_range(m_ptr)) {
+            group_task* tas_ptr = (group_task*) m2_ptr;
+            group_task::group_task_spot* free_spot = tas_ptr->get_free_spot();
+            if(!free_spot) {
+                //There are no free spots here. Ignore it.
+            } else {
+                pending_intermob_events.push_back(
+                    pending_intermob_event(d_between, ngto_event, m2_ptr)
+                );
+            }
         }
+        
     }
 }
 
@@ -996,40 +1013,43 @@ void gameplay_state::process_mob_reaches(
     mob_event* opir_ev =
         m_ptr->fsm.get_event(MOB_EV_OPPONENT_IN_REACH);
         
+    if(!obir_ev && !opir_ev) return;
+    
     mob_type::reach_struct* r_ptr =
         &m_ptr->type->reaches[m_ptr->near_reach];
         
-    if(!obir_ev && !opir_ev) return;
-    
+    dist d_between = m_ptr->get_distance_between(m2_ptr, &d);
     float face_diff =
         get_angle_smallest_dif(
             m_ptr->angle,
             get_angle(m_ptr->pos, m2_ptr->pos)
         );
         
-    if(
+    bool in_reach =
         (
-            d <= r_ptr->radius_1 +
-            (m_ptr->radius + m2_ptr->radius) &&
+            d_between <= r_ptr->radius_1 &&
             face_diff <= r_ptr->angle_1 / 2.0
-        ) || (
-            d <= r_ptr->radius_2 +
-            (m_ptr->radius + m2_ptr->radius) &&
-            face_diff <= r_ptr->angle_2 / 2.0
-        )
-        
-    ) {
+        );
+    if(!in_reach) {
+        in_reach =
+            (
+                d_between <= r_ptr->radius_2 &&
+                face_diff <= r_ptr->angle_2 / 2.0
+            );
+    }
+    
+    if(in_reach) {
         if(obir_ev) {
             pending_intermob_events.push_back(
                 pending_intermob_event(
-                    d, obir_ev, m2_ptr
+                    d_between, obir_ev, m2_ptr
                 )
             );
         }
         if(opir_ev && m_ptr->can_hunt(m2_ptr)) {
             pending_intermob_events.push_back(
                 pending_intermob_event(
-                    d, opir_ev, m2_ptr
+                    d_between, opir_ev, m2_ptr
                 )
             );
         }

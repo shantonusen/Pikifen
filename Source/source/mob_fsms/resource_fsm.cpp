@@ -122,6 +122,7 @@ void resource_fsm::create_fsm(mob_type* typ) {
     
     efc.new_state("being_delivered", RESOURCE_STATE_BEING_DELIVERED); {
         efc.new_event(MOB_EV_ON_ENTER); {
+            efc.run(resource_fsm::start_being_delivered);
             efc.run(gen_mob_fsm::start_being_delivered);
         }
         efc.new_event(MOB_EV_TIMER); {
@@ -154,17 +155,17 @@ void resource_fsm::create_fsm(mob_type* typ) {
  *   Unused.
  */
 void resource_fsm::handle_delivery(mob* m, void* info1, void* info2) {
-    resource* r_ptr = (resource*) m;
+    resource* res_ptr = (resource*) m;
     if(
-        r_ptr->res_type->delivery_result ==
+        res_ptr->res_type->delivery_result ==
         RESOURCE_DELIVERY_RESULT_DAMAGE_MOB
     ) {
-        r_ptr->focused_mob->set_health(
-            true, false, -r_ptr->res_type->damage_mob_amount
+        res_ptr->focused_mob->set_health(
+            true, false, -res_ptr->res_type->damage_mob_amount
         );
         
-        hitbox_interaction ev_info(r_ptr, NULL, NULL);
-        r_ptr->fsm.run_event(MOB_EV_DAMAGE, (void*) &ev_info);
+        hitbox_interaction ev_info(res_ptr, NULL, NULL);
+        res_ptr->fsm.run_event(MOB_EV_DAMAGE, (void*) &ev_info);
     }
 }
 
@@ -179,13 +180,13 @@ void resource_fsm::handle_delivery(mob* m, void* info1, void* info2) {
  *   Unused.
  */
 void resource_fsm::handle_dropped(mob* m, void* info1, void* info2) {
-    resource* r_ptr = (resource*) m;
-    if(!r_ptr->res_type->vanish_on_drop) return;
+    resource* res_ptr = (resource*) m;
+    if(!res_ptr->res_type->vanish_on_drop) return;
     
-    if(r_ptr->res_type->vanish_delay == 0) {
+    if(res_ptr->res_type->vanish_delay == 0) {
         resource_fsm::vanish(m, info1, info2);
     } else {
-        r_ptr->set_timer(r_ptr->res_type->vanish_delay);
+        res_ptr->set_timer(res_ptr->res_type->vanish_delay);
     }
 }
 
@@ -200,8 +201,8 @@ void resource_fsm::handle_dropped(mob* m, void* info1, void* info2) {
  *   Unused.
  */
 void resource_fsm::handle_start_moving(mob* m, void* info1, void* info2) {
-    resource* r_ptr = (resource*) m;
-    r_ptr->set_timer(0);
+    resource* res_ptr = (resource*) m;
+    res_ptr->set_timer(0);
 }
 
 
@@ -222,6 +223,25 @@ void resource_fsm::lose_momentum(mob* m, void* info1, void* info2) {
 
 
 /* ----------------------------------------------------------------------------
+ * When a resource starts being delivered.
+ * m:
+ *   The mob.
+ * info1:
+ *   Unused.
+ * info2:
+ *   Unused.
+ */
+void resource_fsm::start_being_delivered(mob* m, void* info1, void* info2) {
+    if(
+        m->carry_info->intended_mob &&
+        m->carry_info->intended_mob->type->category->id == MOB_CATEGORY_BRIDGES
+    ) {
+        m->delivery_info->anim_type = DELIVERY_ANIM_TOSS;
+    }
+}
+
+
+/* ----------------------------------------------------------------------------
  * When a resource starts idling, waiting to be carried.
  * m:
  *   The mob.
@@ -231,21 +251,23 @@ void resource_fsm::lose_momentum(mob* m, void* info1, void* info2) {
  *   Unused.
  */
 void resource_fsm::start_waiting(mob* m, void* info1, void* info2) {
-    resource* r_ptr = (resource*) m;
+    resource* res_ptr = (resource*) m;
     
-    r_ptr->become_carriable(r_ptr->res_type->carrying_destination);
-    if(r_ptr->origin_pile) {
-        r_ptr->carry_info->must_return = true;
-        r_ptr->carry_info->return_point = r_ptr->origin_pile->pos;
-        r_ptr->carry_info->return_dist =
-            r_ptr->origin_pile->radius +
+    res_ptr->become_carriable(res_ptr->res_type->carrying_destination);
+    if(res_ptr->origin_pile) {
+        res_ptr->carry_info->must_return = true;
+        res_ptr->carry_info->return_point = res_ptr->origin_pile->pos;
+        res_ptr->carry_info->return_dist =
+            res_ptr->origin_pile->radius +
             game.config.standard_pikmin_radius +
             game.config.idle_task_range / 2.0f;
     } else {
-        r_ptr->carry_info->must_return = false;
+        res_ptr->carry_info->must_return = false;
     }
     
-    r_ptr->set_animation(RESOURCE_ANIM_IDLING);
+    res_ptr->set_animation(
+        RESOURCE_ANIM_IDLING, true, START_ANIMATION_RANDOM_TIME_ON_SPAWN
+    );
 }
 
 
@@ -259,11 +281,11 @@ void resource_fsm::start_waiting(mob* m, void* info1, void* info2) {
  *   Unused.
  */
 void resource_fsm::vanish(mob* m, void* info1, void* info2) {
-    resource* r_ptr = (resource*) m;
-    if(r_ptr->res_type->return_to_pile_on_vanish && r_ptr->origin_pile) {
-        r_ptr->origin_pile->change_amount(+1);
+    resource* res_ptr = (resource*) m;
+    if(res_ptr->res_type->return_to_pile_on_vanish && res_ptr->origin_pile) {
+        res_ptr->origin_pile->change_amount(+1);
     }
     
-    r_ptr->become_uncarriable();
-    r_ptr->to_delete = true;
+    res_ptr->become_uncarriable();
+    res_ptr->to_delete = true;
 }

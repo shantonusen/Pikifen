@@ -10,6 +10,8 @@
 
 #include <algorithm>
 
+#include <allegro5/allegro_ttf.h>
+
 #include "load.h"
 
 #include "const.h"
@@ -711,8 +713,10 @@ void load_custom_particle_generators(const bool load_resources) {
         new_pg.angle_deviation = deg_to_rad(new_pg.angle_deviation);
         
         new_pg.id =
-            MOB_PARTICLE_GENERATOR_STATUS +
-            game.custom_particle_generators.size();
+            (MOB_PARTICLE_GENERATOR_IDS) (
+                MOB_PARTICLE_GENERATOR_STATUS +
+                game.custom_particle_generators.size()
+            );
             
         game.custom_particle_generators[name_str] = new_pg;
     }
@@ -826,6 +830,16 @@ void load_fonts() {
     }
     al_destroy_bitmap(temp_font_bmp);
     
+    //Slim font.
+    game.fonts.slim =
+        al_load_ttf_font(
+            (
+                GRAPHICS_FOLDER_PATH + "/" +
+                game.asset_file_names.slim_font
+            ).c_str(),
+            22, ALLEGRO_TTF_NO_KERNING
+        );
+        
     game.fonts.builtin = al_create_builtin_font();
 }
 
@@ -838,7 +852,10 @@ void load_game_config() {
     
     game.config.load(&file);
     
-    al_set_window_title(game.display, game.config.name.c_str());
+    al_set_window_title(
+        game.display,
+        game.config.name.empty() ? "Pikifen" : game.config.name.c_str()
+    );
 }
 
 
@@ -987,7 +1004,7 @@ void load_maker_tools() {
         
         for(size_t t = 0; t < N_MAKER_TOOLS; ++t) {
             if(tool_name == MAKER_TOOL_NAMES[t]) {
-                game.maker_tools.keys[k] = t;
+                game.maker_tools.keys[k] = (MAKER_TOOLS) t;
             }
         }
     }
@@ -1023,10 +1040,16 @@ void load_misc_graphics() {
     al_set_display_icon(game.display, game.sys_assets.bmp_icon);
     
     //Graphics.
+    game.sys_assets.bmp_bright_circle =
+        game.bitmaps.get(game.asset_file_names.bright_circle);
+    game.sys_assets.bmp_bright_ring =
+        game.bitmaps.get(game.asset_file_names.bright_ring);
     game.sys_assets.bmp_bubble_box =
         game.bitmaps.get(game.asset_file_names.bubble_box);
     game.sys_assets.bmp_checkbox_check =
         game.bitmaps.get(game.asset_file_names.checkbox_check);
+    game.sys_assets.bmp_control_icons =
+        game.bitmaps.get(game.asset_file_names.control_icons);
     game.sys_assets.bmp_cursor =
         game.bitmaps.get(game.asset_file_names.cursor);
     game.sys_assets.bmp_enemy_spirit =
@@ -1039,10 +1062,6 @@ void load_misc_graphics() {
         game.bitmaps.get(game.asset_file_names.more);
     game.sys_assets.bmp_mouse_cursor =
         game.bitmaps.get(game.asset_file_names.mouse_cursor);
-    game.sys_assets.bmp_mouse_wd_icon =
-        game.bitmaps.get(game.asset_file_names.mouse_wd_icon);
-    game.sys_assets.bmp_mouse_wu_icon =
-        game.bitmaps.get(game.asset_file_names.mouse_wu_icon);
     game.sys_assets.bmp_notification =
         game.bitmaps.get(game.asset_file_names.notification);
     game.sys_assets.bmp_pikmin_silhouette =
@@ -1071,10 +1090,6 @@ void load_misc_graphics() {
         game.bitmaps.get(game.asset_file_names.throw_preview_dashed);
     game.sys_assets.bmp_wave_ring =
         game.bitmaps.get(game.asset_file_names.wave_ring);
-    for(unsigned char i = 0; i < 3; ++i) {
-        game.sys_assets.bmp_mouse_button_icon[i] =
-            game.bitmaps.get(game.asset_file_names.mouse_button_icon[i]);
-    }
 }
 
 
@@ -1197,13 +1212,16 @@ void load_spike_damage_types() {
         reader_setter rs(&file);
         
         string particle_generator_name;
+        string status_name;
         data_node* damage_node = NULL;
         data_node* particle_generator_node = NULL;
+        data_node* status_name_node = NULL;
         
         rs.set("name", new_t.name);
         rs.set("damage", new_t.damage, &damage_node);
         rs.set("ingestion_only", new_t.ingestion_only);
         rs.set("is_damage_ratio", new_t.is_damage_ratio);
+        rs.set("status_to_apply", status_name, &status_name_node);
         rs.set(
             "particle_generator", particle_generator_name,
             &particle_generator_node
@@ -1229,12 +1247,16 @@ void load_spike_damage_types() {
             }
         }
         
-        if(new_t.damage == 0) {
-            log_error(
-                "Spike damage type \"" + new_t.name +
-                "\" needs a damage number!",
-                (damage_node ? damage_node : &file)
-            );
+        if(status_name_node) {
+            auto s = game.status_types.find(status_name);
+            if(s != game.status_types.end()) {
+                new_t.status_to_apply = s->second;
+            } else {
+                log_error(
+                    "Unknown status type \"" + status_name + "\"!",
+                    status_name_node
+                );
+            }
         }
         
         game.spike_damage_types[new_t.name] = new_t;
@@ -1415,6 +1437,7 @@ void load_status_types(const bool load_resources) {
         rs.set("remove_on_hazard_leave",  new_t->remove_on_hazard_leave);
         rs.set("auto_remove_time",        new_t->auto_remove_time);
         rs.set("reapply_rule",            reapply_rule_str, &reapply_rule_node);
+        rs.set("health_change",           new_t->health_change);
         rs.set("health_change_ratio",     new_t->health_change_ratio);
         rs.set("state_change_type",       sc_type_str, &sc_type_node);
         rs.set("state_change_name",       new_t->state_change_name);
@@ -1705,8 +1728,11 @@ void unload_liquids() {
  * Unloads miscellaneous graphics, sounds, and other resources.
  */
 void unload_misc_resources() {
+    game.bitmaps.detach(game.sys_assets.bmp_bright_circle);
+    game.bitmaps.detach(game.sys_assets.bmp_bright_ring);
     game.bitmaps.detach(game.sys_assets.bmp_bubble_box);
     game.bitmaps.detach(game.sys_assets.bmp_checkbox_check);
+    game.bitmaps.detach(game.sys_assets.bmp_control_icons);
     game.bitmaps.detach(game.sys_assets.bmp_cursor);
     game.bitmaps.detach(game.sys_assets.bmp_enemy_spirit);
     game.bitmaps.detach(game.sys_assets.bmp_focus_box);
@@ -1714,8 +1740,6 @@ void unload_misc_resources() {
     game.bitmaps.detach(game.sys_assets.bmp_idle_glow);
     game.bitmaps.detach(game.sys_assets.bmp_more);
     game.bitmaps.detach(game.sys_assets.bmp_mouse_cursor);
-    game.bitmaps.detach(game.sys_assets.bmp_mouse_wd_icon);
-    game.bitmaps.detach(game.sys_assets.bmp_mouse_wu_icon);
     game.bitmaps.detach(game.sys_assets.bmp_notification);
     game.bitmaps.detach(game.sys_assets.bmp_pikmin_silhouette);
     game.bitmaps.detach(game.sys_assets.bmp_pikmin_spirit);
@@ -1730,9 +1754,6 @@ void unload_misc_resources() {
     game.bitmaps.detach(game.sys_assets.bmp_throw_preview);
     game.bitmaps.detach(game.sys_assets.bmp_throw_preview_dashed);
     game.bitmaps.detach(game.sys_assets.bmp_wave_ring);
-    for(unsigned char i = 0; i < 3; ++i) {
-        game.bitmaps.detach(game.sys_assets.bmp_mouse_button_icon[i]);
-    }
     
     game.sys_assets.sfx_attack.destroy();
     game.sys_assets.sfx_pikmin_attack.destroy();

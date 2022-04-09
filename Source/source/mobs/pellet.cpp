@@ -29,7 +29,7 @@ pellet::pellet(const point &pos, pellet_type* type, const float angle) :
     
     become_carriable(CARRY_DESTINATION_ONION);
     
-    set_animation(ANIM_IDLING);
+    set_animation(ANIM_IDLING, true, START_ANIMATION_RANDOM_TIME_ON_SPAWN);
 }
 
 
@@ -41,18 +41,7 @@ void pellet::draw_mob() {
     if(!s_ptr) return;
     
     bitmap_effect_info eff;
-    ALLEGRO_COLOR delivery_color = map_gray(0);
-    float delivery_time_ratio_left = LARGE_FLOAT;
-    
-    if(fsm.cur_state->id == ENEMY_EXTRA_STATE_BEING_DELIVERED) {
-        delivery_color = delivery_info->color;
-        delivery_time_ratio_left = script_timer.get_ratio_left();
-    }
-    
-    get_sprite_bitmap_effects(
-        s_ptr, &eff, true, true,
-        delivery_time_ratio_left, delivery_color
-    );
+    get_sprite_bitmap_effects(s_ptr, &eff, true, true, true, false, true);
     
     eff.scale.x *= radius * 2.0 / al_get_bitmap_width(s_ptr->bitmap);
     eff.scale.y *= radius * 2.0 / al_get_bitmap_height(s_ptr->bitmap);

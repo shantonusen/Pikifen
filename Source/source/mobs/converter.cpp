@@ -60,7 +60,8 @@ void converter::change_type() {
         get_animation_nr_from_base_and_group(
             cur_base_anim_nr, N_CONVERTER_ANIMS, current_type_nr
         ),
-        true, false
+        true,
+        START_ANIMATION_NO_RESTART
     );
     
     type_change_timer.start();
@@ -128,9 +129,9 @@ void converter::spew() {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks some logic specific to converters.
+ * Ticks time by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void converter::tick_class_specifics(const float delta_t) {
     type_change_timer.tick(delta_t);

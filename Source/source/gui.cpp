@@ -20,16 +20,80 @@
 #include "utils/string_utils.h"
 
 
-//When an item does a "juicy grow", change the size by this much.
-const float gui_item::JUICY_GROW_DELTA = 0.05f;
-//When an item does a "juicy grow", this is the full effect duration.
+//Padding before/after the circle in a bullet point item.
+const float bullet_point_gui_item::BULLET_PADDING = 6.0f;
+//Radius of the circle that represents the bullet in a bullet point item.
+const float bullet_point_gui_item::BULLET_RADIUS = 4.0f;
+//When an item does a juicy grow, this is the full effect duration.
 const float gui_item::JUICY_GROW_DURATION = 0.3f;
+//When an item does a juicy elastic grow, this is the full effect duration.
+const float gui_item::JUICY_GROW_ELASTIC_DURATION = 0.4f;
+//Grow scale multiplier for a juicy icon grow animation.
+const float gui_item::JUICY_GROW_ICON_MULT = 5.0f;
+//Grow scale multiplier for a juicy text low grow animation.
+const float gui_item::JUICY_GROW_TEXT_LOW_MULT = 0.05f;
+//Grow scale multiplier for a juicy text high grow animation.
+const float gui_item::JUICY_GROW_TEXT_HIGH_MULT = 0.15f;
 //Interval between auto-repeat activations, at the slowest speed.
 const float gui_manager::AUTO_REPEAT_MAX_INTERVAL = 0.3f;
 //Interval between auto-repeat activations, at the fastest speed.
 const float gui_manager::AUTO_REPEAT_MIN_INTERVAL = 0.011f;
 //How long it takes for the auto-repeat activations to reach max speed.
 const float gui_manager::AUTO_REPEAT_RAMP_TIME = 0.9f;
+
+
+/* ----------------------------------------------------------------------------
+ * Creates a new bullet point GUI item.
+ * text:
+ *   Text to display on the bullet point.
+ * font:
+ *   Font for the button's text.
+ * color:
+ *   Color of the button's text.
+ */
+bullet_point_gui_item::bullet_point_gui_item(
+    const string &text, ALLEGRO_FONT* font, const ALLEGRO_COLOR &color
+) :
+    gui_item(true),
+    text(text),
+    font(font),
+    color(color) {
+    
+    on_draw =
+    [this, text, font, color] (const point & center, const point & size) {
+        float item_x_start = center.x - size.x * 0.5;
+        float text_x_offset =
+            bullet_point_gui_item::BULLET_RADIUS * 2 +
+            bullet_point_gui_item::BULLET_PADDING * 2;
+        point text_space(
+            std::max(1.0f, size.x - text_x_offset),
+            size.y
+        );
+        
+        al_draw_filled_circle(
+            item_x_start +
+            bullet_point_gui_item::BULLET_RADIUS +
+            bullet_point_gui_item::BULLET_PADDING,
+            center.y,
+            bullet_point_gui_item::BULLET_RADIUS,
+            color
+        );
+        draw_compressed_scaled_text(
+            this->font, this->color,
+            point(item_x_start + text_x_offset, center.y),
+            point(1.0, 1.0),
+            ALLEGRO_ALIGN_LEFT, TEXT_VALIGN_CENTER, text_space, true,
+            this->text
+        );
+        if(selected) {
+            draw_textured_box(
+                center,
+                size + 10.0 + sin(game.time_passed * TAU) * 2.0f,
+                game.sys_assets.bmp_focus_box
+            );
+        }
+    };
+}
 
 
 /* ----------------------------------------------------------------------------
@@ -52,7 +116,8 @@ button_gui_item::button_gui_item(
     on_draw =
     [this, text, font, color] (const point & center, const point & size) {
         draw_button(
-            center, size, text, font, color, selected, get_juicy_grow_amount()
+            center, size, text, font, color, selected,
+            get_juice_value()
         );
     };
 }
@@ -85,7 +150,7 @@ check_gui_item::check_gui_item(
         draw_compressed_text(
             font, color,
             point(center.x - size.x * 0.45, center.y),
-            ALLEGRO_ALIGN_LEFT, 1,
+            ALLEGRO_ALIGN_LEFT, TEXT_VALIGN_CENTER,
             point(size.x * 0.90, size.y),
             text
         );
@@ -134,11 +199,13 @@ gui_item::gui_item(const bool selectable) :
     offset(0.0f),
     padding(0.0f),
     can_auto_repeat(false),
+    juice_type(JUICE_TYPE_NONE),
     juice_timer(0.0f),
     on_draw(nullptr),
     on_tick(nullptr),
     on_event(nullptr),
     on_activate(nullptr),
+    on_mouse_over(nullptr),
     on_menu_dir_button(nullptr),
     on_child_selected(nullptr),
     on_get_tooltip(nullptr) {
@@ -176,26 +243,61 @@ float gui_item::get_child_bottom() {
 
 
 /* ----------------------------------------------------------------------------
- * Returns the juicy grow amount for the current juicy grow animation, if any.
+ * Returns the value related to the current juice animation.
+ * Returns 0 if there's no animation.
  */
-float gui_item::get_juicy_grow_amount() {
-    if(juice_timer == 0.0f) {
-        return 0.0f;
+float gui_item::get_juice_value() {
+    switch(juice_type) {
+    case JUICE_TYPE_GROW_TEXT_LOW: {
+        float anim_ratio = 1.0f - (juice_timer / JUICY_GROW_DURATION);
+        return
+            ease(EASE_UP_AND_DOWN, anim_ratio) *
+            JUICY_GROW_TEXT_LOW_MULT;
+        break;
     }
-    
-    return
-        ease(EASE_UP_AND_DOWN, juice_timer / JUICY_GROW_DURATION) *
-        JUICY_GROW_DELTA;
+    case JUICE_TYPE_GROW_TEXT_HIGH: {
+        float anim_ratio = 1.0f - (juice_timer / JUICY_GROW_DURATION);
+        return
+            ease(EASE_UP_AND_DOWN, anim_ratio) *
+            JUICY_GROW_TEXT_HIGH_MULT;
+        break;
+    }
+    case JUICE_TYPE_GROW_TEXT_ELASTIC_LOW: {
+        float anim_ratio = 1.0f - (juice_timer / JUICY_GROW_ELASTIC_DURATION);
+        return
+            ease(EASE_UP_AND_DOWN_ELASTIC, anim_ratio) *
+            JUICY_GROW_TEXT_LOW_MULT;
+        break;
+    }
+    case JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH: {
+        float anim_ratio = 1.0f - (juice_timer / JUICY_GROW_ELASTIC_DURATION);
+        return
+            ease(EASE_UP_AND_DOWN_ELASTIC, anim_ratio) *
+            JUICY_GROW_TEXT_HIGH_MULT;
+        break;
+    }
+    case JUICE_TYPE_GROW_ICON: {
+        float anim_ratio = 1.0f - (juice_timer / JUICY_GROW_DURATION);
+        return
+            ease(EASE_UP_AND_DOWN, anim_ratio) *
+            JUICY_GROW_ICON_MULT;
+        break;
+    }
+    default: {
+        return 0.0f;
+        break;
+    }
+    }
 }
 
 
 /* ----------------------------------------------------------------------------
- * Returns the real center coordinates.
+ * Returns the reference center coordinates, i.e. used when not animating.
  */
-point gui_item::get_real_center() {
+point gui_item::get_reference_center() {
     if(parent) {
-        point parent_s = parent->get_real_size() - (parent->padding * 2.0f);
-        point parent_c = parent->get_real_center();
+        point parent_s = parent->get_reference_size() - (parent->padding * 2.0f);
+        point parent_c = parent->get_reference_center();
         point result = center * parent_s;
         result.x += parent_c.x - parent_s.x / 2.0f;
         result.y += parent_c.y - parent_s.y / 2.0f;
@@ -208,12 +310,12 @@ point gui_item::get_real_center() {
 
 
 /* ----------------------------------------------------------------------------
- * Returns the real size coordinates.
+ * Returns the reference width and height, i.e. used when not animating.
  */
-point gui_item::get_real_size() {
+point gui_item::get_reference_size() {
     point mult;
     if(parent) {
-        mult = parent->get_real_size() - (parent->padding * 2.0f);
+        mult = parent->get_reference_size() - (parent->padding * 2.0f);
     } else {
         mult.x = game.win_w;
         mult.y = game.win_h;
@@ -232,8 +334,8 @@ bool gui_item::is_mouse_on(const point &cursor_pos) {
         return false;
     }
     
-    point c = get_real_center();
-    point s = get_real_size();
+    point c = get_reference_center();
+    point s = get_reference_size();
     return
         (
             cursor_pos.x >= c.x - s.x * 0.5 &&
@@ -261,10 +363,28 @@ void gui_item::remove_child(gui_item* item) {
 
 
 /* ----------------------------------------------------------------------------
- * Starts the process of animating a juicy grow effect.
+ * Starts some juice animation.
+ * type:
+ *   Type of juice animation.
  */
-void gui_item::start_juicy_grow() {
-    juice_timer = JUICY_GROW_DURATION;
+void gui_item::start_juice_animation(JUICE_TYPES type) {
+    juice_type = type;
+    switch(type) {
+    case JUICE_TYPE_GROW_TEXT_LOW:
+    case JUICE_TYPE_GROW_TEXT_HIGH:
+    case JUICE_TYPE_GROW_ICON: {
+        juice_timer = JUICY_GROW_DURATION;
+        break;
+    }
+    case JUICE_TYPE_GROW_TEXT_ELASTIC_LOW:
+    case JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH: {
+        juice_timer = JUICY_GROW_ELASTIC_DURATION;
+        break;
+    }
+    default: {
+        break;
+    }
+    }
 }
 
 
@@ -274,17 +394,37 @@ void gui_item::start_juicy_grow() {
 gui_manager::gui_manager() :
     selected_item(nullptr),
     back_item(nullptr),
+    responsive(true),
+    ignore_input_on_animation(true),
     right_pressed(false),
     up_pressed(false),
     left_pressed(false),
     down_pressed(false),
     ok_pressed(false),
     back_pressed(false),
+    last_input_was_mouse(false),
     auto_repeat_on(false),
     auto_repeat_duration(0.0f),
     auto_repeat_next_activation(0.0f),
-    anim_type(GUI_MANAGER_ANIM_NONE) {
+    anim_type(GUI_MANAGER_ANIM_NONE),
+    visible(true) {
     
+    anim_timer =
+        timer(
+    0.0f, [this] () {
+        switch(anim_type) {
+        case GUI_MANAGER_ANIM_IN_TO_OUT:
+        case GUI_MANAGER_ANIM_CENTER_TO_UP: {
+            visible = false;
+            break;
+        }
+        default: {
+            visible = true;
+            break;
+        }
+        }
+    }
+        );
 }
 
 
@@ -306,6 +446,7 @@ void gui_manager::add_item(gui_item* item, const string &id) {
     }
     
     items.push_back(item);
+    item->manager = this;
 }
 
 
@@ -328,20 +469,23 @@ void gui_manager::destroy() {
  * Draws all items on-screen.
  */
 void gui_manager::draw() {
+    if(!visible) return;
+    
     int ocr_x, ocr_y, ocr_w, ocr_h;
+    
     for(size_t i = 0; i < items.size(); ++i) {
+    
         gui_item* i_ptr = items[i];
+        point draw_center = i_ptr->get_reference_center();
+        point draw_size = i_ptr->get_reference_size();
         
-        if(!i_ptr->visible) continue;
-        if(i_ptr->size.x == 0.0f) continue;
+        if(!get_item_draw_info(i_ptr, &draw_center, &draw_size)) continue;
         
-        point multipliers;
-        gui_item* parent = i_ptr->parent;
-        
-        if(parent) {
+        if(i_ptr->parent) {
             al_get_clipping_rectangle(&ocr_x, &ocr_y, &ocr_w, &ocr_h);
-            point parent_c = parent->get_real_center();
-            point parent_s = parent->get_real_size();
+            point parent_c;
+            point parent_s;
+            get_item_draw_info(i_ptr->parent, &parent_c, &parent_s);
             al_set_clipping_rectangle(
                 parent_c.x - parent_s.x / 2.0f,
                 parent_c.y - parent_s.y / 2.0f,
@@ -350,65 +494,9 @@ void gui_manager::draw() {
             );
         }
         
-        point final_center = i_ptr->get_real_center();
-        point final_size = i_ptr->get_real_size();
+        i_ptr->on_draw(draw_center, draw_size);
         
-        if(anim_timer.time_left > 0.0f) {
-            switch(anim_type) {
-            case GUI_MANAGER_ANIM_OUT_TO_IN: {
-                point start_center;
-                float angle =
-                    get_angle(
-                        point(game.win_w, game.win_h) / 2.0f,
-                        final_center
-                    );
-                start_center.x = final_center.x + cos(angle) * game.win_w;
-                start_center.y = final_center.y + sin(angle) * game.win_h;
-                
-                final_center.x =
-                    interpolate_number(
-                        ease(EASE_OUT, 1.0f - anim_timer.get_ratio_left()),
-                        0.0f, 1.0f, start_center.x, final_center.x
-                    );
-                final_center.y =
-                    interpolate_number(
-                        ease(EASE_OUT, 1.0f - anim_timer.get_ratio_left()),
-                        0.0f, 1.0f, start_center.y, final_center.y
-                    );
-                break;
-                
-            } case GUI_MANAGER_ANIM_IN_TO_OUT: {
-                point end_center;
-                float angle =
-                    get_angle(
-                        point(game.win_w, game.win_h) / 2.0f,
-                        final_center
-                    );
-                end_center.x = final_center.x + cos(angle) * game.win_w;
-                end_center.y = final_center.y + sin(angle) * game.win_h;
-                
-                final_center.x =
-                    interpolate_number(
-                        ease(EASE_IN, 1.0f - anim_timer.get_ratio_left()),
-                        0.0f, 1.0f, final_center.x, end_center.x
-                    );
-                final_center.y =
-                    interpolate_number(
-                        ease(EASE_IN, 1.0f - anim_timer.get_ratio_left()),
-                        0.0f, 1.0f, final_center.y, end_center.y
-                    );
-                break;
-                
-            } default: {
-                break;
-                
-            }
-            }
-        }
-        
-        i_ptr->on_draw(final_center, final_size);
-        
-        if(parent) {
+        if(i_ptr->parent) {
             al_set_clipping_rectangle(ocr_x, ocr_y, ocr_w, ocr_h);
         }
     }
@@ -416,7 +504,7 @@ void gui_manager::draw() {
 
 
 /* ----------------------------------------------------------------------------
- * Returns the current item's tooltip, if any.
+ * Returns the currently selected item's tooltip, if any.
  */
 string gui_manager::get_current_tooltip() {
     if(!selected_item) return string();
@@ -426,11 +514,111 @@ string gui_manager::get_current_tooltip() {
 
 
 /* ----------------------------------------------------------------------------
+ * Returns a given item's drawing information.
+ * Returns true if the item exists and is meant to be drawn, false otherwise.
+ * item:
+ *   What item to check.
+ * draw_center:
+ *   The drawing center coordinates to use.
+ * draw_size:
+ *   The drawing width and height to use.
+ */
+bool gui_manager::get_item_draw_info(
+    gui_item* item, point* draw_center, point* draw_size
+) {
+    if(!item->visible) return false;
+    if(item->size.x == 0.0f) return false;
+    
+    point final_center = item->get_reference_center();
+    point final_size = item->get_reference_size();
+    
+    if(anim_timer.time_left > 0.0f) {
+        switch(anim_type) {
+        case GUI_MANAGER_ANIM_OUT_TO_IN: {
+            point start_center;
+            float angle =
+                get_angle(
+                    point(game.win_w, game.win_h) / 2.0f,
+                    final_center
+                );
+            start_center.x = final_center.x + cos(angle) * game.win_w;
+            start_center.y = final_center.y + sin(angle) * game.win_h;
+            
+            final_center.x =
+                interpolate_number(
+                    ease(EASE_OUT, 1.0f - anim_timer.get_ratio_left()),
+                    0.0f, 1.0f, start_center.x, final_center.x
+                );
+            final_center.y =
+                interpolate_number(
+                    ease(EASE_OUT, 1.0f - anim_timer.get_ratio_left()),
+                    0.0f, 1.0f, start_center.y, final_center.y
+                );
+            break;
+            
+        } case GUI_MANAGER_ANIM_IN_TO_OUT: {
+            point end_center;
+            float angle =
+                get_angle(
+                    point(game.win_w, game.win_h) / 2.0f,
+                    final_center
+                );
+            end_center.x = final_center.x + cos(angle) * game.win_w;
+            end_center.y = final_center.y + sin(angle) * game.win_h;
+            
+            final_center.x =
+                interpolate_number(
+                    ease(EASE_IN, 1.0f - anim_timer.get_ratio_left()),
+                    0.0f, 1.0f, final_center.x, end_center.x
+                );
+            final_center.y =
+                interpolate_number(
+                    ease(EASE_IN, 1.0f - anim_timer.get_ratio_left()),
+                    0.0f, 1.0f, final_center.y, end_center.y
+                );
+            break;
+            
+        } case GUI_MANAGER_ANIM_UP_TO_CENTER: {
+            final_center.y =
+                interpolate_number(
+                    ease(EASE_OUT, 1.0f - anim_timer.get_ratio_left()),
+                    0.0f, 1.0f, final_center.y - game.win_h, final_center.y
+                );
+            break;
+            
+        } case GUI_MANAGER_ANIM_CENTER_TO_UP: {
+            final_center.y =
+                interpolate_number(
+                    ease(EASE_OUT, 1.0f - anim_timer.get_ratio_left()),
+                    0.0f, 1.0f, final_center.y, final_center.y - game.win_h
+                );
+            break;
+            
+        } default: {
+            break;
+            
+        }
+        }
+    }
+    
+    *draw_center = final_center;
+    *draw_size = final_size;
+    return true;
+}
+
+
+/* ----------------------------------------------------------------------------
  * Handle an Allegro event.
  * ev:
  *   Event.
  */
 void gui_manager::handle_event(const ALLEGRO_EVENT &ev) {
+    if(!responsive) return;
+    if(anim_timer.get_ratio_left() > 0.0f && ignore_input_on_animation) return;
+    
+    bool input_happened = false;
+    bool mouse_involved = false;
+    
     //Mousing over an item and clicking.
     if(
         ev.type == ALLEGRO_EVENT_MOUSE_AXES ||
@@ -444,10 +632,14 @@ void gui_manager::handle_event(const ALLEGRO_EVENT &ev) {
                 i_ptr->selectable
             ) {
                 selection_result = i_ptr;
+                if(i_ptr->on_mouse_over) {
+                    i_ptr->on_mouse_over(point(ev.mouse.x, ev.mouse.y));
+                }
                 break;
             }
         }
         set_selected_item(selection_result);
+        mouse_involved = true;
     }
     
     if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN && ev.mouse.button == 1) {
@@ -457,17 +649,23 @@ void gui_manager::handle_event(const ALLEGRO_EVENT &ev) {
             auto_repeat_duration = 0.0f;
             auto_repeat_next_activation = AUTO_REPEAT_MAX_INTERVAL;
         }
+        mouse_involved = true;
     }
     
     if(ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP && ev.mouse.button == 1) {
         auto_repeat_on = false;
+        mouse_involved = true;
     }
     
     vector<action_from_event> actions = get_actions_from_event(ev);
     for(size_t a = 0; a < actions.size(); ++a) {
-        handle_menu_button(
-            actions[a].button, actions[a].pos, actions[a].player
-        );
+        if(
+            handle_menu_button(
+                actions[a].button, actions[a].pos, actions[a].player
+            )
+        ) {
+            input_happened = true;
+        }
     }
     
     for(size_t i = 0; i < items.size(); ++i) {
@@ -475,14 +673,19 @@ void gui_manager::handle_event(const ALLEGRO_EVENT &ev) {
             items[i]->on_event(ev);
         }
     }
+    
+    if(input_happened) {
+        last_input_was_mouse = mouse_involved;
+    }
 }
 
 
 /* ----------------------------------------------------------------------------
  * Handles a button "press" in a GUI. Technically, it could also be
  * a button release.
+ * Returns true if the button was recognized.
  * action:
- *   The button's ID. Use BUTTON_*.
+ *   The button's ID.
  * pos:
  *   The position of the button, i.e., how much it's "held".
  *   0 means it was released. 1 means it was fully pressed.
@@ -491,11 +694,21 @@ void gui_manager::handle_event(const ALLEGRO_EVENT &ev) {
  * player:
  *   Number of the player that pressed.
  */
-void gui_manager::handle_menu_button(
-    const size_t action, const float pos, const size_t player
+bool gui_manager::handle_menu_button(
+    const BUTTONS action, const float pos, const size_t player
 ) {
-
+    if(!responsive) {
+        return false;
+    }
+    if(
+        anim_timer.get_ratio_left() > 0.0f &&
+        ignore_input_on_animation
+    ) {
+        return false;
+    }
+    
     bool is_down = (pos >= 0.5);
+    bool button_recognized = true;
     
     switch(action) {
     case BUTTON_MENU_RIGHT:
@@ -531,22 +744,27 @@ void gui_manager::handle_menu_button(
             }
             down_pressed = is_down;
             break;
+        } default: {
+            break;
         }
         }
         
-        if(pressed == BUTTON_NONE) return;
+        if(pressed == BUTTON_NONE) break;
         
         if(!selected_item) {
             for(size_t i = 0; i < items.size(); ++i) {
                 if(items[i]->selectable) {
                     set_selected_item(items[i]);
-                    return;
+                    break;
                 }
+            }
+            if(selected_item) {
+                break;
             }
         }
         if(!selected_item) {
             //No item can be selected.
-            return;
+            break;
         }
         
         vector<point> selectables;
@@ -583,7 +801,7 @@ void gui_manager::handle_menu_button(
         for(size_t i = 0; i < items.size(); ++i) {
             gui_item* i_ptr = items[i];
             if(i_ptr->selectable) {
-                point i_center = i_ptr->get_real_center();
+                point i_center = i_ptr->get_reference_center();
                 if(i_ptr == selected_item) {
                     selectable_idx = selectables.size();
                 }
@@ -592,7 +810,7 @@ void gui_manager::handle_menu_button(
                 max_y = std::max(max_y, i_center.y);
                 
                 selectable_ptrs.push_back(i_ptr);
-                selectables.push_back(i_ptr->get_real_center());
+                selectables.push_back(i_ptr->get_reference_center());
             }
         }
         
@@ -635,8 +853,22 @@ void gui_manager::handle_menu_button(
         }
         break;
         
+    } default: {
+        button_recognized = false;
+        break;
+        
     }
     }
+    
+    return button_recognized;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Hides all items until an animation shows them again.
+ */
+void gui_manager::hide_items() {
+    visible = false;
 }
 
 
@@ -703,6 +935,7 @@ void gui_manager::remove_item(gui_item* item) {
             items.erase(items.begin() + i);
         }
     }
+    item->manager = NULL;
 }
 
 
@@ -739,13 +972,22 @@ void gui_manager::start_animation(
 ) {
     anim_type = type;
     anim_timer.start(duration);
+    visible = true;
 }
 
 
 /* ----------------------------------------------------------------------------
- * Ticks all items on-screen by one frame of logic.
+ * Returns whether the last input was a mouse input.
+ */
+bool gui_manager::was_last_input_mouse() {
+    return last_input_was_mouse;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Ticks the time of all items by one frame of logic.
  * delta_t:
- *   Amount of time to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void gui_manager::tick(const float delta_t) {
     //Tick the animation.
@@ -760,6 +1002,8 @@ void gui_manager::tick(const float delta_t) {
         if(i_ptr->juice_timer > 0) {
             i_ptr->juice_timer =
                 std::max(0.0f, i_ptr->juice_timer - delta_t);
+        } else {
+            i_ptr->juice_type = gui_item::JUICE_TYPE_NONE;
         }
     }
     
@@ -795,7 +1039,6 @@ void gui_manager::tick(const float delta_t) {
  */
 list_gui_item::list_gui_item() :
     gui_item(),
-    scroll_item(nullptr),
     target_offset(0.0f) {
     
     padding = 8.0f;
@@ -807,7 +1050,15 @@ list_gui_item::list_gui_item() :
     };
     on_tick =
     [this] (const float delta_t) {
-        offset += (target_offset - offset) * (10.0f * delta_t);
+        float child_bottom = get_child_bottom();
+        if(child_bottom < 1.0f) {
+            target_offset = 0.0f;
+            offset = 0.0f;
+        } else {
+            target_offset = clamp(target_offset, 0.0f, child_bottom - 1.0f);
+            offset += (target_offset - offset) * (10.0f * delta_t);
+            offset = clamp(offset, 0.0f, child_bottom - 1.0f);
+        }
     };
     on_event =
     [this] (const ALLEGRO_EVENT & ev) {
@@ -859,31 +1110,62 @@ picker_gui_item::picker_gui_item(
     base_text(base_text),
     option(option),
     on_previous(nullptr),
-    on_next(nullptr) {
+    on_next(nullptr),
+    arrow_highlight(255) {
     
     on_draw =
     [this] (const point & center, const point & size) {
-        draw_text_lines(
-            game.fonts.standard, map_gray(255),
+        unsigned char real_arrow_highlight = 255;
+        if(
+            selected &&
+            manager &&
+            manager->was_last_input_mouse()
+        ) {
+            real_arrow_highlight = arrow_highlight;
+        }
+        ALLEGRO_COLOR arrow_highlight_color = al_map_rgb(87, 200, 208);
+        ALLEGRO_COLOR arrow_regular_color = map_gray(255);
+        point arrow_highlight_size = point(1.4f, 1.4f);
+        point arrow_regular_size = point(1.0f, 1.0f);
+        
+        draw_compressed_scaled_text(
+            game.fonts.standard,
+            real_arrow_highlight == 0 ?
+            arrow_highlight_color :
+            arrow_regular_color,
             point(center.x - size.x * 0.45, center.y),
-            ALLEGRO_ALIGN_CENTER, 1,
+            real_arrow_highlight == 0 ?
+            arrow_highlight_size :
+            arrow_regular_size,
+            ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER,
+            size,
+            false,
             "<"
         );
-        draw_text_lines(
-            game.fonts.standard, map_gray(255),
+        draw_compressed_scaled_text(
+            game.fonts.standard,
+            real_arrow_highlight == 1 ?
+            arrow_highlight_color :
+            arrow_regular_color,
             point(center.x + size.x * 0.45, center.y),
-            ALLEGRO_ALIGN_CENTER, 1,
+            real_arrow_highlight == 1 ?
+            arrow_highlight_size :
+            arrow_regular_size,
+            ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER,
+            size,
+            false,
             ">"
         );
         
-        float juicy_grow_amount = this->get_juicy_grow_amount();
+        float juicy_grow_amount = this->get_juice_value();
         
         draw_compressed_scaled_text(
             game.fonts.standard, map_gray(255),
             point(center.x - size.x * 0.40, center.y),
             point(1.0 + juicy_grow_amount, 1.0 + juicy_grow_amount),
-            ALLEGRO_ALIGN_LEFT, 1,
+            ALLEGRO_ALIGN_LEFT, TEXT_VALIGN_CENTER,
             point(size.x * 0.80, size.y),
+            true,
             this->base_text + this->option
         );
         
@@ -905,7 +1187,7 @@ picker_gui_item::picker_gui_item(
     
     on_activate =
     [this] (const point & cursor_pos) {
-        if(cursor_pos.x >= get_real_center().x) {
+        if(cursor_pos.x >= get_reference_center().x) {
             on_next();
         } else {
             on_previous();
@@ -922,6 +1204,12 @@ picker_gui_item::picker_gui_item(
             return true;
         }
         return false;
+    };
+    
+    on_mouse_over =
+    [this] (const point & cursor_pos) {
+        arrow_highlight =
+            cursor_pos.x >= get_reference_center().x ? 1 : 0;
     };
 }
 
@@ -975,8 +1263,8 @@ scroll_gui_item::scroll_gui_item() :
                 return;
             }
             
-            point c = get_real_center();
-            point s = get_real_size();
+            point c = get_reference_center();
+            point s = get_reference_size();
             float bar_h = (1.0f / list_bottom) * s.y;
             float y1 = (c.y - s.y / 2.0f) + bar_h / 2.0f;
             float y2 = (c.y + s.y / 2.0f) - bar_h / 2.0f;
@@ -1011,11 +1299,10 @@ text_gui_item::text_gui_item(
     flags(flags) {
     
     on_draw =
-        [this, text, font, color, flags]
-    (const point & center, const point & size) {
+    [this] (const point & center, const point & size) {
     
         int text_x = center.x;
-        switch(flags) {
+        switch(this->flags) {
         case ALLEGRO_ALIGN_LEFT: {
             text_x = center.x - size.x * 0.5;
             break;
@@ -1025,14 +1312,14 @@ text_gui_item::text_gui_item(
         }
         }
         
-        float juicy_grow_amount = get_juicy_grow_amount();
+        float juicy_grow_amount = get_juice_value();
         
         draw_compressed_scaled_text(
-            font, color,
+            this->font, this->color,
             point(text_x, center.y),
             point(1.0 + juicy_grow_amount, 1.0 + juicy_grow_amount),
-            flags, 1, size,
-            text
+            this->flags, TEXT_VALIGN_CENTER, size, true,
+            this->text
         );
     };
 }

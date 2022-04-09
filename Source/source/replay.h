@@ -29,16 +29,24 @@ using std::string;
 using std::vector;
 
 
+//Types of elements in a replay.
 enum REPLAY_ELEMENT_TYPES {
+    //A leader.
     REPLAY_ELEMENT_LEADER,
+    //A Pikmin.
     REPLAY_ELEMENT_PIKMIN,
+    //An enemy.
     REPLAY_ELEMENT_ENEMY,
+    //A treasure.
     REPLAY_ELEMENT_TREASURE,
+    //An Onion.
     REPLAY_ELEMENT_ONION,
+    //An obstacle.
     REPLAY_ELEMENT_OBSTACLE,
 };
 
 
+//Types of events that can happen in a replay.
 enum REPLAY_EVENT_TYPES {
     //A replay element was added.
     REPLAY_EVENT_ADDED,
@@ -55,11 +63,11 @@ enum REPLAY_EVENT_TYPES {
  */
 struct replay_element {
     //Type of element this represents.
-    unsigned char type;
+    REPLAY_ELEMENT_TYPES type;
     //Its current position.
     point pos;
     
-    replay_element(const unsigned char type, const point &pos);
+    replay_element(const REPLAY_ELEMENT_TYPES type, const point &pos);
 };
 
 
@@ -70,12 +78,12 @@ struct replay_element {
  */
 struct replay_event {
     //Type of event.
-    unsigned char type;
+    REPLAY_EVENT_TYPES type;
     //Informational data about the event.
     size_t data;
     
     replay_event(
-        const unsigned char type, const size_t data
+        const REPLAY_EVENT_TYPES type, const size_t data
     );
 };
 
@@ -103,6 +111,7 @@ struct replay_state {
  */
 class replay {
 public:
+    //States.
     vector<replay_state> states;
     
     replay();
@@ -122,7 +131,9 @@ public:
     void save_to_file(const string &file_name) const;
     
 private:
+    //List of mobs in the previous state.
     vector<mob*> prev_state_mobs;
+    //Number of the previous leader.
     size_t prev_leader_nr;
     
 };

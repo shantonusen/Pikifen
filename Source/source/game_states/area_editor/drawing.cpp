@@ -28,7 +28,7 @@ void area_editor::do_drawing() {
     ImGui::Render();
     
     //Actually draw the GUI + canvas on-screen.
-    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_clear_to_color(COLOR_BLACK);
     ImGui_ImplAllegro5_RenderDrawData(ImGui::GetDrawData());
     
     draw_unsaved_changes_warning();
@@ -52,7 +52,7 @@ void area_editor::draw_canvas() {
         canvas_br.x - canvas_tl.x, canvas_br.y - canvas_tl.y
     );
     
-    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_clear_to_color(COLOR_BLACK);
     
     float lowest_sector_z = 0.0f;
     float highest_sector_z = 0.0f;
@@ -644,6 +644,15 @@ void area_editor::draw_canvas() {
                     al_map_rgb(240, 240, 192), 1.0f / game.cam.zoom
                 );
             }
+            if(
+                game.options.area_editor_show_territory &&
+                m_ptr->type->terrain_radius > 0
+            ) {
+                al_draw_circle(
+                    m_ptr->pos.x, m_ptr->pos.y, m_ptr->type->terrain_radius,
+                    al_map_rgb(240, 192, 192), 1.0f / game.cam.zoom
+                );
+            }
         }
         
     }
@@ -861,7 +870,7 @@ void area_editor::draw_canvas() {
                         POINT_LETTER_TEXT_SCALE / game.cam.zoom,
                         POINT_LETTER_TEXT_SCALE / game.cam.zoom
                     ),
-                    ALLEGRO_ALIGN_CENTER, 1,
+                    ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER,
                     letter
                 );
             }
@@ -960,7 +969,7 @@ void area_editor::draw_canvas() {
                     POINT_LETTER_TEXT_SCALE / game.cam.zoom,
                     POINT_LETTER_TEXT_SCALE / game.cam.zoom
                 ),
-                ALLEGRO_ALIGN_CENTER, 1,
+                ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER,
                 letter
             );
         }
@@ -1132,14 +1141,14 @@ void area_editor::draw_canvas() {
             marker.y,
             marker.x + 10 / game.cam.zoom,
             marker.y,
-            al_map_rgb(255, 255, 255), 2.0 / game.cam.zoom
+            COLOR_WHITE, 2.0 / game.cam.zoom
         );
         al_draw_line(
             marker.x,
             marker.y - 10 / game.cam.zoom,
             marker.x,
             marker.y + 10 / game.cam.zoom,
-            al_map_rgb(255, 255, 255), 2.0 / game.cam.zoom
+            COLOR_WHITE, 2.0 / game.cam.zoom
         );
     }
     
@@ -1154,14 +1163,14 @@ void area_editor::draw_canvas() {
             marker.y - 10 / game.cam.zoom,
             marker.x + 10 / game.cam.zoom,
             marker.y + 10 / game.cam.zoom,
-            al_map_rgb(255, 255, 255), 2.0 / game.cam.zoom
+            COLOR_WHITE, 2.0 / game.cam.zoom
         );
         al_draw_line(
             marker.x - 10 / game.cam.zoom,
             marker.y + 10 / game.cam.zoom,
             marker.x + 10 / game.cam.zoom,
             marker.y - 10 / game.cam.zoom,
-            al_map_rgb(255, 255, 255), 2.0 / game.cam.zoom
+            COLOR_WHITE, 2.0 / game.cam.zoom
         );
     }
     
@@ -1192,7 +1201,7 @@ void area_editor::draw_canvas() {
             al_draw_filled_rectangle(
                 cross_section_z_window_start.x, cross_section_z_window_start.y,
                 cross_section_z_window_end.x, cross_section_z_window_end.y,
-                al_map_rgb(0, 0, 0)
+                COLOR_BLACK
             );
         }
         
@@ -1219,7 +1228,7 @@ void area_editor::draw_canvas() {
             float l1r = 0;
             float l2r = 0;
             if(
-                line_segments_intersect(
+                line_segs_intersect(
                     point(
                         e_ptr->vertexes[0]->x, e_ptr->vertexes[0]->y
                     ),
@@ -1347,17 +1356,17 @@ void area_editor::draw_canvas() {
                     al_draw_line(
                         cross_section_window_start.x, line_y,
                         cross_section_z_window_start.x + 6, line_y,
-                        al_map_rgb(255, 255, 255), 1
+                        COLOR_WHITE, 1
                     );
                     
                     draw_scaled_text(
-                        game.fonts.builtin, al_map_rgb(255, 255, 255),
+                        game.fonts.builtin, COLOR_WHITE,
                         point(
                             (cross_section_z_window_start.x + 8),
                             line_y
                         ),
                         point(1, 1),
-                        ALLEGRO_ALIGN_LEFT, 1, i2s(z)
+                        ALLEGRO_ALIGN_LEFT, TEXT_VALIGN_CENTER, i2s(z)
                     );
                 }
             }
@@ -1365,7 +1374,7 @@ void area_editor::draw_canvas() {
         } else {
         
             draw_scaled_text(
-                game.fonts.builtin, al_map_rgb(255, 255, 255),
+                game.fonts.builtin, COLOR_WHITE,
                 point(
                     (
                         cross_section_window_start.x +
@@ -1376,14 +1385,14 @@ void area_editor::draw_canvas() {
                         cross_section_window_end.y
                     ) * 0.5
                 ),
-                point(1, 1), ALLEGRO_ALIGN_CENTER, 1,
+                point(1, 1), ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER,
                 "Please cross\nsome edges."
             );
             
         }
         
         float cursor_segment_ratio = 0;
-        get_closest_point_in_line(
+        get_closest_point_in_line_seg(
             cross_section_checkpoints[0], cross_section_checkpoints[1],
             point(game.mouse_cursor_w.x, game.mouse_cursor_w.y),
             &cursor_segment_ratio
@@ -1496,11 +1505,13 @@ void area_editor::draw_debug_text(
     const ALLEGRO_COLOR color, const point &where, const string &text,
     const unsigned char dots
 ) {
+    int dox = 0;
+    int doy = 0;
     int dw = 0;
     int dh = 0;
     al_get_text_dimensions(
         game.fonts.builtin, text.c_str(),
-        NULL, NULL, &dw, &dh
+        &dox, &doy, &dw, &dh
     );
     
     float bbox_w = (dw * DEBUG_TEXT_SCALE) / game.cam.zoom;
@@ -1519,7 +1530,7 @@ void area_editor::draw_debug_text(
             DEBUG_TEXT_SCALE / game.cam.zoom,
             DEBUG_TEXT_SCALE / game.cam.zoom
         ),
-        ALLEGRO_ALIGN_CENTER, 1,
+        ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER,
         text
     );
     

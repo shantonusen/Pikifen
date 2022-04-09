@@ -115,7 +115,9 @@ void options_menu_state::change_auto_throw(const signed int step) {
     
     game.options.auto_throw_mode = AUTO_THROW_PRESETS[cur_auto_throw_idx];
     
-    auto_throw_picker->start_juicy_grow();
+    auto_throw_picker->start_juice_animation(
+        gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_LOW
+    );
     update();
 }
 
@@ -144,7 +146,9 @@ void options_menu_state::change_cursor_speed(const signed int step) {
     
     game.options.cursor_speed = CURSOR_SPEED_PRESETS[cur_cursor_speed_idx];
     
-    cursor_speed_picker->start_juicy_grow();
+    cursor_speed_picker->start_juice_animation(
+        gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_LOW
+    );
     update();
 }
 
@@ -178,7 +182,9 @@ void options_menu_state::change_resolution(const signed int step) {
     game.options.intended_win_h = resolution_presets[cur_resolution_idx].second;
     
     trigger_restart_warning();
-    resolution_picker->start_juicy_grow();
+    resolution_picker->start_juice_animation(
+        gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_LOW
+    );
     update();
 }
 
@@ -187,7 +193,7 @@ void options_menu_state::change_resolution(const signed int step) {
  * Draws the options menu.
  */
 void options_menu_state::do_drawing() {
-    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_clear_to_color(COLOR_BLACK);
     
     draw_bitmap(
         bmp_menu_bg, point(game.win_w * 0.5, game.win_h * 0.5),
@@ -261,14 +267,15 @@ void options_menu_state::load() {
     bmp_menu_bg = load_bmp(game.asset_file_names.main_menu);
     
     //Menu items.
-    gui.register_coords("back",            15, 10, 20,  6);
-    gui.register_coords("fullscreen",      24, 20, 45,  8);
-    gui.register_coords("resolution",      24, 30, 45,  8);
-    gui.register_coords("cursor_speed",    24, 45, 45,  8);
-    gui.register_coords("auto_throw",      24, 55, 45,  8);
-    gui.register_coords("controls",        24, 65, 45,  8);
-    gui.register_coords("tooltip",         50, 95, 95,  8);
-    gui.register_coords("restart_warning", 60,  5, 70,  8);
+    gui.register_coords("back",              15, 10, 20,  6);
+    gui.register_coords("fullscreen",        24, 20, 45,  8);
+    gui.register_coords("resolution",        24, 30, 45,  8);
+    gui.register_coords("cursor_speed",      24, 45, 45,  8);
+    gui.register_coords("auto_throw",        24, 55, 45,  8);
+    gui.register_coords("show_hud_controls", 24, 65, 45,  8);
+    gui.register_coords("controls",          24, 75, 45,  8);
+    gui.register_coords("tooltip",           50, 95, 95,  8);
+    gui.register_coords("restart_warning",   60,  5, 70,  8);
     gui.read_coords(
         data_node(GUI_FILE_PATH).get_child_by_name("positions")
     );
@@ -298,7 +305,6 @@ void options_menu_state::load() {
     };
     fullscreen_check->on_get_tooltip =
     [] () { return "Show the game in fullscreen, or in a window?"; };
-    
     gui.add_item(fullscreen_check, "fullscreen");
     
     //Resolution picker.
@@ -363,6 +369,16 @@ void options_menu_state::load() {
     };
     gui.add_item(auto_throw_picker, "auto_throw");
     
+    //Show HUD controls checkbox.
+    check_gui_item* show_hud_controls_check =
+        new check_gui_item(
+        &game.options.show_hud_controls,
+        "Show controls on HUD", game.fonts.standard
+    );
+    show_hud_controls_check->on_get_tooltip =
+    [] () { return "Show icons of the controls near relevant HUD items?"; };
+    gui.add_item(show_hud_controls_check, "show_hud_controls");
+    
     //Controls button.
     button_gui_item* controls_button =
         new button_gui_item("Edit controls...", game.fonts.standard);
@@ -381,8 +397,9 @@ void options_menu_state::load() {
         [this]
     (const point & center, const point & size) {
         draw_compressed_scaled_text(
-            game.fonts.standard, al_map_rgb(255, 255, 255),
-            center, point(0.7f, 0.7f), ALLEGRO_ALIGN_CENTER, 1, size,
+            game.fonts.standard, COLOR_WHITE,
+            center, point(0.7f, 0.7f),
+            ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER, size, false,
             gui.get_current_tooltip()
         );
     };
@@ -392,7 +409,7 @@ void options_menu_state::load() {
     warning_text =
         new text_gui_item(
         "Please restart for the changes to take effect.",
-        game.fonts.standard, al_map_rgb(255, 255, 255), ALLEGRO_ALIGN_RIGHT
+        game.fonts.standard, COLOR_WHITE, ALLEGRO_ALIGN_RIGHT
     );
     warning_text->visible = false;
     gui.add_item(warning_text, "restart_warning");
@@ -411,7 +428,9 @@ void options_menu_state::load() {
 void options_menu_state::trigger_restart_warning() {
     if(!warning_text->visible) {
         warning_text->visible = true;
-        warning_text->start_juicy_grow();
+        warning_text->start_juice_animation(
+            gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_LOW
+        );
     }
 }
 

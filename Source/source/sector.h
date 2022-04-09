@@ -24,6 +24,8 @@
 #include "hazard.h"
 #include "mob_categories/mob_category.h"
 #include "mob_types/mob_type.h"
+#include "mobs/mob_utils.h"
+#include "pathing.h"
 #include "weather.h"
 
 
@@ -39,12 +41,12 @@ const float LIQUID_DRAIN_DURATION = 2.0f;
 struct area_data;
 struct blockmap;
 struct edge;
-struct path_stop;
-struct path_link;
 struct sector;
 struct triangle;
 struct vertex;
 
+
+//Possible errors after a triangulation operation.
 enum TRIANGULATION_ERRORS {
     //No error occured.
     TRIANGULATION_NO_ERROR,
@@ -59,25 +61,12 @@ enum TRIANGULATION_ERRORS {
 };
 
 
-enum PATH_LINK_TYPES {
-    //Normal.
-    PATH_LINK_TYPE_NORMAL,
-    //Only useable by mob scripts that reference it.
-    PATH_LINK_TYPE_SCRIPT_ONLY,
-    //Only for mobs carrying nothing, or a 1-weight mob.
-    PATH_LINK_TYPE_LIGHT_LOAD_ONLY,
-    //Only for objects that can fly.
-    PATH_LINK_TYPE_AIRBORNE_ONLY,
-};
-
-
-enum PATH_TAKER_FLAGS {
-    //The mob was told to use this path by a script.
-    PATH_TAKER_FLAG_SCRIPT_USE = 1,
-    //The mob has light load.
-    PATH_TAKER_FLAG_LIGHT_LOAD = 2,
-    //The mob can fly.
-    PATH_TAKER_FLAG_AIRBORNE = 4,
+//Types of sector.
+enum SECTOR_TYPES {
+    //Normal sector.
+    SECTOR_TYPE_NORMAL,
+    //Blocks all mob movement.
+    SECTOR_TYPE_BLOCKING,
 };
 
 
@@ -86,7 +75,11 @@ enum PATH_TAKER_FLAGS {
  * edges as red on the editor.
  */
 struct edge_intersection {
-    edge* e1, *e2;
+    //First edge in the intersection.
+    edge* e1;
+    //Second edge in the intersection.
+    edge* e2;
+    
     edge_intersection(edge* e1, edge* e2);
     bool contains(edge* e);
 };
@@ -133,16 +126,18 @@ struct blockmap {
  * In DOOM, these are what's known as linedefs.
  */
 struct edge {
+    //Vertexes that make up the edge.
     vertex* vertexes[2];
+    //Index of the vertexes that make up the edge.
     size_t vertex_nrs[2];
+    //Sectors on each side of the edge.
     sector* sectors[2];
+    //Index of the sectors on each side of the edge.
     size_t sector_nrs[2];
-    
     //Length of the wall shadow. 0 = none. LARGE_FLOAT = auto.
     float wall_shadow_length;
     //Color of the wall shadow, opacity included.
     ALLEGRO_COLOR wall_shadow_color;
-    
     //Length of the ledge smoothing effect. 0 = none.
     float ledge_smoothing_length;
     //Color of the ledge smoothing effect, opacity included.
@@ -176,74 +171,20 @@ struct edge {
 
 
 /* ----------------------------------------------------------------------------
- * Stops are points that make up a path. In mathematics, this is a node
- * in the graph. In a real-world example, this is a bus stop.
- * Pikmin start carrying by going for the closest stop.
- * Then they move stop by stop, following the connections, until they
- * reach the final stop and go wherever they need.
- */
-struct path_stop {
-    //Coordinates.
-    point pos;
-    //Links that go to other stops.
-    vector<path_link*> links;
-    //Sector it's on. Only applicable during gameplay. Cache for performance.
-    sector* sector_ptr;
-    
-    path_stop(
-        const point &pos = point(),
-        const vector<path_link*> &links = vector<path_link*>()
-    );
-    ~path_stop();
-    void add_link(path_stop* other_stop, const bool normal);
-    path_link* get_link(path_stop* other_stop) const;
-    void remove_link(path_link* link_ptr);
-    void remove_link(path_stop* other_stop);
-    void calculate_dists();
-    void calculate_dists_plus_neighbors();
-};
-
-
-
-
-/* ----------------------------------------------------------------------------
- * Info about a path link. A path stop can link to N other path stops,
- * and this structure holds information about a connection.
- */
-struct path_link {
-    //Pointer to the path stop at the start.
-    path_stop* start_ptr;
-    //Pointer to the path stop at the end.
-    path_stop* end_ptr;
-    //Index number of the path stop at the end.
-    size_t end_nr;
-    
-    //Type. Used for special restrictions and behaviors.
-    PATH_LINK_TYPES type;
-    //Its label, if any.
-    string label;
-    
-    //Distance between the two stops.
-    float distance;
-    //Is the stop currently blocked by an obstacle? Cache for performance.
-    bool blocked_by_obstacle;
-    
-    path_link(path_stop* start_ptr, path_stop* end_ptr, size_t end_nr);
-    void calculate_dist(path_stop* start_ptr);
-};
-
-
-
-
-/* ----------------------------------------------------------------------------
  * Information about a sector's texture.
  */
 struct sector_texture_info {
-    point scale; //Texture scale.
-    point translation; //Translation.
-    float rot; //Rotation.
+    //Texture scale.
+    point scale;
+    //Texture translation.
+    point translation;
+    //Texture rotation.
+    float rot;
+    //Texture bitmap.
     ALLEGRO_BITMAP* bitmap;
+    //Texture tint.
     ALLEGRO_COLOR tint;
+    //File name of the texture bitmap.
     string file_name;
     
     sector_texture_info();
@@ -259,26 +200,39 @@ struct sector_texture_info {
  * is determined by its floors.
  */
 struct sector {
-    unsigned char type;
+    //Its type.
+    SECTOR_TYPES type;
+    //Is it a bottomless pit?
     bool is_bottomless_pit;
-    float z; //Height.
+    //Z coordinate of the floor.
+    float z;
+    //Extra information, if any.
     string tag;
+    //Brightness.
     unsigned char brightness;
-    
+    //Information about its texture.
     sector_texture_info texture_info;
+    //Is this sector meant to fade textures from neighboring sectors?
     bool fade;
-    
-    string hazards_str; //For the editor.
-    vector<hazard*> hazards; //For gameplay.
+    //String representing its hazards. Used for the editor.
+    string hazards_str;
+    //List of hazards.
+    vector<hazard*> hazards;
+    //Is only floor hazardous, or the air as well?
     bool hazard_floor;
+    //Time left to drain the liquid in the sector.
     float liquid_drain_left;
+    //Is it currently draining its liquid?
     bool draining_liquid;
+    //Scrolling speed, if any.
     point scroll;
-    
+    //Index number of the edges that make up this sector.
     vector<size_t> edge_nrs;
+    //Edges that make up this sector.
     vector<edge*> edges;
+    //Triangles it is composed of.
     vector<triangle> triangles;
-    
+    //Bounding box.
     point bbox[2];
     
     sector();
@@ -306,7 +260,9 @@ struct sector {
  * and to draw, seeing as OpenGL cannot draw concave polygons.
  */
 struct triangle {
+    //Points that make up this triangle.
     vertex* points[3];
+    
     triangle(vertex* v1, vertex* v2, vertex* v3);
 };
 
@@ -318,8 +274,13 @@ struct triangle {
  * the end-points of an edge.
  */
 struct vertex {
-    float x, y;
+    //X coordinate.
+    float x;
+    //Y coordinate.
+    float y;
+    //Index number of the edges around it.
     vector<size_t> edge_nrs;
+    //Edges around it.
     vector<edge*> edges;
     
     vertex(float x = 0.0f, float y = 0.0f);
@@ -339,6 +300,7 @@ struct vertex {
  * Represents a series of vertexes that make up a polygon.
  */
 struct polygon {
+    //Ordered list of vertexes that represent the polygon.
     vector<vertex*> vertexes;
     
     void clean();
@@ -359,13 +321,19 @@ struct polygon {
  * position and type data, plus some other tiny things.
  */
 struct mob_gen {
+    //Mob category.
     mob_category* category;
+    //Mob type.
     mob_type* type;
-    
+    //Position.
     point pos;
+    //Angle.
     float angle;
+    //Script vars.
     string vars;
-    vector<mob_gen*> links; //Cache for performance.
+    //Linked objects. Cache for performance.
+    vector<mob_gen*> links;
+    //Index of linked objects.
     vector<size_t> link_nrs;
     
     mob_gen(
@@ -383,14 +351,20 @@ struct mob_gen {
  * whatever the game maker desires).
  */
 struct tree_shadow {
+    //File name of the tree shadow texture.
     string file_name;
+    //Tree shadow texture.
     ALLEGRO_BITMAP* bitmap;
-    
-    point center; //X and Y of the center.
-    point size;   //Width and height.
-    float angle;  //Rotation angle.
-    unsigned char alpha; //Opacity.
-    point sway;   //Swaying is multiplied by this.
+    //Center coordinates.
+    point center;
+    //Width and height.
+    point size;
+    //Angle.
+    float angle;
+    //Opacity.
+    unsigned char alpha;
+    //Swaying is multiplied by this.
+    point sway;
     
     tree_shadow(
         const point &center = point(), const point &size = point(100, 100),
@@ -424,31 +398,47 @@ struct geometry_problems {
  * vertexes, etc.
  */
 struct area_data {
-
+    //Blockmap.
     blockmap bmap;
+    //List of vertexes.
     vector<vertex*> vertexes;
+    //List of edges.
     vector<edge*> edges;
+    //List of sectors.
     vector<sector*> sectors;
+    //List of mob generators.
     vector<mob_gen*> mob_generators;
+    //List of path stops.
     vector<path_stop*> path_stops;
+    //List of tree shadows.
     vector<tree_shadow*> tree_shadows;
-    
+    //Bitmap of the background.
     ALLEGRO_BITMAP* bg_bmp;
+    //File name of the background bitmap.
     string bg_bmp_file_name;
+    //Zoom the background by this much.
     float bg_bmp_zoom;
+    //How far away the background is.
     float bg_dist;
+    //Tint the background with this color.
     ALLEGRO_COLOR bg_color;
+    //Name of the area. This is not the internal name.
     string name;
+    //Area subtitle, if any.
     string subtitle;
-    
+    //Who made this area.
     string maker;
+    //Optional version number.
     string version;
+    //Any notes from the person who made it.
     string notes;
+    //String representing the starting amounts of each spray.
     string spray_amounts;
-    
+    //Weather condition to use.
     weather weather_condition;
+    //Name of the weather condition to use.
     string weather_name;
-    
+    //Known geometry problems.
     geometry_problems problems;
     
     area_data();
@@ -487,47 +477,28 @@ struct area_data {
 
 
 
-
 /* ----------------------------------------------------------------------------
- * Manages the paths in the area. Particularly, this keeps an eye out on
- * what stops and links have any sort of obstacle in them that could deter
- * mobs. When these problems disappear, the manager is in charge of alerting
- * all mobs that were following paths, in order to get them recalculate
- * their paths if needed.
- * The reason we want them to recalculate regardless of whether the
- * obstacle affected them or not, is because this obstacle could've freed
- * a different route.
+ * Just a list of the different sector types.
+ * The SECTOR_TYPE_* constants are meant to be used here.
+ * This is a vector instead of a map because hopefully,
+ * the numbers are filled in sequence, as they're from
+ * an enum, hence, there are no gaps.
  */
-struct path_manager {
-    map<path_link*, unordered_set<mob*> > obstructions;
-    unordered_set<path_stop*> hazardous_stops;
+struct sector_types_manager {
+public:
+    void register_type(const SECTOR_TYPES nr, const string &name);
+    SECTOR_TYPES get_nr(const string &name) const;
+    string get_name(const SECTOR_TYPES nr) const;
+    unsigned char get_nr_of_types() const;
     
-    void handle_area_load();
-    void handle_obstacle_add(mob* m);
-    void handle_obstacle_remove(mob* m);
-    void handle_sector_hazard_change(sector* sector_ptr);
-    void clear();
+private:
+    //Known sector types.
+    vector<string> names;
+    
 };
 
 
 
-
-bool can_traverse_path_link(
-    path_link* link_ptr, const bool ignore_obstacles,
-    const vector<hazard*> &invulnerabilities, const unsigned char taker_flags,
-    const string &label
-);
-void depth_first_search(
-    vector<path_stop*> &nodes,
-    unordered_set<path_stop*> &visited, path_stop* start
-);
-vector<path_stop*> dijkstra(
-    path_stop* start_node, path_stop* end_node,
-    const bool ignore_obstacles,
-    const vector<hazard*> &invulnerabilities, const unsigned char taker_flags,
-    const string &label,
-    float* total_dist
-);
 void get_cce(
     vector<vertex> &vertexes_left, vector<size_t> &ears,
     vector<size_t> &convex_vertexes, vector<size_t> &concave_vertexes
@@ -535,14 +506,6 @@ void get_cce(
 vector<std::pair<dist, vertex*> > get_merge_vertexes(
     const point &p, vector<vertex*> &all_vertexes, const float merge_radius
 );
-vector<path_stop*> get_path(
-    const point &start, const point &end,
-    const vector<hazard*> invulnerabilities,
-    const unsigned char taker_flags, const string &label,
-    bool* go_straight, float* get_dist,
-    path_stop** start_stop, path_stop** end_stop
-);
-mob* get_path_link_obstacle(path_stop* s1, path_stop* s2);
 TRIANGULATION_ERRORS get_polys(
     sector* s, polygon* outer, vector<polygon>* inners,
     set<edge*>* lone_edges, const bool check_vertex_reuse
@@ -563,29 +526,10 @@ TRIANGULATION_ERRORS triangulate(
 );
 
 
-enum SECTOR_TYPES {
-    SECTOR_TYPE_NORMAL,
-    SECTOR_TYPE_BLOCKING,
-    SECTOR_TYPE_BRIDGE,
-    SECTOR_TYPE_BRIDGE_RAIL,
-};
-
-
-enum TERRAIN_SOUNDS {
-    TERRAIN_SOUND_NONE,
-    TERRAIN_SOUND_DIRT,
-    TERRAIN_SOUND_GRASS,
-    TERRAIN_SOUND_STONE,
-    TERRAIN_SOUND_WOOD,
-    TERRAIN_SOUND_METAL,
-    TERRAIN_SOUND_WATER,
-};
-
-
 const float BLOCKMAP_BLOCK_SIZE = 128;
 const unsigned char DEF_SECTOR_BRIGHTNESS = 255;
 //Mobs can walk up sectors that are, at the most,
 //this high from the current one, as if climbing up steps.
-const float SECTOR_STEP = 50;
+const float STEP_HEIGHT = 50;
 
 #endif //ifndef SECTOR_INCLUDED

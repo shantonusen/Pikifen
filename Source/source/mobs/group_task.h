@@ -49,6 +49,11 @@ public:
     void finish_task();
     //Free up a spot taken by a Pikmin.
     void free_up_spot(pikmin* whose);
+    //Returns information on how to show the fraction.
+    bool get_fraction_numbers_info(
+        float* fraction_value_nr, float* fraction_req_nr,
+        ALLEGRO_COLOR* fraction_color
+    ) const;
     //Returns a free spot, if any.
     group_task_spot* get_free_spot();
     //Returns the current working power.
@@ -63,7 +68,7 @@ public:
     
 protected:
     //Tick class-specific logic.
-    virtual void tick_class_specifics(const float delta_t);
+    void tick_class_specifics(const float delta_t);
     
 private:
     //Combined Pikmin power put into the task right now. Cache for performance.

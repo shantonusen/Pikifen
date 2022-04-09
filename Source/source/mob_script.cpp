@@ -90,7 +90,7 @@ vector<mob_state*> easy_fsm_creator::finish() {
  * type:
  *   Type of event.
  */
-void easy_fsm_creator::new_event(const unsigned char type) {
+void easy_fsm_creator::new_event(const MOB_EV_TYPES type) {
     commit_event();
     cur_event = new mob_event(type);
     cur_state->events[type] = cur_event;
@@ -155,34 +155,36 @@ mob_event::mob_event(data_node* node, const vector<mob_action_call*> &actions) :
     else if(n == (name)) type = (number)
     
     string n = node->name;
-    if(n == "on_enter") type = MOB_EV_ON_ENTER;
-    r("on_leave",              MOB_EV_ON_LEAVE);
-    r("on_tick",               MOB_EV_ON_TICK);
-    r("on_animation_end",      MOB_EV_ANIMATION_END);
-    r("on_damage",             MOB_EV_DAMAGE);
-    r("on_far_from_home",      MOB_EV_FAR_FROM_HOME);
-    r("on_focus_off_reach",    MOB_EV_FOCUS_OFF_REACH);
-    r("on_frame_signal",       MOB_EV_FRAME_SIGNAL);
-    r("on_held",               MOB_EV_HELD);
-    r("on_hitbox_touch_eat",   MOB_EV_HITBOX_TOUCH_EAT);
-    r("on_hitbox_touch_a_n",   MOB_EV_HITBOX_TOUCH_A_N);
-    r("on_hitbox_touch_n_n",   MOB_EV_HITBOX_TOUCH_N_N);
-    r("on_itch",               MOB_EV_ITCH);
-    r("on_land",               MOB_EV_LANDED);
-    r("on_leave_hazard",       MOB_EV_LEFT_HAZARD);
-    r("on_object_in_reach",    MOB_EV_OBJECT_IN_REACH);
-    r("on_opponent_in_reach",  MOB_EV_OPPONENT_IN_REACH);
-    r("on_pikmin_land",        MOB_EV_THROWN_PIKMIN_LANDED);
-    r("on_receive_message",    MOB_EV_RECEIVE_MESSAGE);
-    r("on_released",           MOB_EV_RELEASED);
-    r("on_reach_destination",  MOB_EV_REACHED_DESTINATION);
-    r("on_timer",              MOB_EV_TIMER);
-    r("on_touch_hazard",       MOB_EV_TOUCHED_HAZARD);
-    r("on_touch_object",       MOB_EV_TOUCHED_OBJECT);
-    r("on_touch_opponent",     MOB_EV_TOUCHED_OPPONENT);
-    r("on_touch_wall",         MOB_EV_TOUCHED_WALL);
-    r("on_weight_added",       MOB_EV_WEIGHT_ADDED);
-    r("on_weight_removed",     MOB_EV_WEIGHT_REMOVED);
+    if(n == "on_enter") type =          MOB_EV_ON_ENTER;
+    r("on_leave",                       MOB_EV_ON_LEAVE);
+    r("on_tick",                        MOB_EV_ON_TICK);
+    r("on_animation_end",               MOB_EV_ANIMATION_END);
+    r("on_damage",                      MOB_EV_DAMAGE);
+    r("on_far_from_home",               MOB_EV_FAR_FROM_HOME);
+    r("on_finish_receiving_delivery",   MOB_EV_FINISHED_RECEIVING_DELIVERY);
+    r("on_focus_off_reach",             MOB_EV_FOCUS_OFF_REACH);
+    r("on_frame_signal",                MOB_EV_FRAME_SIGNAL);
+    r("on_held",                        MOB_EV_HELD);
+    r("on_hitbox_touch_eat",            MOB_EV_HITBOX_TOUCH_EAT);
+    r("on_hitbox_touch_a_n",            MOB_EV_HITBOX_TOUCH_A_N);
+    r("on_hitbox_touch_n_n",            MOB_EV_HITBOX_TOUCH_N_N);
+    r("on_itch",                        MOB_EV_ITCH);
+    r("on_land",                        MOB_EV_LANDED);
+    r("on_leave_hazard",                MOB_EV_LEFT_HAZARD);
+    r("on_object_in_reach",             MOB_EV_OBJECT_IN_REACH);
+    r("on_opponent_in_reach",           MOB_EV_OPPONENT_IN_REACH);
+    r("on_pikmin_land",                 MOB_EV_THROWN_PIKMIN_LANDED);
+    r("on_receive_message",             MOB_EV_RECEIVE_MESSAGE);
+    r("on_released",                    MOB_EV_RELEASED);
+    r("on_reach_destination",           MOB_EV_REACHED_DESTINATION);
+    r("on_start_receiving_delivery",    MOB_EV_STARTED_RECEIVING_DELIVERY);
+    r("on_timer",                       MOB_EV_TIMER);
+    r("on_touch_hazard",                MOB_EV_TOUCHED_HAZARD);
+    r("on_touch_object",                MOB_EV_TOUCHED_OBJECT);
+    r("on_touch_opponent",              MOB_EV_TOUCHED_OPPONENT);
+    r("on_touch_wall",                  MOB_EV_TOUCHED_WALL);
+    r("on_weight_added",                MOB_EV_WEIGHT_ADDED);
+    r("on_weight_removed",              MOB_EV_WEIGHT_REMOVED);
     else {
         type = MOB_EV_UNKNOWN;
         log_error("Unknown script event name \"" + n + "\"!", node);
@@ -201,7 +203,7 @@ mob_event::mob_event(data_node* node, const vector<mob_action_call*> &actions) :
  * a:
  *   Its actions.
  */
-mob_event::mob_event(const unsigned char t, const vector<mob_action_call*> &a) :
+mob_event::mob_event(const MOB_EV_TYPES t, const vector<mob_action_call*> &a) :
     type(t),
     actions(a) {
     
@@ -327,7 +329,7 @@ mob_fsm::mob_fsm(mob* m) :
  * type:
  *   The event's type.
  */
-mob_event* mob_fsm::get_event(const size_t type) const {
+mob_event* mob_fsm::get_event(const MOB_EV_TYPES type) const {
     return cur_state->events[type];
 }
 
@@ -358,7 +360,7 @@ size_t mob_fsm::get_state_nr(const string &name) const {
  *   Custom argument #2 to pass to the code.
  */
 void mob_fsm::run_event(
-    const size_t type, void* custom_data_1, void* custom_data_2
+    const MOB_EV_TYPES type, void* custom_data_1, void* custom_data_2
 ) {
     mob_event* e = get_event(type);
     if(e) {
@@ -475,7 +477,7 @@ mob_state::mob_state(const string &name, const size_t id) :
  * type:
  *   The event's type.
  */
-mob_event* mob_state::get_event(const size_t type) const {
+mob_event* mob_state::get_event(const MOB_EV_TYPES type) const {
     return events[type];
 }
 
@@ -653,7 +655,7 @@ void load_script(mob_type* mt, data_node* node, vector<mob_state*>* states) {
             new_events_custom_actions_after.push_back(false);
         }
         
-        //Inject a spray event.
+        //Inject a spray touch event.
         if(
             !state_ptr->events[MOB_EV_TOUCHED_SPRAY] &&
             find(
@@ -674,7 +676,7 @@ void load_script(mob_type* mt, data_node* node, vector<mob_state*>* states) {
         
         //Connect all new events to the state.
         for(size_t e = 0; e < new_events.size(); ++e) {
-            size_t ev_type = new_events[e]->type;
+            MOB_EV_TYPES ev_type = new_events[e]->type;
             
             if(state_ptr->events[ev_type]) {
                 //Event already exists. Add the new actions, only.

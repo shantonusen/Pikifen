@@ -78,7 +78,7 @@ onion::onion(const point &pos, onion_type* type, const float angle) :
         spew_queue.push_back(0);
     }
     
-    set_animation(ANIM_IDLING);
+    set_animation(ANIM_IDLING, true, START_ANIMATION_RANDOM_TIME_ON_SPAWN);
 }
 
 
@@ -99,7 +99,7 @@ void onion::draw_mob() {
     if(!s_ptr) return;
     
     bitmap_effect_info eff;
-    get_sprite_bitmap_effects(s_ptr, &eff, true, true);
+    get_sprite_bitmap_effects(s_ptr, &eff, true, true, true, false, false);
     
     eff.tint_color.a *= (seethrough / 255.0f);
     
@@ -158,9 +158,9 @@ void onion::spew() {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks some logic specific to Onions.
+ * Ticks time by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void onion::tick_class_specifics(const float delta_t) {
     bool needs_to_spew = false;

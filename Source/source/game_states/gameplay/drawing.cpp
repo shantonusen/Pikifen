@@ -148,6 +148,7 @@ void gameplay_state::do_game_drawing(
         game.perf_mon->start_measurement("Drawing -- HUD");
     }
     al_use_transform(&game.identity_transform);
+    hud->gui.draw();
     if(msg_box) {
         draw_message_box();
     } else if(onion_menu) {
@@ -156,7 +157,6 @@ void gameplay_state::do_game_drawing(
         draw_pause_menu();
     } else {
         draw_mouse_cursor(cursor_color);
-        hud.draw();
     }
     if(game.perf_mon) {
         game.perf_mon->finish_measurement();
@@ -248,135 +248,17 @@ void gameplay_state::draw_background(ALLEGRO_BITMAP* bmp_output) {
  * Draws the in-game text.
  */
 void gameplay_state::draw_ingame_text() {
-    //Fractions and health.
+    //Mob things.
     size_t n_mobs = mobs.all.size();
     for(size_t m = 0; m < n_mobs; ++m) {
         mob* mob_ptr = mobs.all[m];
         
-        if(
-            mob_ptr->carry_info &&
-            mob_ptr->carry_info->cur_carrying_strength > 0
-        ) {
-            bool destination_is_onion =
-                mob_ptr->carry_info->intended_mob &&
-                mob_ptr->carry_info->intended_mob->type->category->id ==
-                MOB_CATEGORY_ONIONS;
-                
-            if(mob_ptr->type->weight > 1 || destination_is_onion) {
-                ALLEGRO_COLOR color;
-                if(mob_ptr->carry_info->is_moving) {
-                    if(
-                        mob_ptr->carry_info->destination ==
-                        CARRY_DESTINATION_SHIP
-                    ) {
-                        color = game.config.carrying_color_move;
-                        
-                    } else if(destination_is_onion) {
-                        color =
-                            mob_ptr->carry_info->intended_pik_type->main_color;
-                    } else {
-                        color = game.config.carrying_color_move;
-                    }
-                    
-                } else {
-                    color = game.config.carrying_color_stop;
-                }
-                
-                draw_fraction(
-                    point(
-                        mob_ptr->pos.x,
-                        mob_ptr->pos.y - mob_ptr->radius -
-                        al_get_font_line_height(game.fonts.standard) * 1.25
-                    ),
-                    mob_ptr->carry_info->cur_carrying_strength,
-                    mob_ptr->type->weight,
-                    color
-                );
-            }
+        //Fractions and health.
+        if(mob_ptr->health_wheel) {
+            mob_ptr->health_wheel->draw();
         }
-        
-        for(size_t p = 0; p < mobs.piles.size(); ++p) {
-            pile* p_ptr = mobs.piles[p];
-            if(p_ptr->amount > 0 && p_ptr->pil_type->show_amount) {
-                draw_text_lines(
-                    game.fonts.standard,
-                    game.config.carrying_color_stop,
-                    point(
-                        p_ptr->pos.x,
-                        p_ptr->pos.y - p_ptr->radius -
-                        al_get_font_line_height(game.fonts.standard) * 1.25
-                    ),
-                    ALLEGRO_ALIGN_CENTER,
-                    1,
-                    i2s(p_ptr->amount)
-                );
-            }
-        }
-        
-        for(size_t t = 0; t < mobs.group_tasks.size(); ++t) {
-            group_task* t_ptr = mobs.group_tasks[t];
-            if(t_ptr->get_power() > 0) {
-                draw_fraction(
-                    point(
-                        t_ptr->pos.x,
-                        t_ptr->pos.y - t_ptr->radius -
-                        al_get_font_line_height(game.fonts.standard) * 1.25
-                    ),
-                    t_ptr->get_power(),
-                    t_ptr->tas_type->power_goal,
-                    game.config.carrying_color_stop
-                );
-            }
-        }
-        
-        for(size_t s = 0; s < mobs.scales.size(); ++s) {
-            scale* s_ptr = mobs.scales[s];
-            if(s_ptr->health <= 0) continue;
-            float w = s_ptr->calculate_cur_weight();
-            if(w > 0) {
-                if(s_ptr->sca_type->goal_number > 0) {
-                    draw_fraction(
-                        point(
-                            s_ptr->pos.x,
-                            s_ptr->pos.y - s_ptr->radius -
-                            al_get_font_line_height(game.fonts.standard) * 1.25
-                        ),
-                        w,
-                        s_ptr->sca_type->goal_number,
-                        game.config.carrying_color_stop
-                    );
-                } else {
-                    draw_text_lines(
-                        game.fonts.standard,
-                        game.config.carrying_color_stop,
-                        point(
-                            s_ptr->pos.x,
-                            s_ptr->pos.y - s_ptr->radius -
-                            al_get_font_line_height(game.fonts.standard) * 1.25
-                        ),
-                        ALLEGRO_ALIGN_CENTER,
-                        1,
-                        i2s(w)
-                    );
-                }
-            }
-        }
-        
-        if(
-            mob_ptr->type->show_health &&
-            !mob_ptr->hide &&
-            mob_ptr->health < mob_ptr->type->max_health &&
-            mob_ptr->health_wheel_alpha > 0.0f
-        ) {
-            draw_health(
-                point(
-                    mob_ptr->pos.x,
-                    mob_ptr->pos.y - mob_ptr->radius -
-                    DEF_HEALTH_WHEEL_RADIUS - 4
-                ),
-                mob_ptr->health_wheel_smoothed_ratio,
-                mob_ptr->health_wheel_alpha
-            );
+        if(mob_ptr->fraction) {
+            mob_ptr->fraction->draw();
         }
         
         //Maker tool -- draw hitboxes.
@@ -478,9 +360,9 @@ void gameplay_state::draw_ingame_text() {
     ) {
         draw_notification(
             point(
-                close_to_ship_to_heal->beam_final_pos.x,
-                close_to_ship_to_heal->beam_final_pos.y -
-                close_to_ship_to_heal->shi_type->beam_radius
+                close_to_ship_to_heal->control_point_final_pos.x,
+                close_to_ship_to_heal->control_point_final_pos.y -
+                close_to_ship_to_heal->shi_type->control_point_radius
             ),
             "Repair suit", &game.options.controls[0][main_control_id]
         );
@@ -547,24 +429,24 @@ void gameplay_state::draw_ingame_text() {
  */
 void gameplay_state::draw_leader_cursor(const ALLEGRO_COLOR &color) {
 
-    size_t n_arrows = swarm_arrows.size();
+    size_t n_arrows = cur_leader_ptr->swarm_arrows.size();
     for(size_t a = 0; a < n_arrows; ++a) {
         point pos(
-            cos(swarm_angle) * swarm_arrows[a],
-            sin(swarm_angle) * swarm_arrows[a]
+            cos(swarm_angle) * cur_leader_ptr->swarm_arrows[a],
+            sin(swarm_angle) * cur_leader_ptr->swarm_arrows[a]
         );
         float alpha =
             64 + std::min(
                 191,
                 (int) (
                     191 *
-                    (swarm_arrows[a] / (game.config.cursor_max_dist * 0.4))
+                    (cur_leader_ptr->swarm_arrows[a] / (game.config.cursor_max_dist * 0.4))
                 )
             );
         draw_bitmap(
             game.sys_assets.bmp_swarm_arrow,
             cur_leader_ptr->pos + pos,
-            point(16 * (1 + swarm_arrows[a] / game.config.cursor_max_dist), -1),
+            point(16 * (1 + cur_leader_ptr->swarm_arrows[a] / game.config.cursor_max_dist), -1),
             swarm_angle,
             map_alpha(alpha)
         );
@@ -572,90 +454,80 @@ void gameplay_state::draw_leader_cursor(const ALLEGRO_COLOR &color) {
     
     size_t n_rings = whistle.rings.size();
     float cursor_angle = get_angle(cur_leader_ptr->pos, leader_cursor_w);
+    float cursor_distance = dist(cur_leader_ptr->pos, leader_cursor_w).to_float();
     for(size_t r = 0; r < n_rings; ++r) {
         point pos(
             cur_leader_ptr->pos.x + cos(cursor_angle) * whistle.rings[r],
             cur_leader_ptr->pos.y + sin(cursor_angle) * whistle.rings[r]
         );
+        float ring_to_whistle_distance = cursor_distance - whistle.rings[r];
+        float scale =
+            interpolate_number(
+                ring_to_whistle_distance,
+                0, cursor_distance,
+                whistle.radius * 2, 0
+            );
+        float alpha =
+            interpolate_number(
+                ring_to_whistle_distance,
+                0, cursor_distance,
+                0, 100
+            );
         unsigned char n = whistle.ring_colors[r];
-        al_draw_circle(
-            pos.x, pos.y, 8,
+        draw_bitmap(
+            game.sys_assets.bmp_bright_ring,
+            pos,
+            point(scale, scale),
+            0.0f,
             al_map_rgba(
                 WHISTLE_RING_COLORS[n][0],
                 WHISTLE_RING_COLORS[n][1],
                 WHISTLE_RING_COLORS[n][2],
-                192
-            ), 3
+                alpha
+            )
         );
     }
     
     if(whistle.radius > 0 || whistle.fade_timer.time_left > 0.0f) {
-        if(game.options.pretty_whistle) {
-            unsigned char n_dots = 16 * 6;
-            for(unsigned char d = 0; d < 6; ++d) {
-                for(unsigned char d2 = 0; d2 < 16; ++d2) {
-                    unsigned char current_dot = d2 * 6 + d;
-                    float angle =
-                        TAU / n_dots *
-                        current_dot -
-                        WHISTLE_DOT_SPIN_SPEED * area_time_passed;
-                        
-                    point dot_pos(
-                        whistle.center.x +
-                        cos(angle) * whistle.dot_radius[d],
-                        whistle.center.y +
-                        sin(angle) * whistle.dot_radius[d]
+        al_draw_filled_circle(
+            whistle.center.x, whistle.center.y,
+            whistle.radius,
+            al_map_rgba(48, 128, 120, 64)
+        );
+        
+        unsigned char n_dots = 16 * N_WHISTLE_DOT_COLORS;
+        for(unsigned char d = 0; d < N_WHISTLE_DOT_COLORS; ++d) {
+            for(unsigned char d2 = 0; d2 < 16; ++d2) {
+                unsigned char current_dot = d2 * N_WHISTLE_DOT_COLORS + d;
+                float angle =
+                    TAU / n_dots *
+                    current_dot -
+                    WHISTLE_DOT_SPIN_SPEED * area_time_passed;
+                    
+                point dot_pos(
+                    whistle.center.x +
+                    cos(angle) * whistle.dot_radius[d],
+                    whistle.center.y +
+                    sin(angle) * whistle.dot_radius[d]
+                );
+                
+                ALLEGRO_COLOR dot_color =
+                    al_map_rgb(
+                        WHISTLE_DOT_COLORS[d][0],
+                        WHISTLE_DOT_COLORS[d][1],
+                        WHISTLE_DOT_COLORS[d][2]
                     );
-                    
-                    ALLEGRO_COLOR c;
-                    float alpha_mult;
-                    if(whistle.fade_timer.time_left > 0.0f)
-                        alpha_mult = whistle.fade_timer.get_ratio_left();
-                    else
-                        alpha_mult = 1;
-                        
-                    switch(d) {
-                    case 0: {
-                        //Red.
-                        c = al_map_rgba(255, 0,   0,   255 * alpha_mult);
-                        break;
-                    } case 1: {
-                        //Orange.
-                        c = al_map_rgba(255, 128, 0,   210 * alpha_mult);
-                        break;
-                    } case 2: {
-                        //Lime.
-                        c = al_map_rgba(128, 255, 0,   165 * alpha_mult);
-                        break;
-                    } case 3: {
-                        //Cyan.
-                        c = al_map_rgba(0,   255, 255, 120 * alpha_mult);
-                        break;
-                    } case 4: {
-                        //Blue.
-                        c = al_map_rgba(0,   0,   255, 75  * alpha_mult);
-                        break;
-                    } default: {
-                        //Purple.
-                        c = al_map_rgba(128, 0,   255, 30  * alpha_mult);
-                        break;
-                    }
-                    }
-                    
-                    al_draw_filled_circle(dot_pos.x, dot_pos.y, 2, c);
+                unsigned char dot_alpha = 255;
+                if(whistle.fade_timer.time_left > 0.0f) {
+                    dot_alpha = 255 * whistle.fade_timer.get_ratio_left();
                 }
+                
+                draw_bitmap(
+                    game.sys_assets.bmp_bright_circle,
+                    dot_pos, point(5.0f, 5.0f),
+                    0.0f, change_alpha(dot_color, dot_alpha)
+                );
             }
-        } else {
-            unsigned char alpha = whistle.fade_timer.get_ratio_left() * 255;
-            float radius = whistle.fade_radius;
-            if(whistle.radius > 0) {
-                alpha = 255;
-                radius = whistle.radius;
-            }
-            al_draw_circle(
-                whistle.center.x, whistle.center.y, radius,
-                al_map_rgba(192, 192, 0, alpha), 2
-            );
         }
     }
     
@@ -707,7 +579,7 @@ void gameplay_state::draw_leader_cursor(const ALLEGRO_COLOR &color) {
             point(count_offset, count_offset),
             point(1.0f, 1.0f),
             ALLEGRO_ALIGN_LEFT,
-            0,
+            TEXT_VALIGN_TOP,
             i2s(n_standby_pikmin)
         );
     }
@@ -815,14 +687,20 @@ void gameplay_state::draw_lighting_filter() {
         //their lights on the map (as black).
         al_hold_bitmap_drawing(true);
         for(size_t m = 0; m < mobs.all.size(); ++m) {
-            if(mobs.all[m]->hide) continue;
+            mob* m_ptr = mobs.all[m];
+            if(
+                m_ptr->hide ||
+                m_ptr->type->category->id == MOB_CATEGORY_DECORATIONS
+            ) {
+                continue;
+            }
             
-            point pos = mobs.all[m]->pos;
+            point pos = m_ptr->pos;
             al_transform_coordinates(
                 &game.world_to_screen_transform,
                 &pos.x, &pos.y
             );
-            float radius = mobs.all[m]->radius * 4.0 * game.cam.zoom;
+            float radius = m_ptr->radius * 4.0 * game.cam.zoom;
             al_draw_scaled_bitmap(
                 game.sys_assets.bmp_spotlight,
                 0, 0, 64, 64,
@@ -851,12 +729,7 @@ void gameplay_state::draw_lighting_filter() {
  * Draws a message box.
  */
 void gameplay_state::draw_message_box() {
-    draw_mouse_cursor(
-        change_color_lighting(
-            cur_leader_ptr->lea_type->main_color,
-            cursor_height_diff_light
-        )
-    );
+    draw_mouse_cursor(al_map_rgb(188, 230, 230));
     
     al_use_transform(&game.identity_transform);
     
@@ -883,7 +756,7 @@ void gameplay_state::draw_message_box() {
             point(48, 48)
         );
         draw_bitmap(
-            bmp_bubble,
+            hud->bmp_bubble,
             point(
                 40,
                 game.win_h -
@@ -898,13 +771,13 @@ void gameplay_state::draw_message_box() {
     for(size_t l = 0; l < lines.size(); ++l) {
     
         draw_compressed_text(
-            game.fonts.standard, al_map_rgb(255, 255, 255),
+            game.fonts.standard, COLOR_WHITE,
             point(
                 24,
                 game.win_h -
                 al_get_font_line_height(game.fonts.standard) * (4 - l) + 8
             ),
-            ALLEGRO_ALIGN_LEFT, 0, point(game.win_w - 64, 0),
+            ALLEGRO_ALIGN_LEFT, TEXT_VALIGN_TOP, point(game.win_w - 64, 0),
             lines[l]
         );
         
@@ -918,26 +791,98 @@ void gameplay_state::draw_message_box() {
  *   Color to tint it with.
  */
 void gameplay_state::draw_mouse_cursor(const ALLEGRO_COLOR &color) {
-    //Cursor trail.
+    const float CURSOR_TRAIL_MAX_WIDTH = 30.0f;
+    const unsigned char CURSOR_TRAIL_MAX_ALPHA = 72;
+    const float CURSOR_TRAIL_MIN_SPOT_DIFF = 4.0f;
+    
     al_use_transform(&game.identity_transform);
+    
+    //Cursor trail.
     if(game.options.draw_cursor_trail) {
-        for(size_t p = 1; p < cursor_spots.size(); ++p) {
-            point* p_ptr = &cursor_spots[p];
-            point* pp_ptr = &cursor_spots[p - 1]; //Previous point.
+        size_t anchor = 0;
+        
+        for(size_t s = 1; s < cursor_spots.size(); ++s) {
+            point anchor_diff = cursor_spots[anchor] - cursor_spots[s];
             if(
-                (*p_ptr) != (*pp_ptr) &&
-                dist(*p_ptr, *pp_ptr) > 4
+                fabs(anchor_diff.x) < CURSOR_TRAIL_MIN_SPOT_DIFF &&
+                fabs(anchor_diff.y) < CURSOR_TRAIL_MIN_SPOT_DIFF
             ) {
-                al_draw_line(
-                    p_ptr->x, p_ptr->y,
-                    pp_ptr->x, pp_ptr->y,
-                    change_alpha(
-                        color,
-                        (p / (float) cursor_spots.size()) * 64
-                    ),
-                    p * 3
+                continue;
+            }
+            
+            float start_ratio = anchor / (float) cursor_spots.size();
+            float start_thickness = CURSOR_TRAIL_MAX_WIDTH * start_ratio;
+            unsigned char start_alpha = CURSOR_TRAIL_MAX_ALPHA * start_ratio;
+            ALLEGRO_COLOR start_color = change_alpha(color, start_alpha);
+            point start_p1;
+            point start_p2;
+            
+            float end_ratio = s / (float) CURSOR_TRAIL_SAVE_N_SPOTS;
+            float end_thickness = CURSOR_TRAIL_MAX_WIDTH * end_ratio;
+            unsigned char end_alpha = CURSOR_TRAIL_MAX_ALPHA * end_ratio;
+            ALLEGRO_COLOR end_color = change_alpha(color, end_alpha);
+            point end_p1;
+            point end_p2;
+            
+            if(anchor == 0) {
+                point cur_to_next = cursor_spots[s] - cursor_spots[anchor];
+                point cur_to_next_normal(-cur_to_next.y, cur_to_next.x);
+                cur_to_next_normal = normalize_vector(cur_to_next_normal);
+                point spot_offset = cur_to_next_normal * start_thickness / 2.0f;
+                start_p1 = cursor_spots[anchor] - spot_offset;
+                start_p2 = cursor_spots[anchor] + spot_offset;
+            } else {
+                get_miter_points(
+                    cursor_spots[anchor - 1],
+                    cursor_spots[anchor],
+                    cursor_spots[anchor + 1],
+                    -start_thickness,
+                    &start_p1,
+                    &start_p2
                 );
             }
+            
+            if(s == cursor_spots.size() - 1) {
+                point prev_to_cur = cursor_spots[s] - cursor_spots[anchor];
+                point prev_to_cur_normal(-prev_to_cur.y, prev_to_cur.x);
+                prev_to_cur_normal = normalize_vector(prev_to_cur_normal);
+                point spot_offset = prev_to_cur_normal * start_thickness / 2.0f;
+                end_p1 = cursor_spots[s] - spot_offset;
+                end_p2 = cursor_spots[s] + spot_offset;
+            } else {
+                get_miter_points(
+                    cursor_spots[s - 1],
+                    cursor_spots[s],
+                    cursor_spots[s + 1],
+                    -end_thickness,
+                    &end_p1,
+                    &end_p2
+                );
+            }
+            
+            ALLEGRO_VERTEX vertexes[4];
+            for(unsigned char v = 0; v < 4; ++v) {
+                vertexes[v].z = 0.0f;
+            }
+            
+            vertexes[0].x = start_p1.x;
+            vertexes[0].y = start_p1.y;
+            vertexes[0].color = start_color;
+            vertexes[1].x = start_p2.x;
+            vertexes[1].y = start_p2.y;
+            vertexes[1].color = start_color;
+            vertexes[2].x = end_p1.x;
+            vertexes[2].y = end_p1.y;
+            vertexes[2].color = end_color;
+            vertexes[3].x = end_p2.x;
+            vertexes[3].y = end_p2.y;
+            vertexes[3].color = end_color;
+            
+            al_draw_prim(
+                vertexes, NULL, NULL, 0, 4, ALLEGRO_PRIM_TRIANGLE_STRIP
+            );
+            
+            anchor = s;
         }
     }
     
@@ -960,7 +905,8 @@ void gameplay_state::draw_mouse_cursor(const ALLEGRO_COLOR &color) {
  */
 void gameplay_state::draw_onion_menu() {
     al_draw_filled_rectangle(
-        0, 0, game.win_w, game.win_h, al_map_rgba(24, 64, 60, 220)
+        0, 0, game.win_w, game.win_h,
+        al_map_rgba(24, 64, 60, 220 * onion_menu->bg_alpha_mult)
     );
     
     onion_menu->gui.draw();
@@ -974,10 +920,11 @@ void gameplay_state::draw_onion_menu() {
  */
 void gameplay_state::draw_pause_menu() {
     al_draw_filled_rectangle(
-        0, 0, game.win_w, game.win_h, al_map_rgba(24, 64, 60, 200)
+        0, 0, game.win_w, game.win_h,
+        al_map_rgba(24, 64, 60, 200 * pause_menu->bg_alpha_mult)
     );
     
-    pause_menu->gui.draw();
+    pause_menu->draw();
     
     draw_mouse_cursor(al_map_rgb(188, 230, 230));
 }
@@ -995,7 +942,7 @@ void gameplay_state::draw_precipitation() {
         for(size_t p = 0; p < n_precipitation_particles; ++p) {
             al_draw_filled_circle(
                 precipitation[p].x, precipitation[p].y,
-                3, al_map_rgb(255, 255, 255)
+                3, COLOR_WHITE
             );
         }
     }
@@ -1029,7 +976,7 @@ void gameplay_state::draw_system_stuff() {
         );
         draw_text_lines(
             game.fonts.builtin, al_map_rgba(255, 255, 255, 128 * alpha_mult),
-            point(8, 8), 0, 0, game.maker_tools.info_print_text
+            point(8, 8), 0, TEXT_VALIGN_TOP, game.maker_tools.info_print_text
         );
     }
     
@@ -1137,7 +1084,7 @@ void gameplay_state::draw_throw_preview() {
         
         float r = 0.0f;
         if(
-            !line_segments_intersect(
+            !line_segs_intersect(
                 cur_leader_ptr->pos,
                 throw_dest,
                 point(e->vertexes[0]->x, e->vertexes[0]->y),
@@ -1182,7 +1129,8 @@ void gameplay_state::draw_throw_preview() {
                     cos(throw_v_angle) * cos(throw_v_angle)
                 )
             ) * x_at_edge * x_at_edge;
-            
+        y_at_edge += cur_leader_ptr->z;
+        
         //If the throwee would hit the wall at these coordinates, collision.
         if(edge_z >= y_at_edge && r < wall_collision_r) {
             wall_collision_r = r;
@@ -1518,6 +1466,7 @@ void gameplay_state::draw_world_components(ALLEGRO_BITMAP* bmp_output) {
             } else {
                 c.z = mob_ptr->ground_sector->z;
             }
+            c.z += 0.01f;
             components.push_back(c);
         }
         

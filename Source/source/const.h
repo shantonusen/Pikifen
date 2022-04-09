@@ -40,14 +40,21 @@ constexpr size_t INVALID = UINT32_MAX;
 //Cross-platform way of representing a float value of "invalid" or similar.
 constexpr float LARGE_FLOAT = 999999.0f;
 
-//Number of positions of the cursor to keep track of.
-const unsigned char CURSOR_SAVE_N_SPOTS = 10;
+//Full-white opaque color.
+const ALLEGRO_COLOR COLOR_WHITE = { 1.0f, 1.0f, 1.0f, 1.0f };
+//Full-black opaque color.
+const ALLEGRO_COLOR COLOR_BLACK = { 0.0f, 0.0f, 0.0f, 1.0f };
+//Fully-transparent color, in black.
+const ALLEGRO_COLOR COLOR_EMPTY = { 0.0f, 0.0f, 0.0f, 0.0f };
+
 //The default rotation speed of a mob type.
 const float DEF_ROTATION_SPEED = 630.0f;
 //The whistle can't go past this radius, by default.
 const float DEF_WHISTLE_RANGE = 80.0f;
 //How long to suck a mob in for, when being delivered to an Onion/ship.
-const float DELIVERY_SUCK_TIME = 1.5f;
+const float DELIVERY_SUCK_TIME = 2.0f;
+//How long to toss a mob in the air for, when being delivered to another mob.
+const float DELIVERY_TOSS_TIME = 1.0f;
 //If the Pikmin is within this distance of the mob, it can ground attack.
 const float GROUNDED_ATTACK_DIST = 5.0f;
 //If there's less than this much gap between the leader and group,
@@ -100,7 +107,7 @@ const float WHISTLE_DOT_INTERVAL = 0.03;
 //A whistle dot spins these many radians a second.
 const float WHISTLE_DOT_SPIN_SPEED = TAU / 4;
 //Time the whistle animations take to fade out.
-const float WHISTLE_FADE_TIME = 0.1f;
+const float WHISTLE_FADE_TIME = 0.13f;
 //Whistle rings move these many units per second.
 const float WHISTLE_RING_SPEED = 600.0f;
 //Seconds that need to pass before another whistle ring appears.
@@ -162,16 +169,29 @@ const string SYSTEM_ANIMATIONS_FILE_PATH =
 const string SYSTEM_ASSET_FILE_NAMES_FILE_PATH =
     MISC_FOLDER_PATH + "/System_asset_file_names.txt";
 
-enum MAKER_TOOL_IDS {
+
+//List of maker tools.
+enum MAKER_TOOLS {
+    //None.
     MAKER_TOOL_NONE,
+    //Create an image of the whole area.
     MAKER_TOOL_AREA_IMAGE,
+    //Change gameplay speed.
     MAKER_TOOL_CHANGE_SPEED,
+    //Geometry info beneath mouse cursor.
     MAKER_TOOL_GEOMETRY_INFO,
+    //Show hitboxes.
     MAKER_TOOL_HITBOXES,
+    //Hurt mob beneath mouse cursor.
     MAKER_TOOL_HURT_MOB,
+    //Get info on the mob beneath mouse cursor.
     MAKER_TOOL_MOB_INFO,
+    //Create a new Pikmin beneath mouse cursor.
     MAKER_TOOL_NEW_PIKMIN,
+    //Teleport to mouse cursor.
     MAKER_TOOL_TELEPORT,
+    
+    //Total amount of maker tools.
     N_MAKER_TOOLS,
 };
 
@@ -189,97 +209,6 @@ const string MAKER_TOOL_NAMES[N_MAKER_TOOLS] = {
 };
 
 
-enum HUD_ITEMS {
-    HUD_ITEM_TIME,
-    HUD_ITEM_DAY_BUBBLE,
-    HUD_ITEM_DAY_NUMBER,
-    HUD_ITEM_LEADER_1_ICON,
-    HUD_ITEM_LEADER_2_ICON,
-    HUD_ITEM_LEADER_3_ICON,
-    HUD_ITEM_LEADER_1_HEALTH,
-    HUD_ITEM_LEADER_2_HEALTH,
-    HUD_ITEM_LEADER_3_HEALTH,
-    HUD_ITEM_PIKMIN_STANDBY_ICON,
-    HUD_ITEM_PIKMIN_STANDBY_M_ICON,
-    HUD_ITEM_PIKMIN_STANDBY_NR,
-    HUD_ITEM_PIKMIN_STANDBY_X,
-    HUD_ITEM_PIKMIN_GROUP_NR,
-    HUD_ITEM_PIKMIN_FIELD_NR,
-    HUD_ITEM_PIKMIN_TOTAL_NR,
-    HUD_ITEM_PIKMIN_SLASH_1,
-    HUD_ITEM_PIKMIN_SLASH_2,
-    HUD_ITEM_PIKMIN_SLASH_3,
-    HUD_ITEM_SPRAY_1_ICON,
-    HUD_ITEM_SPRAY_1_AMOUNT,
-    HUD_ITEM_SPRAY_1_BUTTON,
-    HUD_ITEM_SPRAY_2_ICON,
-    HUD_ITEM_SPRAY_2_AMOUNT,
-    HUD_ITEM_SPRAY_2_BUTTON,
-    HUD_ITEM_SPRAY_PREV_ICON,
-    HUD_ITEM_SPRAY_PREV_BUTTON,
-    HUD_ITEM_SPRAY_NEXT_ICON,
-    HUD_ITEM_SPRAY_NEXT_BUTTON,
-    
-    N_HUD_ITEMS,
-};
-
-
-enum ONION_HUD_ITEMS {
-    ONION_HUD_ITEM_TITLE,
-    ONION_HUD_ITEM_CANCEL,
-    ONION_HUD_ITEM_OK,
-    ONION_HUD_ITEM_FIELD,
-    ONION_HUD_ITEM_O1_BUTTON,
-    ONION_HUD_ITEM_O2_BUTTON,
-    ONION_HUD_ITEM_O3_BUTTON,
-    ONION_HUD_ITEM_O4_BUTTON,
-    ONION_HUD_ITEM_O5_BUTTON,
-    ONION_HUD_ITEM_O1_AMOUNT,
-    ONION_HUD_ITEM_O2_AMOUNT,
-    ONION_HUD_ITEM_O3_AMOUNT,
-    ONION_HUD_ITEM_O4_AMOUNT,
-    ONION_HUD_ITEM_O5_AMOUNT,
-    ONION_HUD_ITEM_P1_BUTTON,
-    ONION_HUD_ITEM_P2_BUTTON,
-    ONION_HUD_ITEM_P3_BUTTON,
-    ONION_HUD_ITEM_P4_BUTTON,
-    ONION_HUD_ITEM_P5_BUTTON,
-    ONION_HUD_ITEM_P1_AMOUNT,
-    ONION_HUD_ITEM_P2_AMOUNT,
-    ONION_HUD_ITEM_P3_AMOUNT,
-    ONION_HUD_ITEM_P4_AMOUNT,
-    ONION_HUD_ITEM_P5_AMOUNT,
-    ONION_HUD_ITEM_OALL_BUTTON,
-    ONION_HUD_ITEM_PALL_BUTTON,
-    ONION_HUD_ITEM_SEL_ALL,
-    ONION_HUD_ITEM_NEXT_PAGE,
-    ONION_HUD_ITEM_PREV_PAGE,
-    ONION_HUD_ITEM_O_L_MORE,
-    ONION_HUD_ITEM_O_R_MORE,
-    ONION_HUD_ITEM_P_L_MORE,
-    ONION_HUD_ITEM_P_R_MORE,
-    
-    N_ONION_HUD_ITEMS,
-};
-
-
-enum LIMB_DRAW_METHODS {
-    LIMB_DRAW_BELOW_BOTH,
-    LIMB_DRAW_BELOW_CHILD,
-    LIMB_DRAW_BELOW_PARENT,
-    LIMB_DRAW_ABOVE_PARENT,
-    LIMB_DRAW_ABOVE_CHILD,
-    LIMB_DRAW_ABOVE_BOTH,
-};
-
-
-enum HOLD_ROTATION_METHODS {
-    HOLD_ROTATION_METHOD_NEVER,
-    HOLD_ROTATION_METHOD_FACE_HOLDER,
-    HOLD_ROTATION_METHOD_COPY_HOLDER,
-};
-
-
 const unsigned char N_WHISTLE_RING_COLORS = 8;
 const unsigned char WHISTLE_RING_COLORS[N_WHISTLE_RING_COLORS][3] = {
     {255, 255, 0  },
@@ -290,6 +219,15 @@ const unsigned char WHISTLE_RING_COLORS[N_WHISTLE_RING_COLORS][3] = {
     {0,   255, 255},
     {0,   255, 0  },
     {128, 255, 0  }
+};
+const unsigned char N_WHISTLE_DOT_COLORS = 6;
+const unsigned char WHISTLE_DOT_COLORS[N_WHISTLE_DOT_COLORS][3] = {
+    {214, 25,  25 }, //Red.
+    {242, 134, 48 }, //Orange.
+    {143, 227, 58 }, //Lime.
+    {55,  222, 222}, //Cyan.
+    {30,  30,  219}, //Blue.
+    {133, 28,  237}, //Purple.
 };
 
 

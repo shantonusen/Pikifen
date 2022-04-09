@@ -22,6 +22,10 @@ using std::set;
  * Returns NULL if none is found.
  */
 mob* mob::get_mob_to_walk_on() const {
+    //Can't walk on anything if it's moving upwards.
+    if(speed_z > 0.0f) return NULL;
+    
+    mob* best_candidate = NULL;
     for(size_t m = 0; m < game.states.gameplay->mobs.all.size(); ++m) {
         mob* m_ptr = game.states.gameplay->mobs.all[m];
         if(!m_ptr->type->walkable) {
@@ -30,10 +34,10 @@ mob* mob::get_mob_to_walk_on() const {
         if(m_ptr == this) {
             continue;
         }
-        if(z < m_ptr->z + m_ptr->height - SECTOR_STEP) {
+        if(fabs(z - (m_ptr->z + m_ptr->height)) > STEP_HEIGHT) {
             continue;
         }
-        if(z > m_ptr->z + m_ptr->height) {
+        if(best_candidate && m_ptr->z <= best_candidate->z) {
             continue;
         }
         
@@ -76,9 +80,9 @@ mob* mob::get_mob_to_walk_on() const {
                 continue;
             }
         }
-        return m_ptr;
+        best_candidate = m_ptr;
     }
-    return NULL;
+    return best_candidate;
 }
 
 
@@ -100,11 +104,17 @@ H_MOVE_RESULTS mob::get_movement_edge_intersections(
     //This way, we won't check for edges that are really far away.
     //Use the bounding box to know which blockmap blocks the mob will be on.
     set<edge*> candidate_edges;
-    
+    //Use the terrain radius if the mob is moving about and alive.
+    //Otherwise if it's a corpse, it can use the regular radius.
+    float radius_to_use =
+        (type->terrain_radius < 0 || health <= 0) ?
+        radius :
+        type->terrain_radius;
+        
     if(
         !game.cur_area_data.bmap.get_edges_in_region(
-            new_pos - radius,
-            new_pos + radius,
+            new_pos - radius_to_use,
+            new_pos + radius_to_use,
             candidate_edges
         )
     ) {
@@ -118,8 +128,8 @@ H_MOVE_RESULTS mob::get_movement_edge_intersections(
         bool is_edge_blocking = false;
         
         if(
-            !circle_intersects_line(
-                new_pos, radius,
+            !circle_intersects_line_seg(
+                new_pos, radius_to_use,
                 point(e_ptr->vertexes[0]->x, e_ptr->vertexes[0]->y),
                 point(e_ptr->vertexes[1]->x, e_ptr->vertexes[1]->y),
                 NULL, NULL
@@ -198,7 +208,7 @@ const float FREE_MOVE_THRESHOLD = 10.0f;
  * and Y have been set and movement logic can be skipped, and H_MOVE_FAIL if
  * movement is entirely impossible this frame.
  * delta_t:
- *   How many seconds to tick the logic by.
+ *   How long the frame's tick is, in seconds.
  * move_speed_mult:
  *   Movement speed is multiplied by this.
  * move_speed:
@@ -377,7 +387,7 @@ H_MOVE_RESULTS mob::get_wall_slide_angle(
 /* ----------------------------------------------------------------------------
  * Ticks physics logic regarding the mob's horizontal movement.
  * delta_t:
- *   How many seconds to tick the logic by.
+ *   How long the frame's tick is, in seconds.
  * attempted_move_speed:
  *   Movement speed to calculate with.
  * touched_wall:
@@ -474,7 +484,7 @@ void mob::tick_horizontal_movement_physics(
             //encountered of all edges crossed.
             if(
                 !was_thrown &&
-                tallest_sector->z <= z + SECTOR_STEP &&
+                tallest_sector->z <= z + STEP_HEIGHT &&
                 tallest_sector->z > step_sector->z
             ) {
                 step_sector = tallest_sector;
@@ -602,7 +612,7 @@ void mob::tick_horizontal_movement_physics(
  * Ticks the mob's actual physics procedures:
  * falling because of gravity, moving forward, etc.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void mob::tick_physics(const float delta_t) {
     if(!ground_sector) {
@@ -664,7 +674,7 @@ void mob::tick_physics(const float delta_t) {
 /* ----------------------------------------------------------------------------
  * Ticks physics logic regarding the mob rotating.
  * delta_t:
- *   How many seconds to tick the logic by.
+ *   How long the frame's tick is, in seconds.
  * move_speed_mult:
  *   Movement speed is multiplied by this.
  */
@@ -702,6 +712,8 @@ void mob::tick_rotation_physics(
             angle = holder.m->angle;
             stop_turning();
             break;
+        } default: {
+            break;
         }
         }
     }
@@ -714,7 +726,7 @@ void mob::tick_rotation_physics(
 /* ----------------------------------------------------------------------------
  * Ticks physics logic regarding the mob's vertical movement.
  * delta_t:
- *   How many seconds to tick the logic by.
+ *   How long the frame's tick is, in seconds.
  * pre_move_ground_z:
  *   Z of the floor before horizontal movement started.
  */
@@ -729,7 +741,7 @@ void mob::tick_vertical_movement_physics(
         //If the current ground is one step (or less) below
         //the previous ground, just instantly go down the step.
         if(
-            pre_move_ground_z - ground_sector->z <= SECTOR_STEP &&
+            pre_move_ground_z - ground_sector->z <= STEP_HEIGHT &&
             z == pre_move_ground_z
         ) {
             z = ground_sector->z;
@@ -836,7 +848,7 @@ void mob::tick_vertical_movement_physics(
 /* ----------------------------------------------------------------------------
  * Ticks physics logic regarding landing on top of a walkable mob.
  * delta_t:
- *   How many seconds to tick the logic by.
+ *   How long the frame's tick is, in seconds.
  */
 void mob::tick_walkable_riding_physics(const float delta_t) {
     mob* rider_added_ev_mob = NULL;

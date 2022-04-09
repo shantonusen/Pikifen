@@ -42,13 +42,15 @@ controls_menu_state::controls_menu_state() :
  */
 void controls_menu_state::add_control() {
     if(game.options.controls[0].size()) {
-        size_t last_action =
+        BUTTONS last_action =
             game.options.controls[0].back().action;
         game.options.controls[0].push_back(
             control_info(
-                last_action == N_BUTTONS - 1 ?
-                1 : //The "None" action is 0, so go to 1.
-                last_action + 1,
+                (BUTTONS) (
+                    last_action == N_BUTTONS - 1 ?
+                    1 : //The "None" action is 0, so go to 1.
+                    last_action + 1
+                ),
                 ""
             )
         );
@@ -117,13 +119,13 @@ void controls_menu_state::add_control_gui_items(
             }
         }
         
-        float juicy_grow_amount = action_name_text->get_juicy_grow_amount();
+        float juicy_grow_amount = action_name_text->get_juice_value();
         
         draw_compressed_scaled_text(
             game.fonts.standard, map_gray(255),
             center,
             point(1.0 + juicy_grow_amount, 1.0 + juicy_grow_amount),
-            ALLEGRO_ALIGN_CENTER, 1, size,
+            ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER, size, true,
             action_name
         );
     };
@@ -158,12 +160,12 @@ void controls_menu_state::add_control_gui_items(
     (const point & center, const point & size) {
         control_info* c_ptr = &game.options.controls[0][index];
         
-        draw_control(game.fonts.standard, *c_ptr, center, size * 0.8f);
+        draw_control_icon(game.fonts.slim, c_ptr, false, center, size * 0.8f);
         
         draw_button(
             center, size, "", game.fonts.standard, map_gray(255),
             control_button->selected,
-            control_button->get_juicy_grow_amount()
+            control_button->get_juice_value()
         );
     };
     control_button->center = point(0.83f, items_y);
@@ -175,7 +177,7 @@ void controls_menu_state::add_control_gui_items(
     
     //Focus, if requested.
     if(focus) {
-        action_name_text->start_juicy_grow();
+        action_name_text->start_juice_animation(gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH);
         float list_bottom = list_box->get_child_bottom();
         if(list_bottom > 1.0f) {
             list_box->target_offset = list_bottom - 1.0f;
@@ -202,9 +204,11 @@ void controls_menu_state::choose_button(const size_t index) {
  */
 void controls_menu_state::choose_next_action(const size_t index) {
     control_info* c_ptr = &game.options.controls[0][index];
-    c_ptr->action = sum_and_wrap(c_ptr->action, 1, N_BUTTONS);
+    c_ptr->action = (BUTTONS) sum_and_wrap((size_t) c_ptr->action, 1, N_BUTTONS);
     gui_item* action_name_text = list_box->children[index * 5 + 2];
-    ((text_gui_item*) action_name_text)->start_juicy_grow();
+    ((text_gui_item*) action_name_text)->start_juice_animation(
+        gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH
+    );
 }
 
 
@@ -215,9 +219,11 @@ void controls_menu_state::choose_next_action(const size_t index) {
  */
 void controls_menu_state::choose_prev_action(const size_t index) {
     control_info* c_ptr = &game.options.controls[0][index];
-    c_ptr->action = sum_and_wrap(c_ptr->action, -1, N_BUTTONS);
+    c_ptr->action = (BUTTONS) sum_and_wrap((size_t) c_ptr->action, -1, N_BUTTONS);
     gui_item* action_name_text = list_box->children[index * 5 + 2];
-    ((text_gui_item*) action_name_text)->start_juicy_grow();
+    ((text_gui_item*) action_name_text)->start_juice_animation(
+        gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH
+    );
 }
 
 
@@ -252,7 +258,7 @@ void controls_menu_state::delete_control_gui_items() {
  * Draws the controls menu.
  */
 void controls_menu_state::do_drawing() {
-    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_clear_to_color(COLOR_BLACK);
     
     draw_bitmap(
         bmp_menu_bg, point(game.win_w * 0.5, game.win_h * 0.5),
@@ -269,10 +275,10 @@ void controls_menu_state::do_drawing() {
         
         draw_text_lines(
             game.fonts.standard,
-            al_map_rgb(255, 255, 255),
+            COLOR_WHITE,
             point(game.win_w / 2.0f, game.win_h / 2.0f),
             ALLEGRO_ALIGN_CENTER,
-            1,
+            TEXT_VALIGN_CENTER,
             "Waiting for any input..."
         );
     }
@@ -284,7 +290,7 @@ void controls_menu_state::do_drawing() {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks one frame's worth of logic.
+ * Ticks time by one frame of logic.
  */
 void controls_menu_state::do_logic() {
     game.fade_mgr.tick(game.delta_t);
@@ -427,7 +433,6 @@ void controls_menu_state::load() {
     //Controls list scrollbar.
     scroll_gui_item* list_scroll = new scroll_gui_item();
     list_scroll->list_item = list_box;
-    list_box->scroll_item = list_scroll;
     gui.add_item(list_scroll, "list_scroll");
     
     //New control button.
@@ -449,8 +454,9 @@ void controls_menu_state::load() {
         [this]
     (const point & center, const point & size) {
         draw_compressed_scaled_text(
-            game.fonts.standard, al_map_rgb(255, 255, 255),
-            center, point(0.7f, 0.7f), ALLEGRO_ALIGN_CENTER, 1, size,
+            game.fonts.standard, COLOR_WHITE,
+            center, point(0.7f, 0.7f),
+            ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER, size, false,
             gui.get_current_tooltip()
         );
     };

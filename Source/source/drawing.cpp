@@ -234,7 +234,7 @@ void draw_button(
         font, color,
         center,
         point(1.0 + juicy_grow_amount, 1.0 + juicy_grow_amount),
-        ALLEGRO_ALIGN_CENTER, 1, size,
+        ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER, size, true,
         text
     );
     
@@ -269,48 +269,69 @@ void draw_button(
  * flags:
  *   Allegro text render function flags.
  * valign:
- *   Vertical align: 0 = top, 1 = middle, 2 = bottom.
+ *   Vertical alignment.
  * max_size:
  *   The maximum width and height. Use <= 0 to have no limit.
+ * scale_past_max:
+ *   If true, the max size will only be taken into account when the scale is 1.
+ *   If it is any bigger, it will overflow past the max size.
  * text:
  *   Text to draw.
  */
 void draw_compressed_scaled_text(
     const ALLEGRO_FONT* const font, const ALLEGRO_COLOR &color,
     const point &where, const point &scale,
-    const int flags, const unsigned char valign,
-    const point &max_size, const string &text
+    const int flags, const TEXT_VALIGN_MODES valign,
+    const point &max_size, const bool scale_past_max, const string &text
 ) {
 
     if(max_size.x == 0 && max_size.y == 0) return;
     
-    int x1, x2, y1, y2;
-    al_get_text_dimensions(font, text.c_str(), &x1, &y1, &x2, &y2);
+    int text_ox;
+    int text_oy;
+    int text_w;
+    int text_h;
+    al_get_text_dimensions(
+        font, text.c_str(),
+        &text_ox, &text_oy, &text_w, &text_h
+    );
     
-    int text_width = (x2 - x1) * scale.x;
-    int text_height = (y2 - y1) * scale.y;
-    point final_scale = scale;
-    float final_text_height = text_height;
+    point normal_text_size(text_w, text_h);
+    point text_size_to_check = normal_text_size;
+    point final_scale(1.0f, 1.0f);
     
-    if(text_width > max_size.x && max_size.x > 0) {
-        final_scale.x = max_size.x / text_width;
+    if(!scale_past_max) {
+        final_scale = scale;
+        text_size_to_check = normal_text_size * scale;
     }
-    if(text_height > max_size.y && max_size.y > 0) {
-        final_scale.y = max_size.y / text_height;
-        final_text_height = max_size.y;
+    
+    if(max_size.x > 0 && text_size_to_check.x > max_size.x) {
+        final_scale.x = max_size.x / normal_text_size.x;
+    }
+    if(max_size.y > 0 && text_size_to_check.y > max_size.y) {
+        final_scale.y = max_size.y / normal_text_size.y;
     }
     
+    if(scale_past_max) {
+        final_scale = final_scale * scale;
+    }
+    
+    float final_text_height = normal_text_size.y * final_scale.y;
+    float valign_offset =
+        valign == TEXT_VALIGN_CENTER ?
+        final_text_height / 2.0f :
+        valign == TEXT_VALIGN_BOTTOM ?
+        final_text_height :
+        0.0f;
+        
     ALLEGRO_TRANSFORM scale_transform, old_transform;
     al_copy_transform(&old_transform, al_get_current_transform());
     al_identity_transform(&scale_transform);
     al_scale_transform(&scale_transform, final_scale.x, final_scale.y);
     al_translate_transform(
-        &scale_transform, where.x,
-        (
-            (valign == 1) ?
-            where.y - final_text_height * 0.5 :
-            ((valign == 2) ? where.y - final_text_height : where.y)
-        )
+        &scale_transform,
+        where.x,
+        where.y - valign_offset
     );
     al_compose_transform(&scale_transform, &old_transform);
     
@@ -332,7 +353,7 @@ void draw_compressed_scaled_text(
  * flags:
  *   Allegro text render function flags.
  * valign:
- *   Vertical align: 0 = top, 1 = middle, 2 = bottom.
+ *   Vertical alignment.
  * max_size:
  *   The maximum width and height. Use <= 0 to have no limit.
  * text:
@@ -340,36 +361,45 @@ void draw_compressed_scaled_text(
  */
 void draw_compressed_text(
     const ALLEGRO_FONT* const font, const ALLEGRO_COLOR &color,
-    const point &where, const int flags, const unsigned char valign,
+    const point &where, const int flags, const TEXT_VALIGN_MODES valign,
     const point &max_size, const string &text
 ) {
     if(max_size.x == 0 && max_size.y == 0) return;
     
-    int x1, x2, y1, y2;
-    al_get_text_dimensions(font, text.c_str(), &x1, &y1, &x2, &y2);
-    int text_width = x2 - x1, text_height = y2 - y1;
+    int text_ox;
+    int text_oy;
+    int text_w;
+    int text_h;
+    al_get_text_dimensions(
+        font, text.c_str(),
+        &text_ox, &text_oy, &text_w, &text_h
+    );
     point scale(1.0, 1.0);
-    float final_text_height = text_height;
+    float final_text_height = text_h;
     
-    if(text_width > max_size.x && max_size.x > 0) {
-        scale.x = max_size.x / text_width;
+    if(text_w > max_size.x && max_size.x > 0) {
+        scale.x = max_size.x / text_w;
     }
-    if(text_height > max_size.y && max_size.y > 0) {
-        scale.y = max_size.y / text_height;
+    if(text_h > max_size.y && max_size.y > 0) {
+        scale.y = max_size.y / text_h;
         final_text_height = max_size.y;
     }
     
+    float valign_offset =
+        valign == TEXT_VALIGN_CENTER ?
+        final_text_height / 2.0f :
+        valign == TEXT_VALIGN_BOTTOM ?
+        final_text_height :
+        0.0f;
+        
     ALLEGRO_TRANSFORM scale_transform, old_transform;
     al_copy_transform(&old_transform, al_get_current_transform());
     al_identity_transform(&scale_transform);
     al_scale_transform(&scale_transform, scale.x, scale.y);
     al_translate_transform(
-        &scale_transform, where.x,
-        (
-            (valign == 1) ?
-            where.y - final_text_height * 0.5 :
-            ((valign == 2) ? where.y - final_text_height : where.y)
-        )
+        &scale_transform,
+        where.x,
+        where.y - valign_offset - text_oy
     );
     al_compose_transform(&scale_transform, &old_transform);
     
@@ -380,114 +410,128 @@ void draw_compressed_text(
 
 
 /* ----------------------------------------------------------------------------
- * Draws a key or button on the screen.
+ * Draws an icon representing some control.
  * font:
- *   Font to use for the name.
+ *   Font to use for the name, if necessary.
  * c:
- *   Info on the control.
+ *   Info on the control. If NULL, a "NONE" icon will be used.
+ * condensed:
+ *   If true, only the icon's fundamental information is presented. If false,
+ *   disambiguation information is included too. For instance, keyboard keys
+ *   that come in pairs specify whether they are the left or right key,
+ *   gamepad controls specify what gamepad number it is, etc.
  * where:
  *   Center of the place to draw at.
  * max_size:
  *   Max width or height. Used to compress it if needed. 0 = unlimited.
  */
-void draw_control(
-    const ALLEGRO_FONT* const font, const control_info &c,
+void draw_control_icon(
+    const ALLEGRO_FONT* const font, const control_info* c, const bool condensed,
     const point &where, const point &max_size
 ) {
-
-    if(c.type == CONTROL_TYPE_MOUSE_BUTTON) {
-        //If it's a mouse click, just draw the icon and be done with it.
-        if(c.button >= 1 && c.button <= 3) {
-        
-            draw_bitmap_in_box(
-                game.sys_assets.bmp_mouse_button_icon[c.button - 1],
-                where, max_size
-            );
-            return;
-            
-        }
-    }
+    const float OPACITY = 0.9f;
+    const ALLEGRO_COLOR RECT_COLOR = {0.45f, 0.45f, 0.45f, OPACITY};
+    const ALLEGRO_COLOR OUTLINE_COLOR = {0.10f, 0.10f, 0.10f, OPACITY};
+    const ALLEGRO_COLOR TEXT_COLOR = {0.95f, 0.95f, 0.95f, OPACITY};
+    const float OUTLINE_THICKNESS = 2.0f;
     
-    if(
-        c.type == CONTROL_TYPE_MOUSE_WHEEL_UP ||
-        c.type == CONTROL_TYPE_MOUSE_WHEEL_DOWN
-    ) {
-        //Likewise, if it's a mouse wheel move, just draw the icon and leave.
-        ALLEGRO_BITMAP* b = game.sys_assets.bmp_mouse_wu_icon;
-        if(c.type == CONTROL_TYPE_MOUSE_WHEEL_DOWN) {
-            b = game.sys_assets.bmp_mouse_wd_icon;
-        }
-        
-        draw_bitmap_in_box(b, where, max_size);
+    //Start by getting the icon's info for drawing.
+    CONTROL_ICON_SHAPES shape;
+    CONTROL_ICON_SPRITES bitmap_sprite;
+    string text;
+    get_control_icon_info(
+        font, c, condensed,
+        &shape, &bitmap_sprite, &text
+    );
+    
+    //If it's a bitmap, just draw it and be done with it.
+    if(shape == CONTROL_ICON_SHAPE_BITMAP) {
+        //All icons are square, and in a row, so the spritesheet height works.
+        int icon_size =
+            al_get_bitmap_height(game.sys_assets.bmp_control_icons);
+        ALLEGRO_BITMAP* bmp =
+            al_create_sub_bitmap(
+                game.sys_assets.bmp_control_icons,
+                (icon_size + 1) * (int) bitmap_sprite, 0,
+                icon_size, icon_size
+            );
+        draw_bitmap_in_box(bmp, where, max_size, 0.0f, map_alpha(192));
+        al_destroy_bitmap(bmp);
         return;
     }
     
-    string name;
-    switch(c.type) {
-    case CONTROL_TYPE_KEYBOARD_KEY: {
-        name = str_to_upper(al_keycode_to_name(c.button));
-        break;
-    } case CONTROL_TYPE_JOYSTICK_AXIS_NEG:
-    case CONTROL_TYPE_JOYSTICK_AXIS_POS: {
-        name = "AXIS " + i2s(c.stick) + " " + i2s(c.axis);
-        name += c.type == CONTROL_TYPE_JOYSTICK_AXIS_NEG ? "-" : "+";
-        break;
-    } case CONTROL_TYPE_JOYSTICK_BUTTON: {
-        name = i2s(c.button + 1);
-        break;
-    } case CONTROL_TYPE_MOUSE_BUTTON: {
-        name = "M" + i2s(c.button);
-        break;
-    } case CONTROL_TYPE_MOUSE_WHEEL_LEFT: {
-        name = "MWL";
-        break;
-    } case CONTROL_TYPE_MOUSE_WHEEL_RIGHT: {
-        name = "MWR";
-        break;
-    }
-    }
-    
-    int x1, y1, x2, y2;
-    al_get_text_dimensions(font, name.c_str(), &x1, &y1, &x2, &y2);
+    //The size of the rectangle will depend on the text within.
+    int text_ox;
+    int text_oy;
+    int text_w;
+    int text_h;
+    al_get_text_dimensions(
+        font, text.c_str(),
+        &text_ox, &text_oy, &text_w, &text_h
+    );
     float total_width =
         std::min(
-            (float) (x2 - x1 + 4),
+            (float) (text_w + CONTROL_ICON_PADDING * 2),
             (max_size.x == 0 ? FLT_MAX : max_size.x)
         );
     float total_height =
         std::min(
-            (float) (y2 - y1 + 4),
+            (float) (text_h + CONTROL_ICON_PADDING * 2),
             (max_size.y == 0 ? FLT_MAX : max_size.y)
         );
+    //Force it to always be a square or horizontal rectangle. Never vertical.
     total_width = std::max(total_width, total_height);
     
-    if(c.type == CONTROL_TYPE_KEYBOARD_KEY) {
+    //Now, draw the rectangle, either sharp or rounded.
+    switch(shape) {
+    case CONTROL_ICON_SHAPE_RECTANGLE: {
         al_draw_filled_rectangle(
             where.x - total_width * 0.5, where.y - total_height * 0.5,
             where.x + total_width * 0.5, where.y + total_height * 0.5,
-            map_alpha(192)
+            RECT_COLOR
         );
         al_draw_rectangle(
             where.x - total_width * 0.5, where.y - total_height * 0.5,
             where.x + total_width * 0.5, where.y + total_height * 0.5,
-            al_map_rgba(160, 160, 160, 192), 2
+            OUTLINE_COLOR,
+            OUTLINE_THICKNESS
         );
-    } else {
+        break;
+    }
+    case CONTROL_ICON_SHAPE_ROUNDED: {
         draw_filled_rounded_rectangle(
             where, point(total_width, total_height),
-            16.0f, map_alpha(192)
+            16.0f,
+            RECT_COLOR
         );
         draw_rounded_rectangle(
             where, point(total_width, total_height),
-            16.0f, al_map_rgba(160, 160, 160, 192), 2.0f
+            16.0f,
+            OUTLINE_COLOR,
+            OUTLINE_THICKNESS
         );
+        break;
     }
+    case CONTROL_ICON_SHAPE_BITMAP: {
+        break;
+    }
+    }
+    
+    //And finally, the text inside.
     draw_compressed_text(
-        font, map_alpha(192), where, ALLEGRO_ALIGN_CENTER, 1,
+        font,
+        TEXT_COLOR,
         point(
-            (max_size.x == 0 ? 0 : max_size.x - 2),
-            (max_size.y == 0 ? 0 : max_size.y - 2)
-        ), name
+            where.x,
+            where.y
+        ),
+        ALLEGRO_ALIGN_CENTER,
+        TEXT_VALIGN_CENTER,
+        point(
+            (max_size.x == 0 ? 0 : max_size.x - CONTROL_ICON_PADDING),
+            (max_size.y == 0 ? 0 : max_size.y - CONTROL_ICON_PADDING)
+        ),
+        text
     );
 }
 
@@ -551,46 +595,49 @@ void draw_filled_rounded_rectangle(
 
 
 /* ----------------------------------------------------------------------------
- * Draws a strength/weight fraction, in the style of Pikmin 2.
- * The strength is above the weight.
- * center:
- *   Center of the text.
- * current:
- *   Current strength.
- * needed:
- *   Needed strength to lift the object (weight).
+ * Draws a fraction, so one number above another, divided by a bar.
+ * The top number usually represents the current value of some attribute,
+ * and the bottom number usually represents the required value for some goal.
+ * bottom:
+ *   Bottom center point of the text.
+ * value_nr:
+ *   Number that represents the current value.
+ * requirement:
+ *   Number that represents the requirement.
  * color:
  *   Color of the fraction's text.
+ * scale:
+ *   Scale the fraction by this much.
  */
 void draw_fraction(
-    const point &center, const size_t current,
-    const size_t needed, const ALLEGRO_COLOR &color
+    const point &bottom, const size_t value_nr,
+    const size_t requirement_nr, const ALLEGRO_COLOR &color, const float scale
 ) {
-    float first_y =
-        center.y - (al_get_font_line_height(game.fonts.standard) * 3) / 2;
-    float font_h = al_get_font_line_height(game.fonts.value);
+    float font_h = al_get_font_line_height(game.fonts.value) * scale;
     
+    float value_nr_y = bottom.y - font_h * 3;
+    float value_nr_scale =
+        value_nr >= requirement_nr ? scale * 1.2f : scale * 1.0f;
     draw_scaled_text(
-        game.fonts.value, color, point(center.x, first_y),
-        point(
-            (current >= needed ? 1.2 : 1.0),
-            (current >= needed ? 1.2 : 1.0)
-        ),
-        ALLEGRO_ALIGN_CENTER, 0, (i2s(current).c_str())
+        game.fonts.value, color, point(bottom.x, value_nr_y),
+        point(value_nr_scale, value_nr_scale),
+        ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_TOP, (i2s(value_nr).c_str())
     );
     
-    al_draw_text(
-        game.fonts.value, color, center.x, first_y + font_h * 0.75,
-        ALLEGRO_ALIGN_CENTER, "-"
+    float bar_y = bottom.y - font_h * 2;
+    draw_scaled_text(
+        game.fonts.value, color, point(bottom.x, bar_y),
+        point(scale, scale),
+        ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_TOP, "-"
     );
     
+    float req_nr_y = bottom.y - font_h;
+    float req_nr_scale =
+        requirement_nr > value_nr ? scale * 1.2f : scale * 1.0f;
     draw_scaled_text(
-        game.fonts.value, color, point(center.x, first_y + font_h * 1.5),
-        point(
-            (needed > current ? 1.2 : 1.0),
-            (needed > current ? 1.2 : 1.0)
-        ),
-        ALLEGRO_ALIGN_CENTER, 0, (i2s(needed).c_str())
+        game.fonts.value, color, point(bottom.x, req_nr_y),
+        point(req_nr_scale, req_nr_scale),
+        ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_TOP, (i2s(requirement_nr).c_str())
     );
 }
 
@@ -602,7 +649,7 @@ void draw_fraction(
  * ratio:
  *   Ratio of health that is filled. 0 is empty, 1 is full.
  * alpha:
- *   Total opacity of the healt wheel.
+ *   Total opacity of the health wheel.
  * radius:
  *   Radius of the wheel (the whole wheel, not just the pieslice).
  * just_chart:
@@ -834,10 +881,10 @@ void draw_loading_screen(
                 
             //Draw the main text on its bitmap.
             al_set_target_bitmap(game.loading_text_bmp); {
-                al_clear_to_color(al_map_rgba(0, 0, 0, 0));
+                al_clear_to_color(COLOR_EMPTY);
                 draw_text_lines(
                     game.fonts.area_name, al_map_rgb(255, 215, 0),
-                    point(), ALLEGRO_ALIGN_LEFT, 0,
+                    point(), ALLEGRO_ALIGN_LEFT, TEXT_VALIGN_TOP,
                     text
                 );
             } al_set_target_backbuffer(game.display);
@@ -863,11 +910,11 @@ void draw_loading_screen(
                 al_create_bitmap(subtext_w, subtext_h);
                 
             al_set_target_bitmap(game.loading_subtext_bmp); {
-                al_clear_to_color(al_map_rgba(0, 0, 0, 0));
+                al_clear_to_color(COLOR_EMPTY);
                 draw_text_lines(
                     game.fonts.area_name, al_map_rgb(224, 224, 224),
                     point(),
-                    ALLEGRO_ALIGN_LEFT, 0,
+                    ALLEGRO_ALIGN_LEFT, TEXT_VALIGN_TOP,
                     subtext
                 );
                 
@@ -1140,8 +1187,9 @@ void draw_notification(
     
     if(control) {
         text_box_x1 += NOTIFICATION_CONTROL_SIZE + NOTIFICATION_PADDING;
-        draw_control(
-            game.fonts.standard, *control,
+        draw_control_icon(
+            game.fonts.standard, control,
+            true,
             point(
                 -bmp_w * 0.5 + NOTIFICATION_PADDING +
                 NOTIFICATION_CONTROL_SIZE * 0.5,
@@ -1161,7 +1209,7 @@ void draw_notification(
             (text_box_y1 + text_box_y2) * 0.5
         ),
         ALLEGRO_ALIGN_CENTER,
-        1,
+        TEXT_VALIGN_CENTER,
         point(
             text_box_x2 - text_box_x1,
             text_box_y2 - text_box_y1
@@ -1249,14 +1297,14 @@ void draw_rounded_rectangle(
  * flags:
  *   Same flags you'd use for al_draw_text.
  * valign:
- *   Vertical align. 0: top, 1: center, 2: bottom.
+ *   Vertical alignment.
  * text:
  *   Text to draw.
  */
 void draw_scaled_text(
     const ALLEGRO_FONT* const font, const ALLEGRO_COLOR &color,
     const point &where, const point &scale,
-    const int flags, const unsigned char valign, const string &text
+    const int flags, const TEXT_VALIGN_MODES valign, const string &text
 ) {
 
     ALLEGRO_TRANSFORM scale_transform, old_transform;
@@ -1455,26 +1503,26 @@ void draw_status_effect_bmp(mob* m, bitmap_effect_info &effects) {
  * flags:
  *   Flags, just like the ones you'd pass to al_draw_text.
  * valign:
- *   Vertical align: 0 for top, 1 for center, 2 for bottom.
+ *   Vertical alignment.
  * text:
  *   Text to write, line breaks included ('\n').
  */
 void draw_text_lines(
     const ALLEGRO_FONT* const font, const ALLEGRO_COLOR &color,
     const point &where, const int flags,
-    const unsigned char valign, const string &text
+    const TEXT_VALIGN_MODES valign, const string &text
 ) {
     vector<string> lines = split(text, "\n", true);
     int fh = al_get_font_line_height(font);
     size_t n_lines = lines.size();
     float top;
     
-    if(valign == 0) {
+    if(valign == TEXT_VALIGN_TOP) {
         top = where.y;
     } else {
         //We add n_lines - 1 because there is a 1px gap between each line.
         int total_height = n_lines * fh + (n_lines - 1);
-        if(valign == 1) {
+        if(valign == TEXT_VALIGN_CENTER) {
             top = where.y - total_height / 2;
         } else {
             top = where.y - total_height;
@@ -1642,19 +1690,287 @@ void draw_textured_box(
  * Eases a number [0, 1] in accordance to a non-linear interpolation
  * method. Normally used for camera movement and such.
  * method:
- *   The method to use. Use EASE_*.
+ *   The method to use.
  * n:
  *   The number to ease, in the range [0, 1].
  */
-float ease(const unsigned char method, const float n) {
+float ease(const EASING_METHODS method, const float n) {
     switch(method) {
-    case EASE_IN:
+    case EASE_IN: {
         return pow(n, 3);
-    case EASE_OUT:
+    }
+    case EASE_OUT: {
         return 1 - (pow((1 - n), 3));
-    case EASE_UP_AND_DOWN:
+    }
+    case EASE_IN_ELASTIC: {
+        const float cp = 0.20f;
+        const float mag = -0.2f;
+        if(n < cp) {
+            float aux = n * 1.0f / cp;
+            return sin(aux * TAU / 2) * mag;
+        } else {
+            float aux = n - cp;
+            aux *= 1.0f / (1.0f - cp);
+            return 1 - (pow((1 - aux), 3));
+        }
+    }
+    case EASE_UP_AND_DOWN: {
         return sin(n * TAU / 2);
+    }
+    case EASE_UP_AND_DOWN_ELASTIC: {
+        const float cp1 = 0.50f;
+        const float cp2 = 0.80f;
+        const float mag1 = -0.4f;
+        const float mag2 = 0.15f;
+        float aux;
+        if(n < cp1) {
+            aux = n * 1.0f / cp1;
+            return sin(aux * TAU / 2);
+        } else if(n < cp2) {
+            aux = n - cp1;
+            aux *= 1.0f / (cp2 - cp1);
+            return sin(aux * TAU / 2) * mag1;
+        } else {
+            aux = n - cp2;
+            aux *= 1.0f / (1.0f - cp2);
+            return sin(aux * TAU / 2) * mag2;
+        }
+    }
+    
     }
     
     return n;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Returns information about how a control icon should be drawn.
+ * font:
+ *   Font to use for the name, if necessary.
+ * c:
+ *   Info on the control. If NULL, a "NONE" icon will be used.
+ * condensed:
+ *   If true, only the icon's fundamental information is presented. If false,
+ *   disambiguation information is included too. For instance, keyboard keys
+ *   that come in pairs specify whether they are the left or right key,
+ *   gamepad controls specify what gamepad number it is, etc.
+ * shape:
+ *   The shape is returned here.
+ * bitmap_sprite:
+ *   If it's one of the icons in the control icon spritesheet, the index
+ *   of the sprite is returned here.
+ * text:
+ *   The text to be written inside is returned here, or an empty string is
+ *   returned if there's nothing to write.
+ */
+void get_control_icon_info(
+    const ALLEGRO_FONT* font, const control_info* c, const bool condensed,
+    CONTROL_ICON_SHAPES* shape, CONTROL_ICON_SPRITES* bitmap_sprite,
+    string* text
+) {
+    *shape = CONTROL_ICON_SHAPE_ROUNDED;
+    *bitmap_sprite = CONTROL_ICON_SPRITE_LMB;
+    *text = "(NONE)";
+    
+    if(!c) return;
+    
+    //Figure out if it's one of those that has a bitmap icon.
+    //If so, just return that.
+    if(c->type == CONTROL_TYPE_MOUSE_BUTTON) {
+        if(c->button == 1) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_LMB;
+            return;
+        } else if(c->button == 2) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_RMB;
+            return;
+        } else if(c->button == 3) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_MMB;
+            return;
+        }
+    } else if(c->type == CONTROL_TYPE_MOUSE_WHEEL_UP) {
+        *shape = CONTROL_ICON_SHAPE_BITMAP;
+        *bitmap_sprite = CONTROL_ICON_SPRITE_MWU;
+        return;
+    } else if(c->type == CONTROL_TYPE_MOUSE_WHEEL_DOWN) {
+        *shape = CONTROL_ICON_SHAPE_BITMAP;
+        *bitmap_sprite = CONTROL_ICON_SPRITE_MWD;
+        return;
+    } else if(c->type == CONTROL_TYPE_KEYBOARD_KEY) {
+        if(c->button == ALLEGRO_KEY_UP) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_UP;
+            return;
+        } else if(c->button == ALLEGRO_KEY_LEFT) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_LEFT;
+            return;
+        } else if(c->button == ALLEGRO_KEY_DOWN) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_DOWN;
+            return;
+        } else if(c->button == ALLEGRO_KEY_RIGHT) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_RIGHT;
+            return;
+        } else if(c->button == ALLEGRO_KEY_BACKSPACE) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_BACKSPACE;
+            return;
+        } else if(
+            condensed &&
+            (c->button == ALLEGRO_KEY_LSHIFT || c->button == ALLEGRO_KEY_RSHIFT)
+        ) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_SHIFT;
+            return;
+        } else if(c->button == ALLEGRO_KEY_TAB) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_TAB;
+            return;
+        } else if(c->button == ALLEGRO_KEY_ENTER) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_ENTER;
+            return;
+        }
+    } else if(c->type == CONTROL_TYPE_JOYSTICK_AXIS_NEG && condensed) {
+        if(c->axis == 0) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_STICK_LEFT;
+            return;
+        } else if(c->axis == 1) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_STICK_UP;
+            return;
+        }
+    } else if(c->type == CONTROL_TYPE_JOYSTICK_AXIS_POS && condensed) {
+        if(c->axis == 0) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_STICK_RIGHT;
+            return;
+        } else if(c->axis == 1) {
+            *shape = CONTROL_ICON_SHAPE_BITMAP;
+            *bitmap_sprite = CONTROL_ICON_SPRITE_STICK_DOWN;
+            return;
+        }
+    }
+    
+    //Otherwise, use an actual shape and some text inside.
+    switch(c->type) {
+    case CONTROL_TYPE_KEYBOARD_KEY: {
+        *shape = CONTROL_ICON_SHAPE_RECTANGLE;
+        *text = get_key_name(c->button, condensed);
+        break;
+        
+    } case CONTROL_TYPE_JOYSTICK_AXIS_NEG:
+    case CONTROL_TYPE_JOYSTICK_AXIS_POS: {
+        *shape = CONTROL_ICON_SHAPE_ROUNDED;
+        if(!condensed) {
+            *text =
+                "Pad " + i2s(c->device_nr + 1) +
+                " stick " + i2s(c->stick + 1);
+            if(
+                c->axis == 0 && c->type == CONTROL_TYPE_JOYSTICK_AXIS_NEG
+            ) {
+                *text += " left";
+            } else if(
+                c->axis == 0 && c->type == CONTROL_TYPE_JOYSTICK_AXIS_POS
+            ) {
+                *text += " right";
+            } else if(
+                c->axis == 1 && c->type == CONTROL_TYPE_JOYSTICK_AXIS_NEG
+            ) {
+                *text += " up";
+            } else if(
+                c->axis == 1 && c->type == CONTROL_TYPE_JOYSTICK_AXIS_POS
+            ) {
+                *text += " down";
+            } else {
+                *text += " axis " + i2s(c->axis) +
+                         (c->type == CONTROL_TYPE_JOYSTICK_AXIS_NEG ? "-" : "+");
+            }
+            
+        } else {
+            *text = "Stick " + i2s(c->stick);
+        }
+        break;
+        
+    } case CONTROL_TYPE_JOYSTICK_BUTTON: {
+        *shape = CONTROL_ICON_SHAPE_ROUNDED;
+        if(!condensed) {
+            *text =
+                "Pad " + i2s(c->device_nr + 1) +
+                "button " + i2s(c->button + 1);
+        } else {
+            *text = i2s(c->button + 1);
+        }
+        break;
+        
+    } case CONTROL_TYPE_MOUSE_BUTTON: {
+        *shape = CONTROL_ICON_SHAPE_ROUNDED;
+        if(!condensed) {
+            *text = "Mouse button " + i2s(c->button);
+        } else {
+            *text = "M" + i2s(c->button);
+        }
+        break;
+        
+    } case CONTROL_TYPE_MOUSE_WHEEL_LEFT: {
+        *shape = CONTROL_ICON_SHAPE_ROUNDED;
+        if(!condensed) {
+            *text = "Mouse wheel left";
+        } else {
+            *text = "MWL";
+        }
+        break;
+        
+    } case CONTROL_TYPE_MOUSE_WHEEL_RIGHT: {
+        *shape = CONTROL_ICON_SHAPE_ROUNDED;
+        if(!condensed) {
+            *text = "Mouse wheel right";
+        } else {
+            *text = "MWR";
+        }
+        break;
+        
+    } default: {
+        break;
+        
+    }
+    }
+}
+
+
+
+/* ----------------------------------------------------------------------------
+ * Returns the width of a control icon, for drawing purposes.
+ * font:
+ *   Font to use for the name, if necessary.
+ * c:
+ *   Info on the control. If NULL, a "NONE" icon will be used.
+ * condensed:
+ *   If true, only the icon's fundamental information is presented. If false,
+ *   disambiguation information is included too. For instance, keyboard keys
+ *   that come in pairs specify whether they are the left or right key,
+ *   gamepad controls specify what gamepad number it is, etc.
+ */
+float get_control_icon_width(
+    const ALLEGRO_FONT* font, const control_info* c, const bool condensed
+) {
+    CONTROL_ICON_SHAPES shape;
+    CONTROL_ICON_SPRITES bitmap_sprite;
+    string text;
+    get_control_icon_info(
+        font, c, condensed,
+        &shape, &bitmap_sprite, &text
+    );
+    
+    if(shape == CONTROL_ICON_SHAPE_BITMAP) {
+        //All icons are square, and in a row, so the spritesheet height works.
+        return al_get_bitmap_height(game.sys_assets.bmp_control_icons);
+    } else {
+        return al_get_text_width(font, text.c_str()) + CONTROL_ICON_PADDING * 2;
+    }
 }

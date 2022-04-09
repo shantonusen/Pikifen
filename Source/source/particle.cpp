@@ -22,7 +22,7 @@
 /* ----------------------------------------------------------------------------
  * Creates a particle.
  * type:
- *   The type of particle. Use PARTICLE_TYPE_*.
+ *   The type of particle.
  * pos:
  *   Starting coordinates.
  * z:
@@ -35,8 +35,8 @@
  *   Lower priority particles will be removed in favor of higher ones.
  */
 particle::particle(
-    const unsigned char type, const point &pos, const float z,
-    const float size, const float duration, const unsigned char priority
+    const PARTICLE_TYPES type, const point &pos, const float z,
+    const float size, const float duration, const PARTICLE_PRIORITIES priority
 ) :
     type(type),
     duration(duration),
@@ -48,7 +48,7 @@ particle::particle(
     pos(pos),
     z(z),
     size(size),
-    color(al_map_rgb(255, 255, 255)),
+    color(COLOR_WHITE),
     priority(priority) {
     
 }
@@ -151,10 +151,10 @@ void particle::draw() {
 
 
 /* ----------------------------------------------------------------------------
- * Makes a particle follow a game tick.
+ * Ticks a particle's time by one frame of logic.
  * Returns false if its lifespan is over and it should be deleted.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void particle::tick(const float delta_t) {
     time -= delta_t;
@@ -192,7 +192,7 @@ particle_generator::particle_generator(
     const float emission_interval,
     const particle &base_particle, const size_t number
 ) :
-    id(0),
+    id(MOB_PARTICLE_GENERATOR_NONE),
     base_particle(base_particle),
     number(number),
     emission_interval(emission_interval),
@@ -312,9 +312,9 @@ void particle_generator::reset() {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks one game frame of logic.
+ * Ticks time by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  * manager:
  *   The manager of all particles.
  */
@@ -520,9 +520,9 @@ void particle_manager::remove(const size_t pos) {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks all particles in the list.
+ * Ticks time of all particles in the list by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void particle_manager::tick_all(const float delta_t) {
     for(size_t c = 0; c < count;) {

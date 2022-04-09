@@ -24,30 +24,52 @@ using std::string;
 using std::vector;
 
 
+//Mob categories. Sorted by what types of mobs to load first.
 enum MOB_CATEGORIES {
-    //Sorted by what types of mobs to load first.
+    //None.
     MOB_CATEGORY_NONE,
+    //Pikmin.
     MOB_CATEGORY_PIKMIN,
+    //Onions.
     MOB_CATEGORY_ONIONS,
+    //Leaders.
     MOB_CATEGORY_LEADERS,
+    //Enemies.
     MOB_CATEGORY_ENEMIES,
+    //Treasures.
     MOB_CATEGORY_TREASURES,
+    //Pellets.
     MOB_CATEGORY_PELLETS,
+    //Converters.
     MOB_CATEGORY_CONVERTERS,
+    //Drops.
     MOB_CATEGORY_DROPS,
+    //Resources.
     MOB_CATEGORY_RESOURCES,
+    //Piles.
     MOB_CATEGORY_PILES,
+    //Tools.
     MOB_CATEGORY_TOOLS,
+    //Ships.
     MOB_CATEGORY_SHIPS,
+    //Bridges.
     MOB_CATEGORY_BRIDGES,
+    //Group tasks.
     MOB_CATEGORY_GROUP_TASKS,
+    //Scales.
     MOB_CATEGORY_SCALES,
+    //Tracks.
     MOB_CATEGORY_TRACKS,
+    //Bouncers.
     MOB_CATEGORY_BOUNCERS,
+    //Decorations.
     MOB_CATEGORY_DECORATIONS,
+    //Interactables.
     MOB_CATEGORY_INTERACTABLES,
+    //Custom.
     MOB_CATEGORY_CUSTOM,
     
+    //Total amount of mob categories.
     N_MOB_CATEGORIES,
 };
 
@@ -61,11 +83,15 @@ class mob_type;
  */
 class mob_category {
 public:
+    //Name of the mob category.
     string name;
-    size_t id;
-    
+    //ID of the mob category.
+    MOB_CATEGORIES id;
+    //Name used when referring to objects of this category in plural.
     string plural_name;
+    //Folder name for this category.
     string folder;
+    //Color used to represent objects of this category in the area editor.
     ALLEGRO_COLOR editor_color;
     
     virtual void get_type_names(vector<string> &list) const = 0;
@@ -79,7 +105,7 @@ public:
     virtual void clear_types() = 0;
     
     mob_category(
-        const size_t id, const string &name, const string &plural_name,
+        const MOB_CATEGORIES id, const string &name, const string &plural_name,
         const string &folder, const ALLEGRO_COLOR editor_color
     );
     virtual ~mob_category() = default;
@@ -95,18 +121,19 @@ public:
  */
 struct mob_category_manager {
 public:
-    void register_category(size_t nr, mob_category* category);
+    void register_category(MOB_CATEGORIES nr, mob_category* category);
     mob_type* find_mob_type(const string &name) const;
     mob_type* find_mob_type_from_folder_name(
         mob_category* cat, const string &name
     ) const;
-    mob_category* get(const size_t id) const;
+    mob_category* get(const MOB_CATEGORIES id) const;
     mob_category* get_from_folder_name(const string &name) const;
     mob_category* get_from_name(const string &name) const;
     mob_category* get_from_pname(const string &pname) const;
     void clear();
-
+    
 private:
+    //List of known mob categories.
     vector<mob_category*> categories;
     
 };
@@ -118,15 +145,15 @@ private:
  */
 class none_category : public mob_category {
 public:
-    virtual void get_type_names(vector<string> &list) const;
-    virtual mob_type* get_type(const string &name) const;
-    virtual mob_type* create_type();
-    virtual void register_type(mob_type* type);
-    virtual mob* create_mob(
+    void get_type_names(vector<string> &list) const;
+    mob_type* get_type(const string &name) const;
+    mob_type* create_type();
+    void register_type(mob_type* type);
+    mob* create_mob(
         const point &pos, mob_type* type, const float angle
     );
-    virtual void erase_mob(mob* m);
-    virtual void clear_types();
+    void erase_mob(mob* m);
+    void clear_types();
     
     none_category();
 };

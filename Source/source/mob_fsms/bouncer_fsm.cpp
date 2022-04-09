@@ -102,7 +102,7 @@ void bouncer_fsm::handle_mob(mob* m, void* info1, void* info2) {
     } else if(
         bou_ptr->bou_type->riders & BOUNCER_RIDER_PIKMIN &&
         toucher->path_info &&
-        (toucher->path_info->taker_flags & PATH_TAKER_FLAG_LIGHT_LOAD)
+        (toucher->path_info->settings.flags & PATH_FOLLOW_FLAG_LIGHT_LOAD)
     ) {
     
         //Pikmin carrying light load is about to be bounced.
@@ -162,5 +162,7 @@ void bouncer_fsm::set_bouncing_animation(mob* m, void* info1, void* info2) {
  *   Unused.
  */
 void bouncer_fsm::set_idling_animation(mob* m, void* info1, void* info2) {
-    m->set_animation(BOUNCER_ANIM_IDLING);
+    m->set_animation(
+        BOUNCER_ANIM_IDLING, true, START_ANIMATION_RANDOM_TIME_ON_SPAWN
+    );
 }

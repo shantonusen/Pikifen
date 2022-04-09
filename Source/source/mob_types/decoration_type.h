@@ -17,16 +17,22 @@
 #include "mob_type.h"
 
 
+//Decoration object animations.
 enum DECORATION_ANIMATIONS {
+    //Idling.
     DECORATION_ANIM_IDLING,
+    //Bumped against.
     DECORATION_ANIM_BUMPED,
 };
 
-
+//Decoration object states.
 enum DECORATION_STATES {
+    //Idling.
     DECORATION_STATE_IDLING,
+    //Bumped against.
     DECORATION_STATE_BUMPED,
     
+    //Total amount of decoration object states.
     N_DECORATION_STATES,
 };
 
@@ -36,9 +42,13 @@ enum DECORATION_STATES {
  */
 class decoration_type : public mob_type {
 public:
+    //Maximum amount it can deviate the tint by, for every color component.
     ALLEGRO_COLOR tint_random_maximum;
+    //Maximum amount it can deviate the scale by.
     float scale_random_variation;
+    //Maximum amount it can deviate the rotation by.
     float rotation_random_variation;
+    //Should it skip to a random point of the animation when it starts?
     bool random_animation_delay;
     
     decoration_type();

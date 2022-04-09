@@ -44,7 +44,7 @@ void drop::draw_mob() {
     if(!s_ptr) return;
     
     bitmap_effect_info eff;
-    get_sprite_bitmap_effects(s_ptr, &eff, true, true);
+    get_sprite_bitmap_effects(s_ptr, &eff, true, true, true, false, false);
     
     eff.scale *= cur_scale;
     
@@ -53,9 +53,9 @@ void drop::draw_mob() {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks some logic specific to drops.
+ * Ticks time by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void drop::tick_class_specifics(const float delta_t) {
     float intended_scale;

@@ -263,15 +263,15 @@ bool mob_action_loaders::arachnorb_plan_logic(mob_action_call &call) {
  */
 bool mob_action_loaders::calculate(mob_action_call &call) {
     if(call.args[2] == "+") {
-        call.args[2] = i2s(MOB_ACTION_SET_VAR_SUM);
+        call.args[2] = i2s(MOB_ACTION_CALCULATE_SUM);
     } else if(call.args[2] == "-") {
-        call.args[2] = i2s(MOB_ACTION_SET_VAR_SUBTRACT);
+        call.args[2] = i2s(MOB_ACTION_CALCULATE_SUBTRACT);
     } else if(call.args[2] == "*") {
-        call.args[2] = i2s(MOB_ACTION_SET_VAR_MULTIPLY);
+        call.args[2] = i2s(MOB_ACTION_CALCULATE_MULTIPLY);
     } else if(call.args[2] == "/") {
-        call.args[2] = i2s(MOB_ACTION_SET_VAR_DIVIDE);
+        call.args[2] = i2s(MOB_ACTION_CALCULATE_DIVIDE);
     } else if(call.args[2] == "%") {
-        call.args[2] = i2s(MOB_ACTION_SET_VAR_MODULO);
+        call.args[2] = i2s(MOB_ACTION_CALCULATE_MODULO);
     } else {
         report_enum_error(call, 2);
         return false;
@@ -489,9 +489,13 @@ bool mob_action_loaders::set_animation(mob_action_call &call) {
     
     for(size_t a = 1; a < call.args.size(); ++a) {
         if(call.args[a] == "no_restart") {
-            call.args[a] = i2s(MOB_ACTION_SET_ANIMATION_NO_RESTART);
+            call.args[a] = i2s(START_ANIMATION_NO_RESTART);
+        } else if(call.args[a] == "random_time") {
+            call.args[a] = i2s(START_ANIMATION_RANDOM_TIME);
+        } else if(call.args[a] == "random_time_on_spawn") {
+            call.args[a] = i2s(START_ANIMATION_RANDOM_TIME_ON_SPAWN);
         } else {
-            call.args[a] = "0";
+            call.args[a] = i2s(START_ANIMATION_NORMAL);
         }
     }
     
@@ -720,7 +724,9 @@ void mob_action_runners::add_health(mob_action_run_data &data) {
  *   Data about the action call.
  */
 void mob_action_runners::arachnorb_plan_logic(mob_action_run_data &data) {
-    data.m->arachnorb_plan_logic(s2i(data.args[0]));
+    data.m->arachnorb_plan_logic(
+        (MOB_ACTION_ARACHNORB_PLAN_LOGIC_TYPES) s2i(data.args[0])
+    );
 }
 
 
@@ -731,24 +737,24 @@ void mob_action_runners::arachnorb_plan_logic(mob_action_run_data &data) {
  */
 void mob_action_runners::calculate(mob_action_run_data &data) {
     float lhs = s2f(data.args[1]);
-    size_t op = s2i(data.args[2]);
+    MOB_ACTION_CALCULATE_TYPES op = (MOB_ACTION_CALCULATE_TYPES) s2i(data.args[2]);
     float rhs = s2f(data.args[3]);
     float result = 0;
     
     switch(op) {
-    case MOB_ACTION_SET_VAR_SUM: {
+    case MOB_ACTION_CALCULATE_SUM: {
         result = lhs + rhs;
         break;
         
-    } case MOB_ACTION_SET_VAR_SUBTRACT: {
+    } case MOB_ACTION_CALCULATE_SUBTRACT: {
         result = lhs - rhs;
         break;
         
-    } case MOB_ACTION_SET_VAR_MULTIPLY: {
+    } case MOB_ACTION_CALCULATE_MULTIPLY: {
         result = lhs * rhs;
         break;
         
-    } case MOB_ACTION_SET_VAR_DIVIDE: {
+    } case MOB_ACTION_CALCULATE_DIVIDE: {
         if(rhs == 0) {
             result = 0;
         } else {
@@ -756,7 +762,7 @@ void mob_action_runners::calculate(mob_action_run_data &data) {
         }
         break;
         
-    } case MOB_ACTION_SET_VAR_MODULO: {
+    } case MOB_ACTION_CALCULATE_MODULO: {
         if(rhs == 0) {
             result = 0;
         } else {
@@ -799,12 +805,6 @@ void mob_action_runners::drain_liquid(mob_action_run_data &data) {
                 return true;
             }
         }
-        if(s->type == SECTOR_TYPE_BRIDGE) {
-            return true;
-        }
-        if(s->type == SECTOR_TYPE_BRIDGE_RAIL) {
-            return true;
-        }
         return false;
     },
     sectors_to_drain
@@ -833,7 +833,7 @@ void mob_action_runners::finish_dying(mob_action_run_data &data) {
  *   Data about the action call.
  */
 void mob_action_runners::focus(mob_action_run_data &data) {
-    size_t t = s2i(data.args[0]);
+    MOB_ACTION_FOCUS_TYPES t = (MOB_ACTION_FOCUS_TYPES) s2i(data.args[0]);
     
     switch(t) {
     case MOB_ACTION_FOCUS_LINK: {
@@ -930,11 +930,12 @@ void mob_action_runners::follow_path_randomly(mob_action_run_data &data) {
     //Go! Though if something went wrong, make it follow a path to nowhere,
     //so it can emit the MOB_EV_REACHED_DESTINATION event, and hopefully
     //make it clear that there was an error.
-    data.m->follow_path(
-        final_stop ? final_stop->pos : data.m->pos, true,
-        data.m->get_base_speed(), chase_info_struct::DEF_TARGET_DISTANCE,
-        true, label
-    );
+    path_follow_settings settings;
+    settings.target_point = final_stop ? final_stop->pos : data.m->pos;
+    settings.flags |= PATH_FOLLOW_FLAG_CAN_CONTINUE;
+    settings.flags |= PATH_FOLLOW_FLAG_SCRIPT_USE;
+    settings.label = label;
+    data.m->follow_path(settings, data.m->get_base_speed());
 }
 
 
@@ -946,15 +947,16 @@ void mob_action_runners::follow_path_randomly(mob_action_run_data &data) {
 void mob_action_runners::follow_path_to_absolute(mob_action_run_data &data) {
     float x = s2f(data.args[0]);
     float y = s2f(data.args[1]);
-    string label;
+    
+    path_follow_settings settings;
+    settings.target_point = point(x, y);
+    settings.flags |= PATH_FOLLOW_FLAG_CAN_CONTINUE;
+    settings.flags |= PATH_FOLLOW_FLAG_SCRIPT_USE;
     if(data.args.size() >= 3) {
-        label = data.args[2];
+        settings.label = data.args[2];
     }
     
-    data.m->follow_path(
-        point(x, y), true, data.m->get_base_speed(),
-        chase_info_struct::DEF_TARGET_DISTANCE, true, label
-    );
+    data.m->follow_path(settings, data.m->get_base_speed());
 }
 
 
@@ -1111,7 +1113,8 @@ void mob_action_runners::hold_focus(mob_action_run_data &data) {
  */
 void mob_action_runners::if_function(mob_action_run_data &data) {
     string lhs = data.args[0];
-    size_t op = s2i(data.args[1]);
+    MOB_ACTION_IF_OPERATOR_TYPES op =
+        (MOB_ACTION_IF_OPERATOR_TYPES) s2i(data.args[1]);
     string rhs = vector_tail_to_string(data.args, 2);
     
     switch(op) {
@@ -1220,7 +1223,7 @@ void mob_action_runners::move_to_relative(mob_action_run_data &data) {
  *   Data about the action call.
  */
 void mob_action_runners::move_to_target(mob_action_run_data &data) {
-    size_t t = s2i(data.args[0]);
+    MOB_ACTION_MOVE_TYPES t = (MOB_ACTION_MOVE_TYPES) s2i(data.args[0]);
     
     switch(t) {
     case MOB_ACTION_MOVE_AWAY_FROM_FOCUSED_MOB: {
@@ -1431,12 +1434,12 @@ void mob_action_runners::send_message_to_nearby(mob_action_run_data &data) {
  *   Data about the action call.
  */
 void mob_action_runners::set_animation(mob_action_run_data &data) {
-    bool must_restart =
-        (
-            data.args.size() > 1 &&
-            s2i(data.args[1]) == MOB_ACTION_SET_ANIMATION_NO_RESTART
-        );
-    data.m->set_animation(s2i(data.args[0]), false, !must_restart);
+    START_ANIMATION_OPTIONS options = START_ANIMATION_NORMAL;
+    if(data.args.size() > 1) {
+        options = (START_ANIMATION_OPTIONS) s2i(data.args[1]);
+    }
+    
+    data.m->set_animation(s2i(data.args[0]), false, options);
 }
 
 
@@ -1645,7 +1648,7 @@ void mob_action_runners::set_tangible(mob_action_run_data &data) {
  *   Data about the action call.
  */
 void mob_action_runners::set_team(mob_action_run_data &data) {
-    data.m->team = s2i(data.args[0]);
+    data.m->team = (MOB_TEAMS) s2i(data.args[0]);
 }
 
 
@@ -1700,8 +1703,9 @@ void mob_action_runners::stabilize_z(mob_action_run_data &data) {
     }
     
     float best_match_z = data.m->links[0]->z;
-    size_t t = s2i(data.args[0]);
-    
+    MOB_ACTION_STABILIZE_Z_TYPES t =
+        (MOB_ACTION_STABILIZE_Z_TYPES) s2i(data.args[0]);
+        
     for(size_t l = 1; l < data.m->links.size(); ++l) {
     
         switch(t) {
@@ -1986,7 +1990,7 @@ void mob_action_runners::turn_to_relative(mob_action_run_data &data) {
  *   Data about the action call.
  */
 void mob_action_runners::turn_to_target(mob_action_run_data &data) {
-    size_t t = s2i(data.args[0]);
+    MOB_ACTION_TURN_TYPES t = (MOB_ACTION_TURN_TYPES) s2i(data.args[0]);
     
     switch(t) {
     case MOB_ACTION_TURN_ARACHNORB_HEAD_LOGIC: {
@@ -2048,6 +2052,8 @@ bool assert_actions(
                 return false;
             }
             if_level--;
+            break;
+        } default: {
             break;
         }
         }
@@ -2139,7 +2145,7 @@ void get_info_runner(mob_action_run_data &data, mob* target_mob) {
     }
     
     string* var = &(data.m->vars[data.args[0]]);
-    size_t t = s2i(data.args[1]);
+    MOB_ACTION_GET_INFO_TYPES t = (MOB_ACTION_GET_INFO_TYPES) s2i(data.args[1]);
     
     switch(t) {
     case MOB_ACTION_GET_INFO_ANGLE: {

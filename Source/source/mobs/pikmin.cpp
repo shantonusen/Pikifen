@@ -21,8 +21,14 @@
 #include "mob.h"
 
 
-const float pikmin::MISSED_ATTACK_DURATION = 1.5f;
+//Height above the floor that a flying Pikmin prefers to stay at.
 const float pikmin::FLIER_ABOVE_FLOOR_HEIGHT = 100.0f;
+//How long to remember a missed incoming attack for.
+const float pikmin::MISSED_ATTACK_DURATION = 1.5f;
+//Chance of circling the opponent instead of striking, when grounded.
+const float pikmin::CIRCLE_OPPONENT_CHANCE_GROUNDED = 0.2f;
+//Chance of circling the opponent instead of latching, if it can latch.
+const float pikmin::CIRCLE_OPPONENT_CHANCE_PRE_LATCH = 0.5f;
 
 /* ----------------------------------------------------------------------------
  * Creates a Pikmin mob.
@@ -90,7 +96,7 @@ void pikmin::draw_mob() {
     
     //The Pikmin itself.
     bitmap_effect_info eff;
-    get_sprite_bitmap_effects(s_ptr, &eff, true, true);
+    get_sprite_bitmap_effects(s_ptr, &eff, true, true, true, false, false);
     
     bool is_idle =
         fsm.cur_state->id == PIKMIN_STATE_IDLING ||
@@ -98,7 +104,7 @@ void pikmin::draw_mob() {
         fsm.cur_state->id == PIKMIN_STATE_SPROUT;
         
     if(is_idle) {
-        eff.glow_color = al_map_rgb(255, 255, 255);
+        eff.glow_color = COLOR_WHITE;
     }
     
     draw_bitmap_with_effects(s_ptr->bitmap, eff);
@@ -313,7 +319,7 @@ void pikmin::latch(mob* m, hitbox* h) {
     );
     m->hold(
         this, h->body_part_index, h_offset_dist, h_offset_angle,
-        true, true
+        true, HOLD_ROTATION_METHOD_FACE_HOLDER
     );
     
     latched = true;
@@ -321,7 +327,7 @@ void pikmin::latch(mob* m, hitbox* h) {
 
 
 /* ----------------------------------------------------------------------------
- * Checks if the attack should miss, and returns the result.
+ * Checks if an incoming attack should miss, and returns the result.
  * If it was already decided that it missed in a previous frame, that's a
  * straight no. If not, it will roll with the hit rate to check.
  * If the attack is a miss, it also registers the miss, so that we can keep
@@ -398,9 +404,9 @@ void pikmin::start_throw_trail() {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks some logic specific to Pikmin.
+ * Ticks time by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void pikmin::tick_class_specifics(const float delta_t) {
     //Carrying object.

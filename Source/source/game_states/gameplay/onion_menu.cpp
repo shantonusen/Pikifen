@@ -18,10 +18,12 @@
 
 
 //Path to the GUI information file.
-const string gameplay_state::onion_menu_struct::GUI_FILE_PATH =
+const string onion_menu_struct::GUI_FILE_PATH =
     GUI_FOLDER_PATH + "/Onion_menu.txt";
+//The Onion menu can only show, at most, these many Pikmin types per page.
+const size_t onion_menu_struct::ONION_MENU_TYPES_PER_PAGE = 5;
 //How long to let text turn red for.
-const float gameplay_state::onion_menu_struct::RED_TEXT_DURATION = 1.0f;
+const float onion_menu_struct::RED_TEXT_DURATION = 1.0f;
 
 
 /* ----------------------------------------------------------------------------
@@ -31,7 +33,7 @@ const float gameplay_state::onion_menu_struct::RED_TEXT_DURATION = 1.0f;
  * l_ptr:
  *   Leader responsible.
  */
-gameplay_state::onion_menu_struct::onion_menu_struct(
+onion_menu_struct::onion_menu_struct(
     pikmin_nest_struct* n_ptr, leader* l_ptr
 ) :
     n_ptr(n_ptr),
@@ -48,7 +50,10 @@ gameplay_state::onion_menu_struct::onion_menu_struct(
     prev_page_button(nullptr),
     next_page_button(nullptr),
     field_amount_text(nullptr),
-    to_delete(false) {
+    bg_alpha_mult(0.0f),
+    closing_timer(0.0f),
+    to_delete(false),
+    closing(false) {
     
     for(size_t t = 0; t < n_ptr->nest_type->pik_types.size(); ++t) {
         types.push_back(
@@ -110,7 +115,7 @@ gameplay_state::onion_menu_struct::onion_menu_struct(
     );
     gui.back_item->on_activate =
     [this] (const point &) {
-        to_delete = true;
+        start_closing();
     };
     gui.back_item->on_get_tooltip =
     [] () { return "Forget all changes and leave the Onion menu."; };
@@ -124,7 +129,7 @@ gameplay_state::onion_menu_struct::onion_menu_struct(
     ok_button->on_activate =
     [this] (const point &) {
         confirm();
-        to_delete = true;
+        start_closing();
     };
     ok_button->on_get_tooltip =
     [] () { return "Confirm changes."; };
@@ -160,7 +165,7 @@ gameplay_state::onion_menu_struct::onion_menu_struct(
             game.fonts.standard,
             color,
             center,
-            ALLEGRO_ALIGN_CENTER, 1,
+            ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER,
             size,
             "Field: " +
             i2s(game.states.gameplay->mobs.pikmin_list.size() + total_delta)
@@ -261,7 +266,7 @@ gameplay_state::onion_menu_struct::onion_menu_struct(
                 game.fonts.area_name,
                 color,
                 center,
-                ALLEGRO_ALIGN_CENTER, 1,
+                ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER,
                 size,
                 i2s(real_onion_amount - t_ptr->delta)
             );
@@ -346,7 +351,7 @@ gameplay_state::onion_menu_struct::onion_menu_struct(
                 game.fonts.area_name,
                 color,
                 center,
-                ALLEGRO_ALIGN_CENTER, 1,
+                ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER,
                 size,
                 i2s(real_group_amount + t_ptr->delta)
             );
@@ -419,7 +424,7 @@ gameplay_state::onion_menu_struct::onion_menu_struct(
         draw_button(
             center, size, "", game.fonts.standard, map_gray(255),
             prev_page_button->selected,
-            prev_page_button->get_juicy_grow_amount()
+            prev_page_button->get_juice_value()
         );
     };
     prev_page_button->on_activate =
@@ -444,7 +449,7 @@ gameplay_state::onion_menu_struct::onion_menu_struct(
         draw_button(
             center, size, "", game.fonts.standard, map_gray(255),
             next_page_button->selected,
-            next_page_button->get_juicy_grow_amount()
+            next_page_button->get_juice_value()
         );
     };
     next_page_button->on_activate =
@@ -465,20 +470,26 @@ gameplay_state::onion_menu_struct::onion_menu_struct(
     (const point & center, const point & size) {
         draw_compressed_scaled_text(
             game.fonts.standard, al_map_rgb(255, 255, 255),
-            center, point(0.7f, 0.7f), ALLEGRO_ALIGN_CENTER, 1, size,
+            center, point(0.7f, 0.7f),
+            ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER, size, false,
             gui.get_current_tooltip()
         );
     };
     gui.add_item(tooltip_text, "tooltip");
     
+    //Finishing touches.
     update();
+    gui.start_animation(
+        GUI_MANAGER_ANIM_UP_TO_CENTER,
+        gameplay_state::MENU_ENTRY_HUD_MOVE_TIME
+    );
 }
 
 
 /* ----------------------------------------------------------------------------
  * Destroys an Onion menu struct.
  */
-gameplay_state::onion_menu_struct::~onion_menu_struct() {
+onion_menu_struct::~onion_menu_struct() {
     gui.destroy();
 }
 
@@ -486,7 +497,7 @@ gameplay_state::onion_menu_struct::~onion_menu_struct() {
 /* ----------------------------------------------------------------------------
  * Adds one Pikmin of each type from Onion to the group, if possible.
  */
-void gameplay_state::onion_menu_struct::add_all_to_group() {
+void onion_menu_struct::add_all_to_group() {
     for(size_t t = 0; t < types.size(); ++t) {
         add_to_group(t);
     }
@@ -496,7 +507,7 @@ void gameplay_state::onion_menu_struct::add_all_to_group() {
 /* ----------------------------------------------------------------------------
  * Adds one Pikmin of each type from the group to the Onion, if possible.
  */
-void gameplay_state::onion_menu_struct::add_all_to_onion() {
+void onion_menu_struct::add_all_to_onion() {
     for(size_t t = 0; t < types.size(); ++t) {
         add_to_onion(t);
     }
@@ -508,7 +519,7 @@ void gameplay_state::onion_menu_struct::add_all_to_onion() {
  * type_idx:
  *   Index of the Onion's Pikmin type.
  */
-void gameplay_state::onion_menu_struct::add_to_group(const size_t type_idx) {
+void onion_menu_struct::add_to_group(const size_t type_idx) {
     size_t real_onion_amount =
         n_ptr->get_amount_by_type(n_ptr->nest_type->pik_types[type_idx]);
         
@@ -543,7 +554,7 @@ void gameplay_state::onion_menu_struct::add_to_group(const size_t type_idx) {
  * type_idx:
  *   Index of the Onion's Pikmin type.
  */
-void gameplay_state::onion_menu_struct::add_to_onion(const size_t type_idx) {
+void onion_menu_struct::add_to_onion(const size_t type_idx) {
     size_t real_group_amount =
         l_ptr->group->get_amount_by_type(n_ptr->nest_type->pik_types[type_idx]);
         
@@ -563,7 +574,7 @@ void gameplay_state::onion_menu_struct::add_to_onion(const size_t type_idx) {
  * Confirms the player's changes, and sets up the Pikmin to climb up the
  * Onion, if any, and sets up the Onion to spit out Pikmin, if any.
  */
-void gameplay_state::onion_menu_struct::confirm() {
+void onion_menu_struct::confirm() {
     for(size_t t = 0; t < types.size(); ++t) {
         if(types[t].delta > 0) {
             n_ptr->request_pikmin(t, types[t].delta, l_ptr);
@@ -577,11 +588,19 @@ void gameplay_state::onion_menu_struct::confirm() {
 
 
 /* ----------------------------------------------------------------------------
+ * Handles an Allegro event.
+ */
+void onion_menu_struct::handle_event(const ALLEGRO_EVENT &ev) {
+    if(!closing) gui.handle_event(ev);
+}
+
+
+/* ----------------------------------------------------------------------------
  * Flips to the specified page of Pikmin types.
  * page:
  *   Index of the new page.
  */
-void gameplay_state::onion_menu_struct::go_to_page(const size_t page) {
+void onion_menu_struct::go_to_page(const size_t page) {
     this->page = page;
     update();
 }
@@ -592,17 +611,31 @@ void gameplay_state::onion_menu_struct::go_to_page(const size_t page) {
  * item:
  *   The item.
  */
-void gameplay_state::onion_menu_struct::make_gui_item_red(gui_item* item) {
+void onion_menu_struct::make_gui_item_red(gui_item* item) {
     red_items[item] = RED_TEXT_DURATION;
 }
 
 
 /* ----------------------------------------------------------------------------
- * Ticks the Onion menu by one frame.
- * delta_t:
- *   How many seconds to tick by.
+ * Starts the closing process.
  */
-void gameplay_state::onion_menu_struct::tick(const float delta_t) {
+void onion_menu_struct::start_closing() {
+    closing = true;
+    closing_timer = gameplay_state::MENU_EXIT_HUD_MOVE_TIME;
+    gui.start_animation(GUI_MANAGER_ANIM_CENTER_TO_UP, gameplay_state::MENU_EXIT_HUD_MOVE_TIME);
+    game.states.gameplay->hud->gui.start_animation(
+        GUI_MANAGER_ANIM_OUT_TO_IN,
+        gameplay_state::MENU_EXIT_HUD_MOVE_TIME
+    );
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Ticks time by one frame of logic.
+ * delta_t:
+ *   How long the frame's tick is, in seconds.
+ */
+void onion_menu_struct::tick(const float delta_t) {
 
     //Correct the amount of wanted group members, if they are invalid.
     int total_delta = 0;
@@ -675,13 +708,26 @@ void gameplay_state::onion_menu_struct::tick(const float delta_t) {
     
     //Tick the GUI.
     gui.tick(delta_t);
+    
+    //Tick the background.
+    const float bg_alpha_mult_speed = 1.0f / gameplay_state::MENU_ENTRY_HUD_MOVE_TIME;
+    const float diff = closing ? -bg_alpha_mult_speed : bg_alpha_mult_speed;
+    bg_alpha_mult = clamp(bg_alpha_mult + diff * delta_t, 0.0f, 1.0f);
+    
+    //Tick the menu closing.
+    if(closing) {
+        closing_timer -= delta_t;
+        if(closing_timer <= 0.0f) {
+            to_delete = true;
+        }
+    }
 }
 
 
 /* ----------------------------------------------------------------------------
  * Toggles the "select all" mode.
  */
-void gameplay_state::onion_menu_struct::toggle_select_all() {
+void onion_menu_struct::toggle_select_all() {
     select_all = !select_all;
     
     update();
@@ -691,7 +737,7 @@ void gameplay_state::onion_menu_struct::toggle_select_all() {
 /* ----------------------------------------------------------------------------
  * Updates some things about the Onion's state, especially caches.
  */
-void gameplay_state::onion_menu_struct::update() {
+void onion_menu_struct::update() {
     //Reset the on-screen types.
     on_screen_types.clear();
     
@@ -797,7 +843,7 @@ void gameplay_state::onion_menu_struct::update() {
  * pik_type:
  *   The Pikmin type.
  */
-gameplay_state::onion_menu_type_struct::onion_menu_type_struct(
+onion_menu_type_struct::onion_menu_type_struct(
     const size_t idx, pikmin_type* pik_type
 ) :
     delta(0),

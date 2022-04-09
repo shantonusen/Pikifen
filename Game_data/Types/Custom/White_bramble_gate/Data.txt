@@ -1,4 +1,5 @@
 name = White bramble gate
+description = A simple gate made of bramble. It can be knocked down with any Pikmin.
 
 can_block_paths = true
 casts_shadow = false
@@ -8,6 +9,7 @@ pushable = false
 pushes = true
 radius = 32
 rectangular_dimensions = 40 192
+show_health = false
 target_type = strong_plain_obstacle
 team = obstacle
 

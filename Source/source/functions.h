@@ -25,13 +25,18 @@
 #include "utils/data_file.h"
 
 
+//Possible results for the player interacting with a file dialog.
 enum FILE_DIALOG_RESULTS {
+    //Successful operation.
     FILE_DIALOG_RES_SUCCESS,
+    //The option picked is not in the expected folder.
     FILE_DIALOG_RES_WRONG_FOLDER,
+    //The player cancelled the dialog.
     FILE_DIALOG_RES_CANCELED,
 };
 
 
+//Possible results for a folder wipe operation.
 enum WIPE_FOLDER_RESULTS {
     //Wipe successful.
     WIPE_FOLDER_RESULT_OK,
@@ -131,6 +136,7 @@ void get_edge_offset_intersection(
     float* final_angle, float* final_length
 );
 ALLEGRO_COLOR get_fog_color();
+string get_key_name(const int keycode, const bool condensed);
 ALLEGRO_COLOR get_ledge_smoothing_color(edge* e_ptr);
 ALLEGRO_COLOR get_liquid_limit_color(edge* e_ptr);
 float get_ledge_smoothing_length(edge* e_ptr);
@@ -163,8 +169,8 @@ ALLEGRO_COLOR get_wall_shadow_color(edge* e_ptr);
 float get_wall_shadow_length(edge* e_ptr);
 vector<std::pair<size_t, string> > get_weather_table(data_node* node);
 ALLEGRO_COLOR interpolate_color(
-    const float n, const float n1, const float n2,
-    const ALLEGRO_COLOR &c1, const ALLEGRO_COLOR &c2
+    const float input, const float input_start, const float input_end,
+    const ALLEGRO_COLOR &output_start, const ALLEGRO_COLOR &output_end
 );
 void log_error(string s, data_node* d = NULL);
 void print_info(

@@ -24,11 +24,11 @@ const float options_struct::DEF_AREA_EDITOR_GRID_INTERVAL = 32.0f;
 const bool options_struct::DEF_AREA_EDITOR_SEL_TRANS = false;
 const bool options_struct::DEF_AREA_EDITOR_SHOW_EDGE_LENGTH = true;
 const bool options_struct::DEF_AREA_EDITOR_SHOW_TERRITORY = false;
-const unsigned char options_struct::DEF_AREA_EDITOR_SNAP_MODE =
+const area_editor::SNAP_MODES options_struct::DEF_AREA_EDITOR_SNAP_MODE =
     area_editor::SNAP_GRID;
 const size_t options_struct::DEF_AREA_EDITOR_SNAP_THRESHOLD = 80;
 const size_t options_struct::DEF_AREA_EDITOR_UNDO_LIMIT = 20;
-const unsigned char options_struct::DEF_AREA_EDITOR_VIEW_MODE =
+const area_editor::VIEW_MODES options_struct::DEF_AREA_EDITOR_VIEW_MODE =
     area_editor::VIEW_MODE_TEXTURES;
 const AUTO_THROW_MODES options_struct::DEF_AUTO_THROW_MODE = AUTO_THROW_OFF;
 const float options_struct::DEF_CURSOR_SPEED = 500.0f;
@@ -48,8 +48,8 @@ const size_t options_struct::DEF_MAX_PARTICLES = 200;
 const bool options_struct::DEF_MIPMAPS_ENABLED = true;
 const bool options_struct::DEF_MOUSE_MOVES_CURSOR[MAX_PLAYERS] =
 {true, false, false, false};
-const bool options_struct::DEF_PRETTY_WHISTLE = true;
 const bool options_struct::DEF_SMOOTH_SCALING = true;
+const bool options_struct::DEF_SHOW_HUD_CONTROLS = true;
 const unsigned int options_struct::DEF_TARGET_FPS = 60;
 const bool options_struct::DEF_TRUE_FULLSCREEN = false;
 const bool options_struct::DEF_WIN_FULLSCREEN = false;
@@ -86,8 +86,8 @@ options_struct::options_struct() :
     joystick_min_deadzone(DEF_JOYSTICK_MIN_DEADZONE),
     max_particles(DEF_MAX_PARTICLES),
     mipmaps_enabled(DEF_MIPMAPS_ENABLED),
-    pretty_whistle(DEF_PRETTY_WHISTLE),
     smooth_scaling(DEF_SMOOTH_SCALING),
+    show_hud_controls(DEF_SHOW_HUD_CONTROLS),
     target_fps(DEF_TARGET_FPS),
     true_fullscreen(DEF_TRUE_FULLSCREEN),
     window_position_hack(DEF_WINDOW_POSITION_HACK),
@@ -139,9 +139,9 @@ void options_struct::load(data_node* file) {
     for(unsigned char p = 0; p < MAX_PLAYERS; ++p) {
         controls[p].clear();
         for(size_t b = 0; b < N_BUTTONS; ++b) {
-            string option_name = game.buttons.list[b].option_name;
-            if(option_name.empty()) continue;
-            load_control(game.buttons.list[b].id, p, option_name, file);
+            string internal_name = game.buttons.list[b].internal_name;
+            if(internal_name.empty()) continue;
+            load_control(game.buttons.list[b].id, p, internal_name, file);
         }
     }
     
@@ -175,6 +175,8 @@ void options_struct::load(data_node* file) {
     
     //Other options.
     string resolution_str;
+    unsigned char editor_snap_mode_c;
+    unsigned char editor_view_mode_c;
     unsigned char auto_throw_mode_c;
     
     rs.set("area_editor_backup_interval", area_editor_backup_interval);
@@ -182,10 +184,10 @@ void options_struct::load(data_node* file) {
     rs.set("area_editor_selection_transformation", area_editor_sel_trans);
     rs.set("area_editor_show_edge_length", area_editor_show_edge_length);
     rs.set("area_editor_show_territory", area_editor_show_territory);
-    rs.set("area_editor_snap_mode", area_editor_snap_mode);
+    rs.set("area_editor_snap_mode", editor_snap_mode_c);
     rs.set("area_editor_snap_threshold", area_editor_snap_threshold);
     rs.set("area_editor_undo_limit", area_editor_undo_limit);
-    rs.set("area_editor_view_mode", area_editor_view_mode);
+    rs.set("area_editor_view_mode", editor_view_mode_c);
     rs.set("auto_throw_mode", auto_throw_mode_c);
     rs.set("cursor_speed", cursor_speed);
     rs.set("draw_cursor_trail", draw_cursor_trail);
@@ -203,9 +205,9 @@ void options_struct::load(data_node* file) {
     rs.set("max_particles", max_particles);
     rs.set("middle_zoom_level", zoom_mid_level);
     rs.set("mipmaps", mipmaps_enabled);
-    rs.set("pretty_whistle", pretty_whistle);
     rs.set("resolution", resolution_str);
     rs.set("smooth_scaling", smooth_scaling);
+    rs.set("show_hud_controls", show_hud_controls);
     rs.set("true_fullscreen", true_fullscreen);
     rs.set("window_position_hack", window_position_hack);
     
@@ -214,6 +216,18 @@ void options_struct::load(data_node* file) {
         std::min(
             auto_throw_mode_c,
             (unsigned char) (N_AUTO_THROW_MODES - 1)
+        );
+    area_editor_snap_mode =
+        (area_editor::SNAP_MODES)
+        std::min(
+            editor_snap_mode_c,
+            (unsigned char) (area_editor::N_SNAP_MODES - 1)
+        );
+    area_editor_view_mode =
+        (area_editor::VIEW_MODES)
+        std::min(
+            editor_view_mode_c,
+            (unsigned char) (area_editor::N_VIEW_MODES - 1)
         );
     target_fps = std::max(1, target_fps);
     
@@ -232,7 +246,7 @@ void options_struct::load(data_node* file) {
         intended_win_w = std::max(1, s2i(resolution_parts[0]));
         intended_win_h = std::max(1, s2i(resolution_parts[1]));
     }
-
+    
     //Force the editor styles to be opaque, otherwise there can be problems.
     editor_primary_color.a = 1.0f;
     editor_secondary_color.a = 1.0f;
@@ -254,7 +268,7 @@ void options_struct::load(data_node* file) {
  *   Default value of this control. Only applicable for player 1.
  */
 void options_struct::load_control(
-    const unsigned char action, const unsigned char player,
+    const BUTTONS action, const unsigned char player,
     const string &name, data_node* file, const string &def
 ) {
     data_node* control_node =
@@ -282,9 +296,9 @@ void options_struct::save(data_node* file) const {
     for(unsigned char p = 0; p < MAX_PLAYERS; ++p) {
         string prefix = "p" + i2s((p + 1)) + "_";
         for(size_t b = 0; b < N_BUTTONS; ++b) {
-            string option_name = game.buttons.list[b].option_name;
-            if(option_name.empty()) continue;
-            grouped_controls[prefix + option_name].clear();
+            string internal_name = game.buttons.list[b].internal_name;
+            if(internal_name.empty()) continue;
+            grouped_controls[prefix + internal_name].clear();
         }
     }
     
@@ -294,9 +308,9 @@ void options_struct::save(data_node* file) const {
             string name = "p" + i2s(p + 1) + "_";
             
             for(size_t b = 0; b < N_BUTTONS; ++b) {
-                if(game.buttons.list[b].option_name.empty()) continue;
+                if(game.buttons.list[b].internal_name.empty()) continue;
                 if(controls[p][c].action == game.buttons.list[b].id) {
-                    name += game.buttons.list[b].option_name;
+                    name += game.buttons.list[b].internal_name;
                     break;
                 }
             }
@@ -496,12 +510,6 @@ void options_struct::save(data_node* file) const {
     );
     file->add(
         new data_node(
-            "pretty_whistle",
-            b2s(pretty_whistle)
-        )
-    );
-    file->add(
-        new data_node(
             "resolution",
             i2s(intended_win_w) + " " +
             i2s(intended_win_h)
@@ -511,6 +519,12 @@ void options_struct::save(data_node* file) const {
         new data_node(
             "smooth_scaling",
             b2s(smooth_scaling)
+        )
+    );
+    file->add(
+        new data_node(
+            "show_hud_controls",
+            b2s(show_hud_controls)
         )
     );
     file->add(

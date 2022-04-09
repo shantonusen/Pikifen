@@ -41,6 +41,10 @@ public:
     bool queued_pluck_cancel;
     //Is the leader currently in the walking animation?
     bool is_in_walking_anim;
+    //Time until the next arrow in the list of swarm arrows appears.
+    timer swarm_next_arrow_timer;
+    //List of swarm mode arrows.
+    vector<float> swarm_arrows;
     //Time left before the leader can throw again.
     float throw_cooldown;
     //Whether or not a throw has been queued to be pulled off.
@@ -63,6 +67,10 @@ public:
     float throwee_speed_z;
     //Provided there's a throw, this indicates whether it's low enough to reach.
     bool throwee_can_reach;
+    //How much the health wheel is filled. Gradually moves to the target amount.
+    float health_wheel_visible_ratio;
+    //Timer for the animation of the health wheel's caution ring.
+    float health_wheel_caution_timer;
     
     //Returns whether or not a leader can throw.
     bool check_throw_ok() const;
@@ -95,22 +103,25 @@ public:
     leader(const point &pos, leader_type* type, const float angle);
     
     //Can the mob currently receive the specified status effect?
-    virtual bool can_receive_status(status_type* s) const;
+    bool can_receive_status(status_type* s) const;
     //Return the coords and distance of its spot in the group.
-    virtual void get_group_spot_info(
+    void get_group_spot_info(
         point* final_spot, float* final_dist
     ) const;
     //Mob drawing routine.
-    virtual void draw_mob();
+    void draw_mob();
     
     static const float AUTO_THROW_COOLDOWN_MAX_DURATION;
     static const float AUTO_THROW_COOLDOWN_MIN_DURATION;
     static const float AUTO_THROW_COOLDOWN_SPEED;
+    static const float HEALTH_CAUTION_RATIO;
+    static const float HEALTH_CAUTION_RING_DURATION;
+    static const float SWARM_ARROWS_INTERVAL;
     static const float THROW_COOLDOWN_DURATION;
     
 protected:
     //Tick class-specific logic.
-    virtual void tick_class_specifics(const float delta_t);
+    void tick_class_specifics(const float delta_t);
     
 private:
     //Returns how many rows are needed for all members' dismissal.
@@ -120,8 +131,10 @@ private:
 };
 
 
-void change_to_next_leader(const bool forward, const bool force_success);
+void change_to_next_leader(
+    const bool forward, const bool force_success, const bool keep_idx
+);
 bool grab_closest_group_member();
-void update_closest_group_member();
+bool process_total_leader_ko();
 
 #endif //ifndef LEADER_INCLUDED

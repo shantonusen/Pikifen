@@ -15,6 +15,7 @@
 #include <map>
 #include <vector>
 
+#include "game_states/area_editor/editor.h"
 #include "const.h"
 #include "controls.h"
 #include "utils/data_file.h"
@@ -25,14 +26,23 @@ using std::size_t;
 using std::vector;
 
 
+//Modes for the auto-throw feature.
 enum AUTO_THROW_MODES {
+    //Off.
     AUTO_THROW_OFF,
+    //Hold button to auto-throw.
     AUTO_THROW_HOLD,
+    //Press button to toggle auto-throw.
     AUTO_THROW_TOGGLE,
+    
+    //Total amount of auto-throw modes.
     N_AUTO_THROW_MODES,
 };
 
 
+/* ----------------------------------------------------------------------------
+ * Game options.
+ */
 struct options_struct {
 
     static const float DEF_AREA_EDITOR_BACKUP_INTERVAL;
@@ -40,10 +50,10 @@ struct options_struct {
     static const bool DEF_AREA_EDITOR_SEL_TRANS;
     static const bool DEF_AREA_EDITOR_SHOW_EDGE_LENGTH;
     static const bool DEF_AREA_EDITOR_SHOW_TERRITORY;
-    static const unsigned char DEF_AREA_EDITOR_SNAP_MODE;
+    static const area_editor::SNAP_MODES DEF_AREA_EDITOR_SNAP_MODE;
     static const size_t DEF_AREA_EDITOR_SNAP_THRESHOLD;
     static const size_t DEF_AREA_EDITOR_UNDO_LIMIT;
-    static const unsigned char DEF_AREA_EDITOR_VIEW_MODE;
+    static const area_editor::VIEW_MODES DEF_AREA_EDITOR_VIEW_MODE;
     static const AUTO_THROW_MODES DEF_AUTO_THROW_MODE;
     static const float DEF_CURSOR_SPEED;
     static const bool DEF_DRAW_CURSOR_TRAIL;
@@ -58,8 +68,8 @@ struct options_struct {
     static const size_t DEF_MAX_PARTICLES;
     static const bool DEF_MIPMAPS_ENABLED;
     static const bool DEF_MOUSE_MOVES_CURSOR[MAX_PLAYERS];
-    static const bool DEF_PRETTY_WHISTLE;
     static const bool DEF_SMOOTH_SCALING;
+    static const bool DEF_SHOW_HUD_CONTROLS;
     static const unsigned int DEF_TARGET_FPS;
     static const bool DEF_TRUE_FULLSCREEN;
     static const bool DEF_WIN_FULLSCREEN;
@@ -79,13 +89,13 @@ struct options_struct {
     //Show the selected mob(s)'s territory?
     bool area_editor_show_territory;
     //Snap mode to use.
-    unsigned char area_editor_snap_mode;
+    area_editor::SNAP_MODES area_editor_snap_mode;
     //Snap when the cursor is this close to a vertex/edge.
     size_t area_editor_snap_threshold;
     //Maximum number of undo operations.
     size_t area_editor_undo_limit;
     //View mode to use.
-    unsigned char area_editor_view_mode;
+    area_editor::VIEW_MODES area_editor_view_mode;
     //Auto-throw mode.
     AUTO_THROW_MODES auto_throw_mode;
     //List of controls for each player.
@@ -126,10 +136,10 @@ struct options_struct {
     bool mipmaps_enabled;
     //For each player, does the mouse move their leader's cursor?
     bool mouse_moves_cursor[MAX_PLAYERS];
-    //False for a more basic whistle, to save on resources.
-    bool pretty_whistle;
     //True to use interpolation when graphics are scaled up/down.
     bool smooth_scaling;
+    //Show control icons on top of HUD elements?
+    bool show_hud_controls;
     //Target framerate.
     int target_fps;
     //When using fullscreen, is this true fullscreen, or borderless window?
@@ -148,7 +158,7 @@ struct options_struct {
 private:
 
     void load_control(
-        const unsigned char action, const unsigned char player,
+        const BUTTONS action, const unsigned char player,
         const string &name, data_node* file, const string &def = ""
     );
     

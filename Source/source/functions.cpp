@@ -364,7 +364,7 @@ bool does_edge_have_wall_shadow(
         return true;
     } else {
         //Auto shadow length.
-        return (*unaffected_sector)->z > (*affected_sector)->z + SECTOR_STEP;
+        return (*unaffected_sector)->z > (*affected_sector)->z + STEP_HEIGHT;
     }
 }
 
@@ -587,6 +587,142 @@ ALLEGRO_COLOR get_fog_color() {
     
     //If anything goes wrong, return a failsafe.
     return al_map_rgba(255, 255, 255, 0);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Returns a name for the specified Allegro keyboard keycode.
+ * This basically makes use of al_keycode_to_name, but with some special cases
+ * and with some nice capitalization.
+ * Returns an empty string on error.
+ * keycode:
+ *   Keycode to check.
+ * condensed:
+ *   If true, only the key name is returned. If false, some extra disambiguation
+ *   is returned too, e.g. whether this is the left or right Ctrl.
+ */
+string get_key_name(const int keycode, const bool condensed) {
+    switch(keycode) {
+    case ALLEGRO_KEY_ESCAPE: {
+        return "Esc";
+    }
+    case ALLEGRO_KEY_INSERT: {
+        return "Ins";
+    }
+    case ALLEGRO_KEY_DELETE: {
+        return "Del";
+    }
+    case ALLEGRO_KEY_PGUP: {
+        return "PgUp";
+    }
+    case ALLEGRO_KEY_PGDN: {
+        return "PgDn";
+    }
+    case ALLEGRO_KEY_PAD_0: {
+        return "0 KP";
+    }
+    case ALLEGRO_KEY_PAD_1: {
+        return "1 KP";
+    }
+    case ALLEGRO_KEY_PAD_2: {
+        return "2 KP";
+    }
+    case ALLEGRO_KEY_PAD_3: {
+        return "3 KP";
+    }
+    case ALLEGRO_KEY_PAD_4: {
+        return "4 KP";
+    }
+    case ALLEGRO_KEY_PAD_5: {
+        return "5 KP";
+    }
+    case ALLEGRO_KEY_PAD_6: {
+        return "6 KP";
+    }
+    case ALLEGRO_KEY_PAD_7: {
+        return "7 KP";
+    }
+    case ALLEGRO_KEY_PAD_8: {
+        return "8 KP";
+    }
+    case ALLEGRO_KEY_PAD_9: {
+        return "9 KP";
+    }
+    case ALLEGRO_KEY_PAD_ASTERISK: {
+        return "* KP";
+    }
+    case ALLEGRO_KEY_PAD_DELETE: {
+        return "Del KP";
+    }
+    case ALLEGRO_KEY_PAD_ENTER: {
+        return "Enter KP";
+    }
+    case ALLEGRO_KEY_PAD_EQUALS: {
+        return "= KP";
+    }
+    case ALLEGRO_KEY_PAD_MINUS: {
+        return "- KP";
+    }
+    case ALLEGRO_KEY_PAD_PLUS: {
+        return "+ KP";
+    }
+    case ALLEGRO_KEY_PAD_SLASH: {
+        return "/ KP";
+    }
+    case ALLEGRO_KEY_LSHIFT: {
+        if(!condensed) {
+            return "Shift (left)";
+        } else {
+            return "Shift";
+        }
+    }
+    case ALLEGRO_KEY_RSHIFT: {
+        if(!condensed) {
+            return "Shift (right)";
+        } else {
+            return "Shift";
+        }
+    }
+    case ALLEGRO_KEY_ALT: {
+        return "Alt";
+    }
+    case ALLEGRO_KEY_ALTGR: {
+        return "AltGr";
+    }
+    case ALLEGRO_KEY_LCTRL: {
+        if(!condensed) {
+            return "Ctrl (left)";
+        } else {
+            return "Ctrl";
+        }
+    }
+    case ALLEGRO_KEY_RCTRL: {
+        if(!condensed) {
+            return "Ctrl (right)";
+        } else {
+            return "Ctrl";
+        }
+    }
+    case ALLEGRO_KEY_BACKSLASH:
+    case ALLEGRO_KEY_BACKSLASH2: {
+        return "\\";
+    }
+    case ALLEGRO_KEY_BACKSPACE: {
+        if(!condensed) {
+            return "Backspace";
+        } else {
+            return "BkSpc";
+        }
+    }
+    case ALLEGRO_KEY_ENTER: {
+        return "Enter";
+    }
+    }
+    string name = str_to_title(al_keycode_to_name(keycode));
+    for(size_t c = 0; c < name.size(); ++c) {
+        if(name[c] == '_') name[c] = ' ';
+    }
+    return name;
 }
 
 
@@ -949,29 +1085,30 @@ vector<std::pair<size_t, string> > get_weather_table(data_node* node) {
 
 /* ----------------------------------------------------------------------------
  * Returns the interpolation between two colors, given a number in an interval.
- * n:
- *   The number.
- * n1:
- *   Start of the interval the number falls on, inclusive.
- *   The closer to n1, the closer the final color is to c1.
- * n2:
+ * input:
+ *   The input number.
+ * input_start:
+ *   Start of the interval the input number falls on, inclusive.
+ *   The closer to input_start, the closer the output is to output_start.
+ * input_end:
  *   End of the interval the number falls on, inclusive.
- * c1:
- *   Color on the first end of the interpolation.
- * c2:
- *   Color on the second end of the interpolation.
+ * output_start:
+ *   Color on the starting tip of the interpolation.
+ * output_end:
+ *   Color on the ending tip of the interpolation.
  */
 ALLEGRO_COLOR interpolate_color(
-    const float n, const float n1, const float n2,
-    const ALLEGRO_COLOR &c1, const ALLEGRO_COLOR &c2
+    const float input, const float input_start, const float input_end,
+    const ALLEGRO_COLOR &output_start, const ALLEGRO_COLOR &output_end
 ) {
-    float progress = (float) (n - n1) / (float) (n2 - n1);
+    float progress =
+        (float) (input - input_start) / (float) (input_end - input_start);
     return
         al_map_rgba_f(
-            c1.r + progress * (c2.r - c1.r),
-            c1.g + progress * (c2.g - c1.g),
-            c1.b + progress * (c2.b - c1.b),
-            c1.a + progress * (c2.a - c1.a)
+            output_start.r + progress * (output_end.r - output_start.r),
+            output_start.g + progress * (output_end.g - output_start.g),
+            output_start.b + progress * (output_end.b - output_start.b),
+            output_start.a + progress * (output_end.a - output_start.a)
         );
 }
 
@@ -1000,8 +1137,12 @@ void log_error(string s, data_node* d) {
             get_current_time(false) +
             "; Pikifen version " +
             i2s(VERSION_MAJOR) + "." + i2s(VERSION_MINOR) +
-            "." + i2s(VERSION_REV) + ", game version " +
-            game.config.version + "\n" + s;
+            "." + i2s(VERSION_REV);
+        if(!game.config.version.empty()) {
+            s +=
+                ", game version " +
+                game.config.version + "\n" + s;
+        }
     }
     
     string prev_error_log;
@@ -1664,9 +1805,17 @@ void start_message(string text, ALLEGRO_BITMAP* speaker_bmp) {
         string final_text = unescape_string(text);
         game.states.gameplay->msg_box =
             new msg_box_info(final_text, speaker_bmp);
+        game.states.gameplay->hud->gui.start_animation(
+            GUI_MANAGER_ANIM_IN_TO_OUT,
+            gameplay_state::MENU_ENTRY_HUD_MOVE_TIME
+        );
     } else {
         delete game.states.gameplay->msg_box;
         game.states.gameplay->msg_box = NULL;
+        game.states.gameplay->hud->gui.start_animation(
+            GUI_MANAGER_ANIM_OUT_TO_IN,
+            gameplay_state::MENU_EXIT_HUD_MOVE_TIME
+        );
     }
 }
 

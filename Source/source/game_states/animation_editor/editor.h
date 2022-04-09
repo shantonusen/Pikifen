@@ -17,6 +17,9 @@
 #include "../../imgui/imgui_impl_allegro5.h"
 
 
+/* ----------------------------------------------------------------------------
+ * Information about the animation editor.
+ */
 class animation_editor : public editor {
 public:
 
@@ -34,23 +37,31 @@ public:
     void draw_canvas();
     void load();
     void unload();
-    virtual string get_name() const;
+    string get_name() const;
     
     animation_editor();
     
 private:
 
-private:
-
+    //Editor states.
     enum EDITOR_STATES {
+        //Main menu.
         EDITOR_STATE_MAIN,
+        //Animation editing.
         EDITOR_STATE_ANIMATION,
+        //Sprite editing.
         EDITOR_STATE_SPRITE,
+        //Body part editing.
         EDITOR_STATE_BODY_PART,
+        //Hitbox editing.
         EDITOR_STATE_HITBOXES,
+        //Sprite bitmap editing.
         EDITOR_STATE_SPRITE_BITMAP,
+        //Sprite transformations editing.
         EDITOR_STATE_SPRITE_TRANSFORM,
+        //Top editing.
         EDITOR_STATE_TOP,
+        //Tools.
         EDITOR_STATE_TOOLS,
     };
     
@@ -137,9 +148,11 @@ private:
     //Keep the aspect ratio when resizing the Pikmin top?
     bool top_keep_aspect_ratio;
     
-    //Position of some important widgets.
+    //Position of the load widget.
     point load_widget_pos;
+    //Position of the reload widget.
     point reload_widget_pos;
+    //Position of the quit widget.
     point quit_widget_pos;
     
     

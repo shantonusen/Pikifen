@@ -473,7 +473,7 @@ void area_editor::process_gui_mob_script_vars(mob_gen* m_ptr) {
             int value_i = s2i(value);
             if(
                 ImGui::DragInt(
-                    p_ptr->name.c_str(), &value_i, 0.1f,
+                    p_ptr->name.c_str(), &value_i, 0.02f,
                     p_ptr->min_value, p_ptr->max_value
                 )
             ) {
@@ -641,10 +641,12 @@ void area_editor::process_gui_options_dialog() {
         
         //Show territory checkbox.
         ImGui::Checkbox(
-            "Show territory", &game.options.area_editor_show_territory
+            "Show territory/terrain radius",
+            &game.options.area_editor_show_territory
         );
         set_tooltip(
-            "Show the territory of selected objects, when applicable."
+            "Show the territory radius and terrain radius\n"
+            "of the selected objects, when applicable."
         );
         
         //View mode text.
@@ -677,7 +679,7 @@ void area_editor::process_gui_options_dialog() {
         set_tooltip(
             "Draw sectors as solid grays based on their brightness."
         );
-        game.options.area_editor_view_mode = view_mode;
+        game.options.area_editor_view_mode = (VIEW_MODES) view_mode;
         
         ImGui::Unindent();
         
@@ -1478,6 +1480,8 @@ void area_editor::process_gui_panel_layout() {
             sel_filter_bmp = editor_icons[ICON_SECTORS];
             sel_filter_description = "sectors + edges + vertexes";
             break;
+        } case N_SELECTION_FILTERS: {
+            break;
         }
         }
         
@@ -1789,10 +1793,14 @@ void area_editor::process_gui_panel_mob() {
         last_mob_type = m_ptr->type;
     }
     
-    if(m_ptr->type && !m_ptr->type->area_editor_tips.empty()) {
+    if(m_ptr->type) {
         //Tips text.
-        ImGui::TextDisabled("(%s tips)", m_ptr->type->name.c_str());
-        set_tooltip(m_ptr->type->area_editor_tips);
+        ImGui::TextDisabled("(%s info & tips)", m_ptr->type->name.c_str());
+        string full_str = m_ptr->type->description;
+        if(!m_ptr->type->area_editor_tips.empty()) {
+            full_str += "\n\n" + m_ptr->type->area_editor_tips;
+        }
+        set_tooltip(full_str);
     }
     
     //Spacer dummy widget.
@@ -2634,36 +2642,20 @@ void area_editor::process_gui_panel_sector() {
             for(
                 size_t t = 0; t < game.sector_types.get_nr_of_types(); ++t
             ) {
-                types_list.push_back(game.sector_types.get_name(t));
+                types_list.push_back(
+                    game.sector_types.get_name(
+                        (SECTOR_TYPES) t
+                    )
+                );
             }
             int sector_type = s_ptr->type;
             if(ImGui::Combo("Type", &sector_type, types_list)) {
                 register_change("sector type change");
-                s_ptr->type = sector_type;
+                s_ptr->type = (SECTOR_TYPES) sector_type;
             }
             set_tooltip(
                 "What type of sector this is."
             );
-            
-            //Sector bridge height value.
-            if(
-                s_ptr->type == SECTOR_TYPE_BRIDGE ||
-                s_ptr->type == SECTOR_TYPE_BRIDGE_RAIL
-            ) {
-            
-                float bridge_height = s2f(s_ptr->tag);
-                ImGui::SetNextItemWidth(96.0f);
-                if(ImGui::DragFloat("Bridge height", &bridge_height)) {
-                    register_change("sector bridge height change");
-                    s_ptr->tag = f2s(bridge_height);
-                }
-                set_tooltip(
-                    "When the bridge opens, "
-                    "set the sector's height to this.",
-                    "", WIDGET_EXPLANATION_DRAG
-                );
-                
-            }
             
             //Sector bottomless pit checkbox.
             bool sector_bottomless_pit = s_ptr->is_bottomless_pit;
@@ -3251,6 +3243,8 @@ void area_editor::process_gui_toolbar() {
     } case SNAP_NOTHING: {
         snap_mode_bmp = editor_icons[ICON_SNAP_NOTHING];
         snap_mode_description = "off. Shift snaps to grid.";
+        break;
+    } case N_SNAP_MODES: {
         break;
     }
     }

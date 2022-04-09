@@ -110,22 +110,34 @@ void results_state::do_logic() {
     if(old_time_cp < new_time_cp) {
         switch(old_time_cp) {
         case 0: {
-            area_name_text->start_juicy_grow();
+            area_name_text->start_juice_animation(
+                gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH
+            );
             break;
         } case 2: {
-            time_text->start_juicy_grow();
+            time_text->start_juice_animation(
+                gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH
+            );
             break;
         } case 4: {
-            points_text->start_juicy_grow();
+            points_text->start_juice_animation(
+                gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH
+            );
             break;
         } case 6: {
-            enemies_text->start_juicy_grow();
+            enemies_text->start_juice_animation(
+                gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH
+            );
             break;
         } case 8: {
-            pikmin_born_text->start_juicy_grow();
+            pikmin_born_text->start_juice_animation(
+                gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH
+            );
             break;
         } case 10: {
-            pikmin_deaths_text->start_juicy_grow();
+            pikmin_deaths_text->start_juice_animation(
+                gui_item::JUICE_TYPE_GROW_TEXT_ELASTIC_HIGH
+            );
             break;
         }
         }
@@ -359,8 +371,9 @@ void results_state::load() {
         [this]
     (const point & center, const point & size) {
         draw_compressed_scaled_text(
-            game.fonts.standard, al_map_rgb(255, 255, 255),
-            center, point(0.7f, 0.7f), ALLEGRO_ALIGN_CENTER, 1, size,
+            game.fonts.standard, COLOR_WHITE,
+            center, point(0.7f, 0.7f),
+            ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER, size, false,
             gui.get_current_tooltip()
         );
     };

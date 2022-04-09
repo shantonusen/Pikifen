@@ -46,9 +46,9 @@ carrier_spot_struct::carrier_spot_struct(const point &pos) :
  * m:
  *   The mob this info belongs to.
  * destination:
- *   Where to deliver the mob. Use CARRY_DESTINATION_*.
+ *   Where to deliver the mob.
  */
-carry_info_struct::carry_info_struct(mob* m, const size_t destination) :
+carry_info_struct::carry_info_struct(mob* m, const CARRY_DESTINATIONS destination) :
     m(m),
     destination(destination),
     cur_carrying_strength(0),
@@ -242,6 +242,8 @@ circling_info_struct::circling_info_struct(mob* m) :
  * Creates a new delivery information struct.
  */
 delivery_info_struct::delivery_info_struct() :
+    anim_type(DELIVERY_ANIM_SUCK),
+    anim_time_ratio_left(1.0f),
     intended_pik_type(nullptr) {
     
     color = game.config.carrying_color_move;
@@ -345,7 +347,9 @@ void group_info_struct::init_spots(mob* affected_mob_ptr) {
     
     //Now, rebuild the spots. Let's draw wheels from the center, for now.
     struct alpha_spot {
+        //Position of the spot.
         point pos;
+        //How far away it is from the rightmost spot.
         dist distance_to_rightmost;
         alpha_spot(const point &p) :
             pos(p) { }
@@ -725,34 +729,22 @@ parent_info_struct::parent_info_struct(mob* m) :
  * Creates an instance of a structure with info about the mob's path-following.
  * m:
  *   Mob this path info struct belongs to.
- * target:
- *   Its target destination.
- * invulnerabilities:
- *   List of hazards that whoever wants to traverse is invulnerable to.
- * taker_flags:
- *   Flags for the path-taker. Use PATH_TAKER_FLAG_*.
- * label:
- *   If not empty, only follow path links with this label.
+ * settings:
+ *   Settings about how the path should be followed.
  */
 path_info_struct::path_info_struct(
     mob* m,
-    const point &target,
-    const vector<hazard*> invulnerabilities,
-    const unsigned char taker_flags,
-    const string &label
+    const path_follow_settings &settings
 ) :
     m(m),
-    target_point(target),
     cur_path_stop_nr(0),
     go_straight(false),
     is_blocked(false),
-    invulnerabilities(invulnerabilities),
-    taker_flags(taker_flags) {
+    settings(settings) {
     
     path =
         get_path(
-            m->pos, target,
-            invulnerabilities, taker_flags, label,
+            m->pos, settings.target_point, settings,
             &go_straight, NULL, NULL, NULL
         );
 }
@@ -772,8 +764,8 @@ bool path_info_struct::check_blockage() {
         
         return
             !can_traverse_path_link(
-                cur_stop->get_link(next_stop), false,
-                invulnerabilities, taker_flags, label
+                cur_stop->get_link(next_stop),
+                settings
             );
     }
     return false;
@@ -959,9 +951,9 @@ void pikmin_nest_struct::store_pikmin(pikmin* p_ptr) {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks one frame of logic.
+ * Ticks time by one frame of logic.
  * delta_t:
- *   Time to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void pikmin_nest_struct::tick(const float delta_t) {
     if(calling_leader && calling_leader->to_delete) {
@@ -1335,7 +1327,7 @@ string get_error_message_mob_info(mob* m) {
  * type_str:
  *   Text representation of the target type.
  */
-size_t string_to_mob_target_type(const string &type_str) {
+MOB_TARGET_TYPES string_to_mob_target_type(const string &type_str) {
     if(type_str == "none") {
         return MOB_TARGET_TYPE_NONE;
     } else if(type_str == "player") {
@@ -1355,7 +1347,7 @@ size_t string_to_mob_target_type(const string &type_str) {
     } else if(type_str == "fragile") {
         return MOB_TARGET_TYPE_FRAGILE;
     }
-    return INVALID;
+    return (MOB_TARGET_TYPES) INVALID;
 }
 
 
@@ -1365,11 +1357,11 @@ size_t string_to_mob_target_type(const string &type_str) {
  * team_str:
  *   Text representation of the team.
  */
-size_t string_to_team_nr(const string &team_str) {
+MOB_TEAMS string_to_team_nr(const string &team_str) {
     for(size_t t = 0; t < N_MOB_TEAMS; ++t) {
         if(team_str == game.team_internal_names[t]) {
-            return t;
+            return (MOB_TEAMS) t;
         }
     }
-    return INVALID;
+    return (MOB_TEAMS) INVALID;
 }

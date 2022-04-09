@@ -24,6 +24,10 @@
 #include "tool.h"
 #include "track.h"
 
+//Duration of the damage squash-and-stretch animation.
+const float mob::DAMAGE_SQUASH_DURATION = 0.25f;
+//How much to change the scale by during a damage squash-and-stretch animation.
+const float mob::DAMAGE_SQUASH_AMOUNT = 0.04f;
 
 size_t next_mob_id = 0;
 
@@ -79,8 +83,6 @@ mob::mob(const point &pos, mob_type* type, const float angle) :
     delivery_info(nullptr),
     track_info(nullptr),
     stored_inside_another(nullptr),
-    health_wheel_smoothed_ratio(1.0f),
-    health_wheel_alpha(1.0f),
     id(next_mob_id),
     health(type->max_health),
     invuln_period(0),
@@ -96,6 +98,9 @@ mob::mob(const point &pos, mob_type* type, const float angle) :
     chomp_max(0),
     parent(nullptr),
     time_alive(0.0f),
+    damage_squash_time(0.0f),
+    health_wheel(nullptr),
+    fraction(nullptr),
     angle_cos(0.0f),
     angle_sin(0.0f),
     max_span(type->max_span),
@@ -128,7 +133,13 @@ mob::mob(const point &pos, mob_type* type, const float angle) :
  * Destroys an instance of a mob.
  */
 mob::~mob() {
+    if(path_info) delete path_info;
+    if(circling_info) delete circling_info;
     if(carry_info) delete carry_info;
+    if(delivery_info) delete delivery_info;
+    if(track_info) delete track_info;
+    if(health_wheel) delete health_wheel;
+    if(fraction) delete fraction;
     if(group) delete group;
     if(parent) delete parent;
 }
@@ -254,6 +265,18 @@ void mob::apply_status_effect(
         mob* m2_ptr = game.states.gameplay->mobs.all[m];
         if(m2_ptr->parent && m2_ptr->parent->m == this) {
             m2_ptr->apply_status_effect(s, true);
+        }
+    }
+    
+    //Get the vulnerabilities to this status.
+    auto vuln_it = type->status_vulnerabilities.find(s);
+    if(vuln_it != type->status_vulnerabilities.end()) {
+        if(vuln_it->second.status_to_apply) {
+            //It must instead receive this status.
+            apply_status_effect(
+                vuln_it->second.status_to_apply, given_by_parent
+            );
+            return;
         }
     }
     
@@ -394,9 +417,9 @@ void mob::arachnorb_head_turn_logic() {
  * Does the logic that arachnorb heads need to plan out how to move their feet
  * for the next set of steps.
  * goal:
- *   Use MOB_ACTION_ARACHNORB_PLAN_LOGIC_*.
+ *   What its goal is.
  */
-void mob::arachnorb_plan_logic(const unsigned char goal) {
+void mob::arachnorb_plan_logic(const MOB_ACTION_ARACHNORB_PLAN_LOGIC_TYPES goal) {
     float max_step_distance = s2f(vars["max_step_distance"]);
     float max_turn_angle = deg_to_rad(s2f(vars["max_turn_angle"]));
     float min_turn_angle = deg_to_rad(s2f(vars["min_turn_angle"]));
@@ -459,9 +482,9 @@ void mob::arachnorb_plan_logic(const unsigned char goal) {
 /* ----------------------------------------------------------------------------
  * Sets up data for a mob to become carriable.
  * destination:
- *   Where to carry it. Use CARRY_DESTINATION_*.
+ *   Where to carry it.
  */
-void mob::become_carriable(const size_t destination) {
+void mob::become_carriable(const CARRY_DESTINATIONS destination) {
     carry_info = new carry_info_struct(this, destination);
 }
 
@@ -519,7 +542,7 @@ bool mob::calculate_carrying_destination(
         
         for(size_t s = 0; s < game.states.gameplay->mobs.ships.size(); ++s) {
             ship* s_ptr = game.states.gameplay->mobs.ships[s];
-            dist d(pos, s_ptr->beam_final_pos);
+            dist d(pos, s_ptr->control_point_final_pos);
             
             if(!closest_ship || d < closest_ship_dist) {
                 closest_ship = s_ptr;
@@ -529,7 +552,7 @@ bool mob::calculate_carrying_destination(
         
         if(closest_ship) {
             *target_mob = closest_ship;
-            *target_point = closest_ship->beam_final_pos;
+            *target_point = closest_ship->control_point_final_pos;
             return true;
             
         } else {
@@ -916,6 +939,10 @@ void mob::cause_spike_damage(mob* victim, const bool is_ingestion) {
         damage *= v->second.damage_mult;
     }
     
+    if(type->spike_damage->status_to_apply) {
+        victim->apply_status_effect(type->spike_damage->status_to_apply, false);
+    }
+    
     victim->set_health(true, false, -damage);
     
     if(type->spike_damage->particle_gen) {
@@ -1024,7 +1051,7 @@ void mob::chomp(mob* m, hitbox* hitbox_info) {
     );
     hold(
         m, hitbox_info->body_part_index, h_offset_dist, h_offset_angle,
-        true, false
+        true, HOLD_ROTATION_METHOD_NEVER
     );
     
     m->focus_on_mob(this);
@@ -1199,6 +1226,13 @@ void mob::do_attack_effects(
     if(!useless) {
         game.sys_assets.sfx_attack.play(0.06, false, 0.6f);
     }
+    
+    //Damage squash-and-stretch animation.
+    if(!useless) {
+        if(damage_squash_time == 0.0f) {
+            damage_squash_time = DAMAGE_SQUASH_DURATION;
+        }
+    }
 }
 
 
@@ -1212,7 +1246,7 @@ void mob::draw_limb() {
     if(!sprite_to_use) return;
     
     bitmap_effect_info eff;
-    get_sprite_bitmap_effects(sprite_to_use, &eff, true, true);
+    get_sprite_bitmap_effects(sprite_to_use, &eff, true, true, true, false, false);
     
     point parent_end;
     if(parent->limb_parent_body_part == INVALID) {
@@ -1274,7 +1308,7 @@ void mob::draw_mob() {
     if(!s_ptr) return;
     
     bitmap_effect_info eff;
-    get_sprite_bitmap_effects(s_ptr, &eff, true, true);
+    get_sprite_bitmap_effects(s_ptr, &eff, true, true, true, false, true);
     
     draw_bitmap_with_effects(s_ptr->bitmap, eff);
 }
@@ -1335,30 +1369,19 @@ void mob::focus_on_mob(mob* m2) {
  * Makes the mob start following a path. This populates the path_info
  * class member, and calculates a path to take.
  * Returns whether or not there is a path available.
- * target:
- *   Target point to reach.
- * can_continue:
- *   If true, it is possible for the new path to continue
- *   from where the old one left off, if there was an old one.
+ * settings:
+ *   Settings about how the path should be followed.
  * speed:
  *   Speed at which to travel.
- * final_target_distance:
- *   For the final chase, from the last path stop to
- *   the destination, use this for the target distance parameter.
- * is_script_action:
- *   If true, this path following order was given by a mob script action.
- * label:
- *   If not empty, only follow path links with this label.
  */
 bool mob::follow_path(
-    const point &target, const bool can_continue,
-    const float speed, const float final_target_distance,
-    const bool is_script_action, const string &label
+    const path_follow_settings &settings, const float speed
 ) {
     bool was_blocked = false;
     path_stop* old_next_stop = NULL;
     
-    if(can_continue && path_info) {
+    //Some setup before we begin.
+    if((settings.flags & PATH_FOLLOW_FLAG_CAN_CONTINUE) && path_info) {
         was_blocked = path_info->is_blocked;
         if(path_info->cur_path_stop_nr < path_info->path.size()) {
             old_next_stop = path_info->path[path_info->cur_path_stop_nr];
@@ -1382,35 +1405,35 @@ bool mob::follow_path(
         }
     }
     
-    unsigned char taker_flags = 0;
+    //Establish the mob's path-following information.
+    //This also generates the path to take.
+    path_info = new path_info_struct(this, settings);
+    
     if(carry_info) {
         //Check if this carriable is considered light load.
-        if(type->weight == 1) taker_flags |= PATH_TAKER_FLAG_LIGHT_LOAD;
+        if(type->weight == 1) {
+            path_info->settings.flags |= PATH_FOLLOW_FLAG_LIGHT_LOAD;
+        }
         //The object will only be airborne if all its carriers can fly.
-        if(carry_info->can_fly()) taker_flags |= PATH_TAKER_FLAG_AIRBORNE;
+        if(carry_info->can_fly()) {
+            path_info->settings.flags |= PATH_FOLLOW_FLAG_AIRBORNE;
+        }
     } else {
         if(
             type->category->id == MOB_CATEGORY_PIKMIN ||
             type->category->id == MOB_CATEGORY_LEADERS
         ) {
             //Simple mobs are empty-handed, so that's considered light load.
-            taker_flags |= PATH_TAKER_FLAG_LIGHT_LOAD;
+            path_info->settings.flags |= PATH_FOLLOW_FLAG_LIGHT_LOAD;
         }
         //Check if the object can fly directly.
-        if(can_move_in_midair) taker_flags |= PATH_TAKER_FLAG_AIRBORNE;
+        if(can_move_in_midair) {
+            path_info->settings.flags |= PATH_FOLLOW_FLAG_AIRBORNE;
+        }
     }
     
-    if(is_script_action) taker_flags |= PATH_TAKER_FLAG_SCRIPT_USE;
-    
-    path_info =
-        new path_info_struct(
-        this, target, invulnerabilities, taker_flags, label
-    );
-    path_info->final_target_distance = final_target_distance;
-    path_info->label = label;
-    
     if(
-        can_continue &&
+        (path_info->settings.flags & PATH_FOLLOW_FLAG_CAN_CONTINUE) &&
         old_next_stop &&
         !was_blocked &&
         path_info->path.size() >= 2
@@ -1432,13 +1455,10 @@ bool mob::follow_path(
         }
     }
     
+    //Now, let's figure out how the mob should start its journey.
     if(path_info->go_straight) {
         //The path info is telling us to just go to the destination directly.
-        chase(
-            target, z,
-            CHASE_FLAG_ANY_ANGLE,
-            path_info->final_target_distance, speed
-        );
+        move_to_path_end(speed);
         
     } else if(!path_info->path.empty()) {
         //Head to the first stop.
@@ -1446,7 +1466,7 @@ bool mob::follow_path(
             path_info->path[path_info->cur_path_stop_nr];
         float next_stop_z = z;
         if(
-            (path_info->taker_flags & PATH_TAKER_FLAG_AIRBORNE) &&
+            (path_info->settings.flags & PATH_FOLLOW_FLAG_AIRBORNE) &&
             next_stop->sector_ptr
         ) {
             next_stop_z =
@@ -1541,6 +1561,93 @@ hitbox* mob::get_closest_hitbox(
  */
 sprite* mob::get_cur_sprite() const {
     return forced_sprite ? forced_sprite : anim.get_cur_sprite();
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Returns the distance between the limits of this mob and
+ * the limits of another.
+ * m2_ptr:
+ *   Pointer to the mob to check.
+ * regular_distance_cache:
+ *   If the regular distance had already been calculated, specify it here.
+ *   This should help with performance. Otherwise, use NULL.
+ */
+dist mob::get_distance_between(
+    mob* m2_ptr, dist* regular_distance_cache
+) const {
+    dist mob_to_hotspot_dist;
+    float dist_padding;
+    if(m2_ptr->rectangular_dim.x != 0.0f) {
+        bool is_inside = false;
+        point hotspot =
+            get_closest_point_in_rotated_rectangle(
+                pos,
+                m2_ptr->pos, m2_ptr->rectangular_dim,
+                m2_ptr->angle,
+                &is_inside
+            );
+        if(is_inside) {
+            mob_to_hotspot_dist = dist(0.0f);
+        } else {
+            mob_to_hotspot_dist = dist(pos, hotspot);
+        }
+        dist_padding = radius;
+    } else {
+        if(regular_distance_cache) {
+            mob_to_hotspot_dist = *regular_distance_cache;
+        } else {
+            mob_to_hotspot_dist = dist(pos, m2_ptr->pos);
+        }
+        dist_padding = radius + m2_ptr->radius;
+    }
+    mob_to_hotspot_dist -= dist_padding;
+    return mob_to_hotspot_dist;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Returns information on how to show the fraction numbers.
+ * Returns true if the fraction numbers should be shown, false if not.
+ * This only keeps in mind things specific to this class, so it shouldn't
+ * check for things like carrying, which is global to all mobs.
+ * fraction_value_nr:
+ *   The fraction's value (upper) number gets set here.
+ * fraction_req_nr:
+ *   The fraction's required (lower) number gets set here.
+ * fraction_color:
+ *   The fraction's color gets set here.
+ */
+bool mob::get_fraction_numbers_info(
+    float* fraction_value_nr, float* fraction_req_nr,
+    ALLEGRO_COLOR* fraction_color
+) const {
+    if(!carry_info || carry_info->cur_carrying_strength <= 0) return false;
+    bool destination_is_onion =
+        carry_info->intended_mob &&
+        carry_info->intended_mob->type->category->id ==
+        MOB_CATEGORY_ONIONS;
+    if(type->weight <= 1 && !destination_is_onion) return false;
+    
+    *fraction_value_nr = carry_info->cur_carrying_strength;
+    *fraction_req_nr = type->weight;
+    if(carry_info->is_moving) {
+        if(
+            carry_info->destination ==
+            CARRY_DESTINATION_SHIP
+        ) {
+            *fraction_color = game.config.carrying_color_move;
+            
+        } else if(destination_is_onion) {
+            *fraction_color =
+                carry_info->intended_pik_type->main_color;
+        } else {
+            *fraction_color = game.config.carrying_color_move;
+        }
+    } else {
+        *fraction_color = game.config.carrying_color_stop;
+    }
+    return true;
 }
 
 
@@ -1674,20 +1781,26 @@ float mob::get_latched_pikmin_weight() const {
  *   If true, add status effect changes to the result.
  * add_sector_brightness:
  *   If true, add sector brightness coloring to the result.
- * delivery_time_ratio_left:
- *   If not LARGE_FLOAT, this indicates how much time
- *   is left in the delivery, as a ratio, and the delivery's shrinking
- *   and glowing effects will be added to the result.
- * delivery_color:
- *   If applying a delivery effect, this is the color to make it glow in.
+ * add_delivery:
+ *   If true, add Onion/ship/etc. delivery changes to the result.
+ * add_damage_squash:
+ *   If true, add damage squash-and-stretch scaling to the result.
+ * add_carry_sway:
+ *   If true, add the back-and-forth sway from being carried to the result.
  */
 void mob::get_sprite_bitmap_effects(
     sprite* s_ptr, bitmap_effect_info* info,
     const bool add_status, const bool add_sector_brightness,
-    const float delivery_time_ratio_left, const ALLEGRO_COLOR &delivery_color
+    const bool add_delivery, const bool add_damage_squash,
+    const bool add_carry_sway
 ) const {
 
     const float STATUS_SHAKING_TIME_MULT = 60.0f;
+    const float DELIVERY_SUCK_SHAKING_TIME_MULT = 60.0f;
+    const float DELIVERY_SUCK_SHAKING_MULT = 4.0f;
+    const float DELIVERY_TOSS_WINDUP_MULT = 5.0f;
+    const float DELIVERY_TOSS_MULT = 40.0f;
+    const float DELIVERY_TOSS_X_OFFSET = 20.0f;
     
     info->translation =
         point(
@@ -1699,7 +1812,7 @@ void mob::get_sprite_bitmap_effects(
     
     if(add_status) {
         size_t n_glow_colors = 0;
-        ALLEGRO_COLOR glow_color_sum = al_map_rgba(0, 0, 0, 0);
+        ALLEGRO_COLOR glow_color_sum = COLOR_EMPTY;
         
         for(size_t s = 0; s < statuses.size(); ++s) {
             status_type* t = this->statuses[s].type;
@@ -1749,32 +1862,186 @@ void mob::get_sprite_bitmap_effects(
         info->tint_color.b *= (center_sector->brightness / 255.0);
     }
     
-    if(delivery_time_ratio_left != LARGE_FLOAT) {
-        ALLEGRO_COLOR new_glow;
-        float new_scale;
-        
-        if(delivery_time_ratio_left > 0.5) {
-            new_glow =
-                interpolate_color(
-                    delivery_time_ratio_left, 0.5, 1.0,
-                    delivery_color, map_gray(0)
-                );
-            new_scale = 1.0f;
-        } else {
-            new_glow = delivery_color;
-            new_scale =
-                interpolate_number(
-                    delivery_time_ratio_left, 0.0, 0.5,
-                    0.0f, 1.0f
-                );
+    if(add_delivery && delivery_info && focused_mob) {
+        switch(delivery_info->anim_type) {
+        case DELIVERY_ANIM_SUCK: {
+            ALLEGRO_COLOR new_glow;
+            float new_scale;
+            point new_offset;
+            
+            float shake_scale =
+                (1 - delivery_info->anim_time_ratio_left) *
+                DELIVERY_SUCK_SHAKING_MULT;
+                
+            if(delivery_info->anim_time_ratio_left < 0.4) {
+                shake_scale =
+                    std::max(
+                        interpolate_number(
+                            delivery_info->anim_time_ratio_left, 0.2, 0.4,
+                            0.0f, shake_scale),
+                        0.0f);
+            }
+            
+            new_offset.x =
+                sin(
+                    game.states.gameplay->area_time_passed *
+                    DELIVERY_SUCK_SHAKING_TIME_MULT
+                ) * shake_scale;
+                
+                
+            if(delivery_info->anim_time_ratio_left > 0.6) {
+                //Changing color.
+                new_glow =
+                    interpolate_color(
+                        delivery_info->anim_time_ratio_left, 0.6, 1.0,
+                        delivery_info->color, map_gray(0)
+                    );
+                new_scale = 1.0f;
+            } else if(delivery_info->anim_time_ratio_left > 0.4) {
+                //Fixed in color.
+                new_glow = delivery_info->color;
+                new_scale = 1.0f;
+            } else {
+                //Shrinking.
+                new_glow = delivery_info->color;
+                new_scale =
+                    interpolate_number(
+                        delivery_info->anim_time_ratio_left, 0.0, 0.4,
+                        0.0f, 1.0f
+                    );
+                new_scale = ease(EASE_OUT, new_scale);
+                
+                point target_pos = focused_mob->pos;
+                
+                if(focused_mob->type->category->id == MOB_CATEGORY_SHIPS) {
+                    ship* s_ptr = (ship*) focused_mob;
+                    target_pos = s_ptr->receptacle_final_pos;
+                }
+                
+                point end_offset = target_pos - pos;
+                
+                float absorb_ratio =
+                    interpolate_number(
+                        delivery_info->anim_time_ratio_left, 0.0, 0.4,
+                        1.0f, 0.0f
+                    );
+                absorb_ratio = ease(EASE_IN, absorb_ratio);
+                new_offset += end_offset * absorb_ratio;
+            }
+            
+            info->glow_color.r =
+                clamp(info->glow_color.r + new_glow.r, 0.0f, 1.0f);
+            info->glow_color.g =
+                clamp(info->glow_color.g + new_glow.g, 0.0f, 1.0f);
+            info->glow_color.b =
+                clamp(info->glow_color.b + new_glow.b, 0.0f, 1.0f);
+            info->glow_color.a =
+                clamp(info->glow_color.a + new_glow.a, 0.0f, 1.0f);
+                
+            info->scale *= new_scale;
+            info->translation += new_offset;
+            break;
+        }
+        case DELIVERY_ANIM_TOSS: {
+            point new_offset;
+            float new_scale = 1.0f;
+            
+            if(delivery_info->anim_time_ratio_left > 0.85) {
+                //Wind-up.
+                new_offset.y =
+                    sin(
+                        interpolate_number(
+                            delivery_info->anim_time_ratio_left,
+                            0.85f, 1.0f,
+                            0.0f, TAU / 2.0f
+                        )
+                    );
+                new_offset.y *= DELIVERY_TOSS_WINDUP_MULT;
+            } else {
+                //Toss.
+                new_offset.y =
+                    sin(
+                        interpolate_number(
+                            delivery_info->anim_time_ratio_left,
+                            0.0f, 0.85f,
+                            TAU / 2.0f, TAU
+                        )
+                    );
+                new_offset.y *= DELIVERY_TOSS_MULT;
+                //Randomly deviate left or right, slightly.
+                float deviation_mult = hash_nr(id) / (float) UINT32_MAX;
+                deviation_mult = deviation_mult * 2.0f - 1.0f;
+                deviation_mult *= DELIVERY_TOSS_X_OFFSET;
+                new_offset.x =
+                    interpolate_number(
+                        delivery_info->anim_time_ratio_left,
+                        0.0f, 0.85f,
+                        1.0f, 0.0f
+                    ) * deviation_mult;
+                new_scale =
+                    interpolate_number(
+                        delivery_info->anim_time_ratio_left,
+                        0.0f, 0.85f,
+                        0.1f, 1.0f
+                    );
+            }
+            
+            info->translation += new_offset;
+            info->scale *= new_scale;
+            break;
+        }
         }
         
-        info->glow_color.r = clamp(info->glow_color.r + new_glow.r, 0.0f, 1.0f);
-        info->glow_color.g = clamp(info->glow_color.g + new_glow.g, 0.0f, 1.0f);
-        info->glow_color.b = clamp(info->glow_color.b + new_glow.b, 0.0f, 1.0f);
-        info->glow_color.a = clamp(info->glow_color.a + new_glow.a, 0.0f, 1.0f);
-        
-        info->scale *= new_scale;
+    }
+    
+    if(add_damage_squash && damage_squash_time > 0.0f) {
+        float damage_squash_time_ratio =
+            damage_squash_time / DAMAGE_SQUASH_DURATION;
+        float damage_scale_y = 1.0f;
+        if(damage_squash_time_ratio > 0.5) {
+            damage_scale_y =
+                interpolate_number(
+                    damage_squash_time_ratio,
+                    0.5f, 1.0f, 0.0f, 1.0f
+                );
+            damage_scale_y =
+                ease(
+                    EASE_UP_AND_DOWN,
+                    damage_scale_y
+                );
+            damage_scale_y *= DAMAGE_SQUASH_AMOUNT;
+        } else {
+            damage_scale_y =
+                interpolate_number(
+                    damage_squash_time_ratio,
+                    0.0f, 0.5f, 1.0f, 0.0f
+                );
+            damage_scale_y =
+                ease(
+                    EASE_UP_AND_DOWN,
+                    damage_scale_y
+                );
+            damage_scale_y *= -DAMAGE_SQUASH_AMOUNT;
+        }
+        damage_scale_y += 1.0f;
+        info->scale.y *= damage_scale_y;
+        info->scale.x *= 1.0f / damage_scale_y;
+    }
+    
+    if(add_carry_sway && carry_info) {
+        const float TIME_MULT = 4.5f;
+        const float X_TRANSLATION_AMOUNT = 2.0f;
+        const float Y_TRANSLATION_AMOUNT = X_TRANSLATION_AMOUNT / 2.0f;
+        const float ROTATION_AMOUNT = TAU * 0.01f;
+        if(carry_info->is_moving) {
+            float factor1 =
+                sin(game.states.gameplay->area_time_passed * TIME_MULT);
+            float factor2 =
+                sin(game.states.gameplay->area_time_passed * TIME_MULT * 2.0f);
+            info->translation.x -= factor1 * X_TRANSLATION_AMOUNT;
+            info->translation.y -= factor2 * Y_TRANSLATION_AMOUNT;
+            info->rotation -= factor1 * ROTATION_AMOUNT;
+        }
     }
 }
 
@@ -1873,6 +2140,120 @@ void mob::handle_status_effect_loss(status_type* sta_type) {
 
 
 /* ----------------------------------------------------------------------------
+ * Returns whether or not this mob has a clear line towards another mob.
+ * In other words, if a straight line is drawn between both,
+ * is this line clear, or is it interrupted by a wall or pushing mob?
+ * target_mob:
+ *   The mob to check against.
+ */
+bool mob::has_clear_line(mob* target_mob) const {
+    //First, get a bounding box of the line to check.
+    //This will help with performance later.
+    point bb_tl(
+        std::min(pos.x, target_mob->pos.x),
+        std::min(pos.y, target_mob->pos.y)
+    );
+    point bb_br(
+        std::max(pos.x, target_mob->pos.x),
+        std::max(pos.y, target_mob->pos.y)
+    );
+    
+    //Check against other mobs.
+    for(size_t m = 0; m < game.states.gameplay->mobs.all.size(); ++m) {
+        mob* m_ptr = game.states.gameplay->mobs.all[m];
+        
+        if(!m_ptr->type->pushes) continue;
+        if(m_ptr == this || m_ptr == target_mob) continue;
+        if(
+            !rectangles_intersect(
+                bb_tl, bb_br,
+                m_ptr->pos - m_ptr->max_span,
+                m_ptr->pos + m_ptr->max_span
+            )
+        ) {
+            continue;
+        }
+        
+        if(m_ptr->rectangular_dim.x != 0.0f) {
+            if(
+                line_seg_intersects_rotated_rectangle(
+                    pos, target_mob->pos,
+                    m_ptr->pos, m_ptr->rectangular_dim, m_ptr->angle
+                )
+            ) {
+                return false;
+            }
+        } else {
+            if(
+                circle_intersects_line_seg(
+                    m_ptr->pos, m_ptr->radius,
+                    pos, target_mob->pos,
+                    NULL, NULL
+                )
+            ) {
+                return false;
+            }
+        }
+    }
+    
+    //Check against walls.
+    set<edge*> candidate_edges;
+    if(
+        !game.cur_area_data.bmap.get_edges_in_region(
+            bb_tl, bb_br,
+            candidate_edges
+        )
+    ) {
+        //Somehow out of bounds.
+        return false;
+    }
+    
+    for(auto e_ptr : candidate_edges) {
+        if(
+            !line_segs_intersect(
+                pos, target_mob->pos,
+                point(e_ptr->vertexes[0]->x, e_ptr->vertexes[0]->y),
+                point(e_ptr->vertexes[1]->x, e_ptr->vertexes[1]->y),
+                NULL
+            )
+        ) {
+            continue;
+        }
+        for(size_t s = 0; s < 2; ++s) {
+            if(!e_ptr->sectors[s]) {
+                //No sectors means there's out-of-bounds geometry in the way.
+                return false;
+            }
+            if(e_ptr->sectors[s]->type == SECTOR_TYPE_BLOCKING) {
+                //If a blocking sector is in the way, no clear line.
+                return false;
+            }
+        }
+        if(
+            e_ptr->sectors[0]->z < z &&
+            e_ptr->sectors[0]->z < target_mob->z &&
+            e_ptr->sectors[1]->z < z &&
+            e_ptr->sectors[1]->z < target_mob->z
+        ) {
+            //If both mobs are above both sectors, it doesn't count.
+            continue;
+        }
+        if(
+            fabs(e_ptr->sectors[0]->z - e_ptr->sectors[1]->z) >
+            STEP_HEIGHT
+        ) {
+            //The walls are more than stepping height in difference.
+            //So it's a genuine wall in the way.
+            return false;
+        }
+    }
+    
+    //Seems good!
+    return true;
+}
+
+
+/* ----------------------------------------------------------------------------
  * Starts holding the specified mob.
  * m:
  *   Mob to start holding.
@@ -1885,12 +2266,12 @@ void mob::handle_status_effect_loss(status_type* sta_type) {
  * above_holder:
  *   Is the mob meant to appear above the holder?
  * rotation_method:
- *   How should the held mob rotate? Use HOLD_ROTATION_METHOD_*.
+ *   How should the held mob rotate?
  */
 void mob::hold(
     mob* m, const size_t hitbox_nr,
     const float offset_dist, const float offset_angle,
-    const bool above_holder, const unsigned char rotation_method
+    const bool above_holder, const HOLD_ROTATION_METHODS rotation_method
 ) {
     holding.push_back(m);
     m->holder.m = this;
@@ -1992,6 +2373,40 @@ void mob::leave_group() {
 
 
 /* ----------------------------------------------------------------------------
+ * Makes the mob start going towards the final destination of its path.
+ * speed:
+ *   Speed to move at.
+ */
+void mob::move_to_path_end(const float speed) {
+    if(!path_info) return;
+    if(
+        (
+            path_info->settings.flags &
+            PATH_FOLLOW_FLAG_FOLLOW_MOB
+        ) &&
+        path_info->settings.target_mob
+    ) {
+        chase(
+            &(path_info->settings.target_mob->pos),
+            &(path_info->settings.target_mob->z),
+            point(), 0.0f,
+            CHASE_FLAG_ANY_ANGLE,
+            path_info->settings.final_target_distance,
+            speed
+        );
+    } else {
+        chase(
+            path_info->settings.target_point,
+            get_sector(path_info->settings.target_point, NULL, true)->z,
+            CHASE_FLAG_ANY_ANGLE,
+            path_info->settings.final_target_distance,
+            speed
+        );
+    }
+}
+
+
+/* ----------------------------------------------------------------------------
  * Returns a string containing the FSM state history for this mob.
  * This is used for debugging crashes.
  */
@@ -2023,7 +2438,7 @@ void mob::read_script_vars(const script_var_reader &svr) {
     string team_var;
     
     if(svr.get("team", team_var)) {
-        size_t team_nr = string_to_team_nr(team_var);
+        MOB_TEAMS team_nr = string_to_team_nr(team_var);
         if(team_nr == INVALID) {
             log_error(
                 "Unknown team name \"" + team_var + "\", when trying to "
@@ -2078,7 +2493,7 @@ void mob::release_chomped_pikmin() {
  * id:
  *   ID of particle generators to remove.
  */
-void mob::remove_particle_generator(const size_t id) {
+void mob::remove_particle_generator(const MOB_PARTICLE_GENERATOR_IDS id) {
     for(size_t g = 0; g < particle_generators.size();) {
         if(particle_generators[g].id == id) {
             particle_generators.erase(particle_generators.begin() + g);
@@ -2121,11 +2536,11 @@ void mob::send_message(mob* receiver, string &msg) const {
  *   Animation number. It's the animation instance number from the database.
  * pre_named:
  *   If true, the animation has already been named in-engine.
- * auto_start:
- *   After the change, start the new animation from time 0.
+ * options:
+ *   Options to start the new animation with.
  */
 void mob::set_animation(
-    const size_t nr, const bool pre_named, const bool auto_start
+    const size_t nr, const bool pre_named, const START_ANIMATION_OPTIONS options
 ) {
     if(nr >= type->anims.animations.size()) return;
     
@@ -2156,8 +2571,19 @@ void mob::set_animation(
     if(new_anim->frames.empty()) {
         anim.cur_frame_index = INVALID;
     } else {
-        if(auto_start || anim.cur_frame_index >= anim.cur_anim->frames.size()) {
+        if(
+            !(options & START_ANIMATION_NO_RESTART) ||
+            anim.cur_frame_index >= anim.cur_anim->frames.size()
+        ) {
             anim.start();
+        }
+    }
+    
+    if(options == START_ANIMATION_RANDOM_TIME) {
+        anim.skip_ahead_randomly();
+    } else if(options == START_ANIMATION_RANDOM_TIME_ON_SPAWN) {
+        if(time_alive == 0.0f) {
+            anim.skip_ahead_randomly();
         }
     }
 }
@@ -2168,13 +2594,15 @@ void mob::set_animation(
  * that name, nothing happens.
  * name:
  *   Name of the animation.
- * auto_start:
- *   After the change, start the new animation from time 0.
+ * options:
+ *   Options to start the new animation with.
  */
-void mob::set_animation(const string &name, const bool auto_start) {
+void mob::set_animation(
+    const string &name, const START_ANIMATION_OPTIONS options
+) {
     size_t idx = anim.anim_db->find_animation(name);
     if(idx != INVALID) {
-        set_animation(idx, false, auto_start);
+        set_animation(idx, false, options);
     }
 }
 
@@ -2229,11 +2657,11 @@ void mob::set_health(const bool add, const bool ratio, const float amount) {
 void mob::set_radius(const float radius) {
     this->radius = radius;
     max_span =
-    calculate_mob_max_span(
-        radius,
-        type->anims.max_span,
-        rectangular_dim
-    );
+        calculate_mob_max_span(
+            radius,
+            type->anims.max_span,
+            rectangular_dim
+        );
 }
 
 
@@ -2245,11 +2673,11 @@ void mob::set_radius(const float radius) {
 void mob::set_rectangular_dim(const point &rectangular_dim) {
     this->rectangular_dim = rectangular_dim;
     max_span =
-    calculate_mob_max_span(
-        radius,
-        type->anims.max_span,
-        rectangular_dim
-    );
+        calculate_mob_max_span(
+            radius,
+            type->anims.max_span,
+            rectangular_dim
+        );
 }
 
 
@@ -2497,7 +2925,7 @@ void mob::swallow_chomped_pikmin(const size_t nr) {
 
 
 /* ----------------------------------------------------------------------------
- * Makes the mob follow a game tick.
+ * Ticks time by one frame of logic.
  * This basically calls sub-tickers.
  * Think of it this way: when you want to go somewhere,
  * you first think about rotating your body to face that
@@ -2506,7 +2934,7 @@ void mob::swallow_chomped_pikmin(const size_t nr) {
  * send signals to the muscles, and gravity, intertia, etc.
  * take over the rest, to make you move.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void mob::tick(const float delta_t) {
     //Since the mob could be marked for deletion after any little
@@ -2578,9 +3006,9 @@ void mob::tick(const float delta_t) {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks one game frame into the mob's animations.
+ * Ticks animation time by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void mob::tick_animation(const float delta_t) {
     float mult = 1.0f;
@@ -2619,7 +3047,7 @@ void mob::tick_animation(const float delta_t) {
  * This is related to mob-global things, like
  * thinking about where to move next and such.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void mob::tick_brain(const float delta_t) {
     //Circling around something.
@@ -2701,8 +3129,8 @@ void mob::tick_brain(const float delta_t) {
                         float next_stop_z = z;
                         if(
                             (
-                                path_info->taker_flags &
-                                PATH_TAKER_FLAG_AIRBORNE
+                                path_info->settings.flags &
+                                PATH_FOLLOW_FLAG_AIRBORNE
                             ) &&
                             next_stop->sector_ptr
                         ) {
@@ -2724,13 +3152,7 @@ void mob::tick_brain(const float delta_t) {
                 ) {
                     //Reached the final stop of the path, but not the goal.
                     //Let's head there.
-                    chase(
-                        path_info->target_point,
-                        get_sector(path_info->target_point, NULL, true)->z,
-                        CHASE_FLAG_ANY_ANGLE,
-                        path_info->final_target_distance,
-                        chase_info.max_speed
-                    );
+                    move_to_path_end(chase_info.max_speed);
                     
                 } else if(
                     path_info->cur_path_stop_nr == path_info->path.size() + 1
@@ -2759,7 +3181,7 @@ void mob::tick_brain(const float delta_t) {
 /* ----------------------------------------------------------------------------
  * Code specific for each class. Meant to be overwritten by the child classes.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void mob::tick_class_specifics(const float delta_t) {
 }
@@ -2768,19 +3190,39 @@ void mob::tick_class_specifics(const float delta_t) {
 /* ----------------------------------------------------------------------------
  * Performs some logic code for this game frame.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void mob::tick_misc_logic(const float delta_t) {
+    if(time_alive == 0.0f) {
+        //This is a convenient spot to signal that the mob is ready.
+        //This will only run once, and only after the mob is all set up.
+        fsm.run_event(MOB_EV_ON_READY);
+    }
     time_alive += delta_t;
     
     invuln_period.tick(delta_t);
     
     for(size_t s = 0; s < this->statuses.size(); ++s) {
         statuses[s].tick(delta_t);
-        set_health(
-            true, true,
-            statuses[s].type->health_change_ratio * delta_t
-        );
+        
+        float damage_mult = 1.0f;
+        auto vuln_it = type->status_vulnerabilities.find(statuses[s].type);
+        if(vuln_it != type->status_vulnerabilities.end()) {
+            damage_mult = vuln_it->second.damage_mult;
+        }
+        
+        if(statuses[s].type->health_change != 0.0f) {
+            set_health(
+                true, false,
+                statuses[s].type->health_change * damage_mult * delta_t
+            );
+        }
+        if(statuses[s].type->health_change_ratio != 0.0f) {
+            set_health(
+                true, true,
+                statuses[s].type->health_change_ratio * damage_mult * delta_t
+            );
+        }
     }
     delete_old_status_effects();
     
@@ -2805,28 +3247,53 @@ void mob::tick_misc_logic(const float delta_t) {
         set_can_block_paths(false);
     }
     
-    float ratio = health / type->max_health;
-    float ratio_difference = ratio - health_wheel_smoothed_ratio;
-    float ratio_max_change_amount = 1 * delta_t;
-    
-    if(ratio_difference < 0) {
-        ratio_difference *= -1;
+    //Health wheel.
+    bool should_show_health =
+        type->show_health &&
+        !hide &&
+        health > 0.0f &&
+        health < type->max_health;
+    if(!health_wheel && should_show_health) {
+        health_wheel = new in_world_health_wheel(this);
+    } else if(health_wheel && !should_show_health) {
+        health_wheel->start_fading();
     }
     
-    if(health <= 0) {
-        ratio_max_change_amount *= 4.0f;
-        if(health_wheel_smoothed_ratio <= 0) {
-            health_wheel_alpha -= 3.0f * delta_t;
+    if(health_wheel) {
+        health_wheel->tick(delta_t);
+        if(health_wheel->to_delete) {
+            delete health_wheel;
+            health_wheel = NULL;
         }
     }
     
-    if(ratio_difference < ratio_max_change_amount) {
-        health_wheel_smoothed_ratio = ratio;
-    } else {
-        if(ratio > health_wheel_smoothed_ratio) {
-            health_wheel_smoothed_ratio += ratio_max_change_amount;
-        } else {
-            health_wheel_smoothed_ratio -= ratio_max_change_amount;
+    //Fraction numbers.
+    float fraction_value_nr = 0.0f;
+    float fraction_req_nr = 0.0f;
+    ALLEGRO_COLOR fraction_color = COLOR_BLACK;
+    bool should_show_fraction =
+        get_fraction_numbers_info(
+            &fraction_value_nr, &fraction_req_nr, &fraction_color
+        );
+        
+    if(!fraction && should_show_fraction) {
+        fraction = new in_world_fraction(this);
+    } else if(fraction && !should_show_fraction) {
+        fraction->start_fading();
+    }
+    
+    if(fraction) {
+        fraction->tick(delta_t);
+        if(should_show_fraction) {
+            //Only update the numbers if we want to show a fraction, i.e.
+            //if we actually KNOW the numbers. Otherwise, keep the old data.
+            fraction->set_color(fraction_color);
+            fraction->set_value_number(fraction_value_nr);
+            fraction->set_requirement_number(fraction_req_nr);
+        }
+        if(fraction->to_delete) {
+            delete fraction;
+            fraction = NULL;
         }
     }
     
@@ -2943,13 +3410,26 @@ void mob::tick_misc_logic(const float delta_t) {
             member->leave_group();
         }
     }
+    
+    if(damage_squash_time > 0.0f) {
+        damage_squash_time -= delta_t;
+        damage_squash_time = std::max(0.0f, damage_squash_time);
+    }
+    
+    //Delivery stuff.
+    if(
+        delivery_info &&
+        fsm.cur_state->id == ENEMY_EXTRA_STATE_BEING_DELIVERED
+    ) {
+        delivery_info->anim_time_ratio_left = script_timer.get_ratio_left();
+    }
 }
 
 
 /* ----------------------------------------------------------------------------
  * Checks general events in the mob's script for this frame.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void mob::tick_script(const float delta_t) {
     if(!fsm.cur_state) return;
@@ -2963,12 +3443,6 @@ void mob::tick_script(const float delta_t) {
                 timer_ev->run(this);
             }
         }
-    }
-    
-    //Has it reached its home?
-    mob_event* reach_dest_ev = fsm.get_event(MOB_EV_REACHED_DESTINATION);
-    if(reach_dest_ev && chase_info.state == CHASE_STATE_FINISHED) {
-        reach_dest_ev->run(this);
     }
     
     //Is it dead?

@@ -18,11 +18,17 @@
 #include "../game.h"
 
 
-const float leader::THROW_COOLDOWN_DURATION = 0.15f;
 const float leader::AUTO_THROW_COOLDOWN_MAX_DURATION = 0.7f;
 const float leader::AUTO_THROW_COOLDOWN_MIN_DURATION =
     THROW_COOLDOWN_DURATION * 1.2f;
 const float leader::AUTO_THROW_COOLDOWN_SPEED = 0.3f;
+//Ratio of health at which a leader's health wheel starts giving a warning.
+const float leader::HEALTH_CAUTION_RATIO = 0.3f;
+//How long the low health caution ring lasts for.
+const float leader::HEALTH_CAUTION_RING_DURATION = 2.5f;
+//Seconds that need to pass before another swarm arrow appears.
+const float leader::SWARM_ARROWS_INTERVAL = 0.1f;
+const float leader::THROW_COOLDOWN_DURATION = 0.15f;
 
 
 /* ----------------------------------------------------------------------------
@@ -42,6 +48,7 @@ leader::leader(const point &pos, leader_type* type, const float angle) :
     pluck_target(nullptr),
     queued_pluck_cancel(false),
     is_in_walking_anim(false),
+    swarm_next_arrow_timer(SWARM_ARROWS_INTERVAL),
     throw_cooldown(0.0f),
     throw_queued(false),
     auto_throwing(false),
@@ -50,7 +57,9 @@ leader::leader(const point &pos, leader_type* type, const float angle) :
     throwee_angle(0.0f),
     throwee_max_z(0.0f),
     throwee_speed_z(0.0f),
-    throwee_can_reach(false) {
+    throwee_can_reach(false),
+    health_wheel_visible_ratio(1.0f),
+    health_wheel_caution_timer(0.0f) {
     
     team = MOB_TEAM_PLAYER_1;
     invuln_period = timer(LEADER_INVULN_PERIOD);
@@ -59,6 +68,47 @@ leader::leader(const point &pos, leader_type* type, const float angle) :
         game.states.gameplay->subgroup_types.get_type(
             SUBGROUP_TYPE_CATEGORY_LEADER
         );
+        
+    swarm_next_arrow_timer.on_end = [this] () {
+        swarm_next_arrow_timer.start();
+        swarm_arrows.push_back(0);
+        
+        const float PARTICLE_ALPHA = 0.8f;
+        const float PARTICLE_MIN_DURATION = 1.0f;
+        const float PARTICLE_MAX_DURATION = 1.5f;
+        const float PARTICLE_FRICTION = 2.0f;
+        const float PARTICLE_SIZE = 6.0f;
+        const float PARTICLE_SPEED_DEVIATION = 10.0f;
+        const float PARTICLE_SPEED_MULT = 500.0f;
+        const float PARTICLE_ANGLE_DEVIATION = TAU * 0.04f;
+        particle p;
+        unsigned char color_idx = randomi(0, N_WHISTLE_DOT_COLORS);
+        p.bitmap = game.sys_assets.bmp_bright_circle;
+        p.color.r = WHISTLE_DOT_COLORS[color_idx][0] / 255.0f;
+        p.color.g = WHISTLE_DOT_COLORS[color_idx][1] / 255.0f;
+        p.color.b = WHISTLE_DOT_COLORS[color_idx][2] / 255.0f;
+        p.color.a = PARTICLE_ALPHA;
+        p.duration = randomf(PARTICLE_MIN_DURATION, PARTICLE_MAX_DURATION);
+        p.friction = PARTICLE_FRICTION;
+        p.pos = this->pos;
+        p.pos.x += randomf(-this->radius * 0.5f, this->radius * 0.5f);
+        p.pos.y += randomf(-this->radius * 0.5f, this->radius * 0.5f);
+        p.priority = PARTICLE_PRIORITY_MEDIUM;
+        p.size = PARTICLE_SIZE;
+        float p_speed =
+            game.states.gameplay->swarm_magnitude *
+            PARTICLE_SPEED_MULT +
+            randomf(-PARTICLE_SPEED_DEVIATION, PARTICLE_SPEED_DEVIATION);
+        float p_angle =
+            game.states.gameplay->swarm_angle +
+            randomf(-PARTICLE_ANGLE_DEVIATION, PARTICLE_ANGLE_DEVIATION);
+        p.speed = rotate_point(point(p_speed, 0.0f), p_angle);
+        p.time = p.duration;
+        p.type = PARTICLE_TYPE_BITMAP;
+        p.z = this->z + this->height / 2.0f;
+        game.states.gameplay->particles.add(p);
+    };
+    swarm_next_arrow_timer.start();
 }
 
 
@@ -141,11 +191,13 @@ void leader::dismiss() {
     
     
     struct subgroup_dismiss_info {
+        //Subgroup type.
         subgroup_type* type;
-        mob_type* m_type;
+        //Radius of the group.
         float radius;
+        //Group members of this subgroup type.
         vector<mob*> members;
-        size_t row;
+        //Center point of the subgroup.
         point center;
     };
     vector<subgroup_dismiss_info> subgroups_info;
@@ -172,7 +224,6 @@ void leader::dismiss() {
                 
                 if(!subgroup_exists) {
                     subgroups_info.push_back(subgroup_dismiss_info());
-                    subgroups_info.back().m_type = m_ptr->type;
                     subgroup_exists = true;
                 }
                 
@@ -214,10 +265,14 @@ void leader::dismiss() {
     //We place the first subgroup, then some padding, then the next group,
     //etc. For every subgroup we place, we must update the thickness.
     struct row_info {
+        //Index of subgroups in this row.
         vector<size_t> subgroups;
+        //Angular distance spread out from the row center.
         float dist_between_center;
+        //How thick this row is.
         float thickness;
-        float angle_occupation; //How much is taken up by Pikmin and padding.
+        //How much is taken up by Pikmin and padding.
+        float angle_occupation;
         
         row_info() {
             dist_between_center = 0;
@@ -278,7 +333,6 @@ void leader::dismiss() {
             cur_row.angle_occupation = new_angle_occupation;
             
             cur_row.subgroups.push_back(cur_subgroup_nr);
-            subgroups_info[cur_subgroup_nr].row = cur_row_nr;
             cur_subgroup_nr++;
         }
         
@@ -399,6 +453,36 @@ void leader::dismiss() {
     
     //Final things.
     lea_type->sfx_dismiss.play(0, false);
+    const size_t N_DISMISS_PARTICLES = N_WHISTLE_DOT_COLORS * 3;
+    const float PARTICLE_ALPHA = 1.0f;
+    const float PARTICLE_MIN_DURATION = 1.0f;
+    const float PARTICLE_MAX_DURATION = 1.4f;
+    const float PARTICLE_FRICTION = 3.2f;
+    const float PARTICLE_MIN_SPEED = 170.0f;
+    const float PARTICLE_MAX_SPEED = 210.0f;
+    const float PARTICLE_SIZE = 8.0f;
+    for(size_t p = 0; p < N_DISMISS_PARTICLES; ++p) {
+        particle par;
+        const unsigned char* color_idx =
+            WHISTLE_DOT_COLORS[p % N_WHISTLE_DOT_COLORS];
+        par.color.r = color_idx[0] / 255.0f;
+        par.color.g = color_idx[1] / 255.0f;
+        par.color.b = color_idx[2] / 255.0f;
+        par.color.a = PARTICLE_ALPHA;
+        par.bitmap = game.sys_assets.bmp_bright_circle;
+        par.duration = randomf(PARTICLE_MIN_DURATION, PARTICLE_MAX_DURATION);
+        par.friction = PARTICLE_FRICTION;
+        par.pos = pos;
+        par.priority = PARTICLE_PRIORITY_MEDIUM;
+        par.size = PARTICLE_SIZE;
+        float par_speed = randomf(PARTICLE_MIN_SPEED, PARTICLE_MAX_SPEED);
+        float par_angle = TAU / N_DISMISS_PARTICLES * p;
+        par.speed = rotate_point(point(par_speed, 0.0f), par_angle);
+        par.time = par.duration;
+        par.type = PARTICLE_TYPE_BITMAP;
+        par.z = z + height / 2.0f;
+        game.states.gameplay->particles.add(par);
+    }
     set_animation(LEADER_ANIM_DISMISSING);
 }
 
@@ -413,7 +497,7 @@ void leader::draw_mob() {
     if(!s_ptr) return;
     
     bitmap_effect_info eff;
-    get_sprite_bitmap_effects(s_ptr, &eff, true, true);
+    get_sprite_bitmap_effects(s_ptr, &eff, true, true, true, false, true);
     
     if(invuln_period.time_left > 0.0f) {
         sprite* spark_s =
@@ -679,7 +763,7 @@ void leader::swap_held_pikmin(mob* new_pik) {
     release(holding[0]);
     hold(
         new_pik, INVALID, LEADER_HELD_MOB_DIST, LEADER_HELD_MOB_ANGLE,
-        false, true
+        false, HOLD_ROTATION_METHOD_FACE_HOLDER
     );
     
     game.sys_assets.sfx_switch_pikmin.play(0, false);
@@ -687,9 +771,9 @@ void leader::swap_held_pikmin(mob* new_pik) {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks leader-related logic for this frame.
+ * Ticks time by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void leader::tick_class_specifics(const float delta_t) {
     //Throw-related things.
@@ -733,6 +817,21 @@ void leader::tick_class_specifics(const float delta_t) {
         
     if(group && group->members.empty()) {
         stop_auto_throwing();
+    }
+    
+    //Health wheel logic.
+    health_wheel_visible_ratio +=
+        ((health / type->max_health) - health_wheel_visible_ratio) *
+        (in_world_health_wheel::SMOOTHNESS_MULT * delta_t);
+        
+    if(
+        health < type->max_health * HEALTH_CAUTION_RATIO ||
+        health_wheel_caution_timer > 0.0f
+    ) {
+        health_wheel_caution_timer += delta_t;
+        if(health_wheel_caution_timer >= HEALTH_CAUTION_RING_DURATION) {
+            health_wheel_caution_timer = 0.0f;
+        }
     }
 }
 
@@ -811,9 +910,20 @@ void leader::update_throw_variables() {
  * force_success:
  *   If true, switch to this leader even if they can't currently handle the
  *   leader switch script event.
+ * keep_idx:
+ *   If true, swap to a leader that has the same index in the list of available
+ *   leaders as the current one does. Usually this is used because the
+ *   current leader is no longer available.
  */
-void change_to_next_leader(const bool forward, const bool force_success) {
-    if(game.states.gameplay->mobs.leaders.size() == 1) return;
+void change_to_next_leader(
+    const bool forward, const bool force_success, const bool keep_idx
+) {
+    if(
+        game.states.gameplay->available_leaders.size() == 1 &&
+        !keep_idx
+    ) {
+        return;
+    }
     
     if(
         !game.states.gameplay->cur_leader_ptr->fsm.get_event(
@@ -830,22 +940,26 @@ void change_to_next_leader(const bool forward, const bool force_success) {
     //If we return to the current leader without anything being
     //changed, then stop trying; no leader can be switched to.
     
-    size_t new_leader_nr = game.states.gameplay->cur_leader_nr;
+    int new_leader_nr = game.states.gameplay->cur_leader_nr;
+    if(keep_idx) {
+        forward ? new_leader_nr-- : new_leader_nr++;
+    }
     leader* new_leader_ptr = NULL;
     bool searching = true;
-    size_t original_leader_nr = game.states.gameplay->cur_leader_nr;
+    leader* original_leader_ptr = game.states.gameplay->cur_leader_ptr;
     bool cant_find_new_leader = false;
+    bool success = false;
     
     while(searching) {
         new_leader_nr =
             sum_and_wrap(
                 new_leader_nr,
                 (forward ? 1 : -1),
-                game.states.gameplay->mobs.leaders.size()
+                game.states.gameplay->available_leaders.size()
             );
-        new_leader_ptr = game.states.gameplay->mobs.leaders[new_leader_nr];
+        new_leader_ptr = game.states.gameplay->available_leaders[new_leader_nr];
         
-        if(new_leader_nr == original_leader_nr) {
+        if(new_leader_ptr == original_leader_ptr) {
             //Back to the original; stop trying.
             cant_find_new_leader = true;
             searching = false;
@@ -856,8 +970,9 @@ void change_to_next_leader(const bool forward, const bool force_success) {
         //If after we called the event, the leader is the same,
         //then that means the leader can't be switched to.
         //Try a new one.
-        if(game.states.gameplay->cur_leader_nr != original_leader_nr) {
+        if(game.states.gameplay->cur_leader_ptr != original_leader_ptr) {
             searching = false;
+            success = true;
         }
     }
     
@@ -867,15 +982,21 @@ void change_to_next_leader(const bool forward, const bool force_success) {
             sum_and_wrap(
                 new_leader_nr,
                 (forward ? 1 : -1),
-                game.states.gameplay->mobs.leaders.size()
+                game.states.gameplay->available_leaders.size()
             );
         game.states.gameplay->cur_leader_ptr =
             game.states.gameplay->
-            mobs.leaders[game.states.gameplay->cur_leader_nr];
+            available_leaders[game.states.gameplay->cur_leader_nr];
             
         game.states.gameplay->cur_leader_ptr->fsm.set_state(
             LEADER_STATE_ACTIVE
         );
+        success = true;
+    }
+    
+    if(success) {
+        game.states.gameplay->hud->start_leader_swap_juice();
+        game.states.gameplay->cur_leader_ptr->swarm_arrows.clear();
     }
 }
 
@@ -885,26 +1006,67 @@ void change_to_next_leader(const bool forward, const bool force_success) {
  * Returns true on success, false on failure.
  */
 bool grab_closest_group_member() {
-    if(game.states.gameplay->closest_group_member) {
-        mob_event* grabbed_ev =
-            game.states.gameplay->closest_group_member->fsm.get_event(
-                MOB_EV_GRABBED_BY_FRIEND
-            );
-        mob_event* grabber_ev =
-            game.states.gameplay->cur_leader_ptr->fsm.get_event(
-                LEADER_EV_HOLDING
-            );
-        if(grabber_ev && grabbed_ev) {
-            game.states.gameplay->cur_leader_ptr->fsm.run_event(
-                LEADER_EV_HOLDING,
-                (void*) game.states.gameplay->closest_group_member
-            );
-            grabbed_ev->run(
-                game.states.gameplay->closest_group_member,
-                (void*) game.states.gameplay->closest_group_member
-            );
-            return true;
+    //Check if there is even a closest group member.
+    if(!game.states.gameplay->closest_group_member) {
+        return false;
+    }
+    
+    //Check if the leader can grab, and the group member can be grabbed.
+    mob_event* grabbed_ev =
+        game.states.gameplay->closest_group_member->fsm.get_event(
+            MOB_EV_GRABBED_BY_FRIEND
+        );
+    mob_event* grabber_ev =
+        game.states.gameplay->cur_leader_ptr->fsm.get_event(
+            LEADER_EV_HOLDING
+        );
+    if(!grabber_ev || !grabbed_ev) {
+        return false;
+    }
+    
+    //Check if there's anything in the way.
+    if(
+        !game.states.gameplay->cur_leader_ptr->has_clear_line(
+            game.states.gameplay->closest_group_member
+        )
+    ) {
+        return false;
+    }
+    
+    //Run the grabbing logic then.
+    grabber_ev->run(
+        game.states.gameplay->cur_leader_ptr,
+        (void*) game.states.gameplay->closest_group_member
+    );
+    grabbed_ev->run(
+        game.states.gameplay->closest_group_member,
+        (void*) game.states.gameplay->cur_leader_ptr
+    );
+    
+    return true;
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Checks if there are leaders alive. If not, then it finishes gameplay.
+ * Returns true if there is a total leader KO.
+ */
+bool process_total_leader_ko() {
+    size_t living_leaders = 0;
+    for(size_t l = 0; l < game.states.gameplay->mobs.leaders.size(); ++l) {
+        if(
+            game.states.gameplay->mobs.leaders[l]->health > 0 &&
+            !game.states.gameplay->mobs.leaders[l]->to_delete
+        ) {
+            living_leaders++;
         }
+    }
+    if(living_leaders == 0) {
+        game.states.results->can_continue = false;
+        game.states.results->leader_ko = true;
+        game.states.gameplay->cur_leader_ptr = NULL;
+        game.states.gameplay->leave(gameplay_state::LEAVE_TO_FINISH);
+        return true;
     }
     return false;
 }

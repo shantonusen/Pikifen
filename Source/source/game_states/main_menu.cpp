@@ -47,7 +47,7 @@ main_menu_state::main_menu_state() :
  * Draws the main menu.
  */
 void main_menu_state::do_drawing() {
-    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_clear_to_color(COLOR_BLACK);
     draw_bitmap(
         bmp_menu_bg, point(game.win_w * 0.5, game.win_h * 0.5),
         point(game.win_w, game.win_h)
@@ -65,20 +65,29 @@ void main_menu_state::do_drawing() {
     }
     
     draw_scaled_text(
-        game.fonts.standard, al_map_rgb(255, 255, 255),
+        game.fonts.standard, COLOR_WHITE,
         point(8, game.win_h  - 8),
         point(0.6, 0.6),
-        ALLEGRO_ALIGN_LEFT, 2,
+        ALLEGRO_ALIGN_LEFT, TEXT_VALIGN_BOTTOM,
         "Pikmin (c) Nintendo"
     );
+    string version_text;
+    if(!game.config.name.empty()) {
+        version_text = game.config.name;
+        if(!game.config.version.empty()) {
+            version_text += " " + game.config.version;
+        }
+        version_text += ", powered by ";
+    }
+    version_text +=
+        "Pikifen " +
+        i2s(VERSION_MAJOR) + "." + i2s(VERSION_MINOR)  + "." + i2s(VERSION_REV);
     draw_scaled_text(
-        game.fonts.standard, al_map_rgb(255, 255, 255),
+        game.fonts.standard, COLOR_WHITE,
         point(game.win_w - 8, game.win_h  - 8),
         point(0.6, 0.6),
-        ALLEGRO_ALIGN_RIGHT, 2,
-        game.config.name + " " + game.config.version +
-        ", powered by Pikifen " +
-        i2s(VERSION_MAJOR) + "." + i2s(VERSION_MINOR)  + "." + i2s(VERSION_REV)
+        ALLEGRO_ALIGN_RIGHT, TEXT_VALIGN_BOTTOM,
+        version_text
     );
     
     gui.draw();
@@ -231,7 +240,12 @@ void main_menu_state::load() {
         game.is_game_running = false;
     };
     gui.back_item->on_get_tooltip =
-    [] () { return "Quit " + game.config.name + "."; };
+    [] () {
+        return
+            game.config.name.empty() ?
+            "Quit Pikifen." :
+            "Quit " + game.config.name + ".";
+    };
     gui.add_item(gui.back_item, "exit");
     
     //Tooltip text.
@@ -241,8 +255,9 @@ void main_menu_state::load() {
         [this]
     (const point & center, const point & size) {
         draw_compressed_scaled_text(
-            game.fonts.standard, al_map_rgb(255, 255, 255),
-            center, point(0.7f, 0.7f), ALLEGRO_ALIGN_CENTER, 1, size,
+            game.fonts.standard, COLOR_WHITE,
+            center, point(0.7f, 0.7f),
+            ALLEGRO_ALIGN_CENTER, TEXT_VALIGN_CENTER, size, false,
             gui.get_current_tooltip()
         );
     };

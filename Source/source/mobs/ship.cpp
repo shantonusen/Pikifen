@@ -8,15 +8,21 @@
  * Ship class and ship-related functions.
  */
 
+#include <allegro5/allegro_color.h>
+
 #include "ship.h"
 
+#include "../functions.h"
 #include "../drawing.h"
 #include "../game.h"
 #include "../utils/geometry_utils.h"
 #include "leader.h"
 
 
-const unsigned int ship::SHIP_BEAM_RING_COLOR_SPEED = 255;
+const unsigned char ship::SHIP_CONTROL_POINT_RING_AMOUNT = 4;
+const float ship::SHIP_CONTROL_POINT_ANIM_DUR = 10.0f;
+const float ship::SHIP_TRACTOR_BEAM_EMIT_RATE = 0.15f;
+const float ship::SHIP_TRACTOR_BEAM_RING_ANIM_DUR = 0.8f;
 
 /* ----------------------------------------------------------------------------
  * Creates a ship mob.
@@ -31,17 +37,34 @@ ship::ship(const point &pos, ship_type* type, float angle) :
     mob(pos, type, angle),
     shi_type(type),
     nest(nullptr),
-    beam_final_pos(rotate_point(type->beam_offset, angle)) {
+    next_tractor_beam_ring_timer(SHIP_TRACTOR_BEAM_EMIT_RATE),
+    mobs_being_beamed(0),
+    control_point_final_pos(
+        rotate_point(type->control_point_offset, angle)
+    ),
+    receptacle_final_pos(
+        rotate_point(type->receptacle_offset, angle)
+    ),
+    control_point_to_receptacle_dist(
+        dist(control_point_final_pos, receptacle_final_pos).to_float()
+    ) {
+    
+    next_tractor_beam_ring_timer.on_end = [this] () {
+        next_tractor_beam_ring_timer.start();
+        tractor_beam_rings.push_back(0);
+        float hue =
+            fmod(
+                game.states.gameplay->area_time_passed * 360, 360
+            );
+            
+        tractor_beam_ring_colors.push_back(hue);
+    };
+    next_tractor_beam_ring_timer.start();
     
     nest = new pikmin_nest_struct(this, shi_type->nest);
     
-    beam_final_pos += pos;
-    beam_ring_color[0] = 0;
-    beam_ring_color[1] = 0;
-    beam_ring_color[2] = 0;
-    beam_ring_color_up[0] = true;
-    beam_ring_color_up[1] = true;
-    beam_ring_color_up[2] = true;
+    control_point_final_pos += pos;
+    receptacle_final_pos += pos;
 }
 
 
@@ -60,25 +83,125 @@ void ship::draw_mob() {
 
     mob::draw_mob();
     
-    al_draw_circle(
-        beam_final_pos.x,
-        beam_final_pos.y,
-        shi_type->beam_radius,
-        al_map_rgb(
-            beam_ring_color[0],
-            beam_ring_color[1],
-            beam_ring_color[2]
-        ),
-        2
-    );
+    //Draw the rings on the control point.
+    for(unsigned char b = 0; b < SHIP_CONTROL_POINT_RING_AMOUNT; ++b) {
+        float ring_idx_ratio = b / (float) SHIP_CONTROL_POINT_RING_AMOUNT;
+        
+        float ring_hue = 360 * ring_idx_ratio;
+        ALLEGRO_COLOR ring_color = al_color_hsl(ring_hue, 1.0f, 0.8f);
+        
+        float ring_anim_ratio =
+            fmod(
+                game.states.gameplay->area_time_passed +
+                SHIP_CONTROL_POINT_ANIM_DUR * ring_idx_ratio,
+                SHIP_CONTROL_POINT_ANIM_DUR
+            );
+        ring_anim_ratio /= SHIP_CONTROL_POINT_ANIM_DUR;
+        
+        unsigned char ring_alpha = 120;
+        
+        if(ring_anim_ratio <= 0.3f) {
+            //Fading into existence.
+            ring_alpha =
+                interpolate_number(
+                    ring_anim_ratio,
+                    0.0f, 0.3f,
+                    0, ring_alpha
+                );
+        } else if(ring_anim_ratio >= 0.7f) {
+            //Shrinking down.
+            ring_alpha =
+                interpolate_number(
+                    ring_anim_ratio,
+                    0.7f, 1.0f,
+                    ring_alpha, 0
+                );
+        }
+        
+        float ring_scale =
+            interpolate_number(
+                ease(EASE_IN, ring_anim_ratio),
+                0.0f, 1.0f,
+                1.0f, 0.3f
+            );
+        float ring_diameter =
+            shi_type->control_point_radius * 2.0f * ring_scale;
+            
+        draw_bitmap(
+            game.sys_assets.bmp_bright_ring,
+            control_point_final_pos, point(ring_diameter, ring_diameter),
+            0.0f,
+            change_alpha(ring_color, ring_alpha)
+        );
+    }
+    
+    //Drawing the tractor beam rings.
+    //Go in reverse to ensure the most recent rings are drawn underneath.
+    for(char r = tractor_beam_rings.size() - 1; r > 0; r--) {
+    
+        float ring_anim_ratio =
+            tractor_beam_rings[r] / SHIP_TRACTOR_BEAM_RING_ANIM_DUR;
+            
+        unsigned char ring_alpha = 80;
+        if(ring_anim_ratio <= 0.3f) {
+            //Fading into existence.
+            ring_alpha =
+                interpolate_number(
+                    ring_anim_ratio,
+                    0.0f, 0.3f,
+                    0, ring_alpha
+                );
+        } else if(ring_anim_ratio >= 0.5f) {
+            //Shrinking down.
+            ring_alpha =
+                interpolate_number(
+                    ring_anim_ratio,
+                    0.5f, 1.0f,
+                    ring_alpha, 0
+                );
+        }
+        
+        float ring_brightness =
+            interpolate_number(
+                ring_anim_ratio,
+                0.0f, 1.0f,
+                0.4f, 0.6f
+            );
+            
+        ALLEGRO_COLOR ring_color =
+            al_color_hsl(tractor_beam_ring_colors[r], 1.0f, ring_brightness);
+        ring_color = change_alpha(ring_color, ring_alpha);
+        
+        float ring_scale =
+            interpolate_number(
+                ring_anim_ratio,
+                0.0f, 1.0f,
+                shi_type->control_point_radius * 2.5f, 1.0f
+            );
+            
+        float distance = control_point_to_receptacle_dist * ring_anim_ratio;
+        float angle = get_angle(control_point_final_pos, receptacle_final_pos);
+        point ring_pos(
+            control_point_final_pos.x + cos(angle) * distance,
+            control_point_final_pos.y + sin(angle) * distance
+        );
+        
+        draw_bitmap(
+            game.sys_assets.bmp_bright_ring,
+            ring_pos,
+            point(ring_scale, ring_scale),
+            0.0f,
+            ring_color
+        );
+    }
 }
 
 
 /* ----------------------------------------------------------------------------
- * Heals a leader, causes particle effects, etc.
- * l:
- *   Leader to heal.
- */
+* Heals a leader, causes particle effects, etc.
+* l:
+*   Leader to heal.
+*/
 void ship::heal_leader(leader* l) const {
     l->set_health(false, true, 1.0);
     
@@ -99,13 +222,15 @@ void ship::heal_leader(leader* l) const {
 
 
 /* ----------------------------------------------------------------------------
- * Checks whether the specified leader is currently under the ship's
- * beam or not.
+ * Checks whether the specified leader is currently on the ship's
+ * control point or not.
  * l:
  *   Leader to check.
  */
-bool ship::is_leader_under_beam(leader* l) const {
-    return dist(l->pos, beam_final_pos) <= shi_type->beam_radius;
+bool ship::is_leader_on_cp(leader* l) const {
+    return
+        dist(l->pos, control_point_final_pos) <=
+        shi_type->control_point_radius;
 }
 
 
@@ -122,30 +247,30 @@ void ship::read_script_vars(const script_var_reader &svr) {
 
 
 /* ----------------------------------------------------------------------------
- * Ticks class-specific logic.
+ * Ticks time by one frame of logic.
  * delta_t:
- *   How many seconds to tick by.
+ *   How long the frame's tick is, in seconds.
  */
 void ship::tick_class_specifics(const float delta_t) {
-    //The way the beam ring works is that the three color components are saved.
-    //Each frame, we increase them or decrease them
-    //(if it reaches 255, set it to decrease, if 0, set it to increase).
-    //Each component increases/decreases at a different speed,
-    //with red being the slowest and blue the fastest.
-    for(unsigned char i = 0; i < 3; ++i) {
-        float dir_mult = (beam_ring_color_up[i]) ? 1.0 : -1.0;
-        signed char addition =
-            dir_mult * SHIP_BEAM_RING_COLOR_SPEED * (i + 1) * delta_t;
-        if(beam_ring_color[i] + addition >= 255) {
-            beam_ring_color[i] = 255;
-            beam_ring_color_up[i] = false;
-        } else if(beam_ring_color[i] + addition <= 0) {
-            beam_ring_color[i] = 0;
-            beam_ring_color_up[i] = true;
+    nest->tick(delta_t);
+    
+    if(mobs_being_beamed > 0) {
+        next_tractor_beam_ring_timer.tick(delta_t);
+    }
+    
+    for(size_t r = 0; r < tractor_beam_rings.size(); ) {
+        //Erase rings that have reached the end of their animation.
+        tractor_beam_rings[r] += delta_t;
+        if(tractor_beam_rings[r] > SHIP_TRACTOR_BEAM_RING_ANIM_DUR) {
+            tractor_beam_rings.erase(
+                tractor_beam_rings.begin() + r
+            );
+            tractor_beam_ring_colors.erase(
+                tractor_beam_ring_colors.begin() + r
+            );
         } else {
-            beam_ring_color[i] += addition;
+            r++;
         }
     }
     
-    nest->tick(delta_t);
 }
